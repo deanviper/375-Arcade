@@ -337,7 +337,7 @@ export default function Page() {
       style={{ 
         position: 'fixed',
         top: '25%', // 20% more up
-        left: '7%', // 10% more to the right (was -3%)
+        left: '-8%', // 15% to the left (was 7%)
         width: '31.25vw', // 25% bigger (was 25vw)
         height: 'auto',
         minWidth: '375px', // 25% bigger (was 300px)
@@ -1053,158 +1053,52 @@ export default function Page() {
     );
   }
 
-  // Show connected and authenticated state - moved game boxes up 30%
-  if (address && address !== '0x0000000000000000000000000000000000000000' && authed && !isPaid && !gameStarted && !gameOver) {
+  // Sign auth - Skip for offline users
+  if (!authed && address !== '0x0000000000000000000000000000000000000000') {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
         <BruceMascot />
-        <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
-            <div style={{ marginBottom: '40px' }}>
-              <img 
-                src="/arcade-title.png" 
-                alt="375 Arcade - Built on Irys"
-                style={{ 
-                  maxWidth: '400px',
-                  width: '100%',
-                  height: 'auto',
-                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
-                }} 
-              />
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              gap: '40px', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                opacity: 0.6,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
-                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
-              </div>
-
-              <div style={{
-                ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #10b981',
-                boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
-              }}>
-                <div style={{ 
-                  width: '64px', 
-                  height: '64px', 
-                  backgroundImage: 'url(/blocks.png)', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '20px',
-                  margin: '0 auto 20px auto'
-                }}></div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #10b981, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  TETRIS
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
-                  Play a classic game of Tetris for 0.01 Irys!
-                </p>
-                
-                <button
-                  style={{ 
-                    ...buttonStyle, 
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
-                  }}
-                  onClick={handlePayment}
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play'}
-                </button>
-              </div>
-
-              <div style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                opacity: 0.6,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
-                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
-              </div>
-            </div>
-          </div>
-          <Footer />
-        </div>
-        
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Pay to play - Skip for offline users (but this case is handled above now)
-  if (!isPaid && address !== '0x0000000000000000000000000000000000000000') {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <BruceMascot />
-        <div style={{ padding: '90px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-          <div style={{
-            ...cardStyle,
-            padding: '20px',
-            maxWidth: '300px'
-          }}>
-            <div style={{ fontSize: '28px', marginBottom: '8px' }}>💎</div>
-            <h2 style={{ marginBottom: '8px', fontSize: '18px' }}>Welcome Champion!</h2>
-            <p style={{ marginBottom: '6px', color: '#B9C1C1', fontSize: '12px' }}>
-              {address.slice(0, 6)}...{address.slice(-4)}
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
+            <h2 style={{ marginBottom: '20px' }}>Authentication Required</h2>
+            <p style={{ marginBottom: '10px', color: '#B9C1C1' }}>
+              <strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}
             </p>
-            <div style={{ margin: '10px 0', transform: 'scale(0.6)' }}>
-              <BlurredPreview />
-            </div>
-            <p style={{ marginBottom: '12px', color: '#B9C1C1', fontSize: '13px' }}>
-              Pay <strong>{process.env.NEXT_PUBLIC_GAME_FEE} IRYS</strong> to play
+            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
+              Sign a message to verify your identity
             </p>
             <button
-              style={{ 
-                ...buttonStyle, 
-                padding: '10px 20px',
-                fontSize: '13px',
-                minWidth: '180px',
-                ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : { animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' })
+              style={buttonStyle}
+              onClick={async () => {
+                try {
+                  const ethereum = (window as any).ethereum;
+                  if (!ethereum) {
+                    throw new Error('No wallet found');
+                  }
+
+                  const provider = new ethers.BrowserProvider(ethereum);
+                  const signer = await provider.getSigner();
+                  
+                  await signer.signMessage(`Authenticate @375 Tetris at ${Date.now()}`);
+                  setAuthed(true);
+                  console.log('Authentication successful');
+                } catch (e: any) {
+                  if (e.code === 4001) {
+                    alert('Authentication cancelled by user');
+                  } else {
+                    alert('Authentication failed: ' + e.message);
+                  }
+                }
               }}
-              onClick={handlePayment}
-              disabled={isProcessingPayment}
             >
-              {isProcessingPayment ? '⏳ Processing...' : `💰 Pay ${process.env.NEXT_PUBLIC_GAME_FEE} IRYS`}
+              🔐 Sign Message
             </button>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
