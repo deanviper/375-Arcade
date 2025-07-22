@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       if (recoveredAddress.toLowerCase() !== data.walletAddress.toLowerCase()) {
         throw new Error('Signature verification failed - address mismatch');
       }
-    } catch (verifyError) {
+    } catch (verifyError: any) {
       console.error('Signature verification failed:', verifyError);
       throw new Error('Invalid signature');
     }
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     try {
       const balance = await irysUploader.getLoadedBalance();
       console.log('Current balance:', irysUploader.utils.fromAtomic(balance).toString());
-    } catch (e) {
+    } catch (e: any) {
       console.log('Balance check failed:', e.message);
     }
 
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({ data, txId: receipt.id })
       });
       console.log('Score added to recent leaderboard');
-    } catch (e) {
+    } catch (e: any) {
       console.log('Failed to add to leaderboard:', e.message);
     }
 
