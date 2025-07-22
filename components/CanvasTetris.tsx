@@ -53,8 +53,8 @@ export default function CanvasTetris({
     Array.from({ length: ROWS }, () => Array(COLS).fill(''))
   );
 
-  const currentRef = useRef<Piece>();
-  const nextPieceRef = useRef<ShapeInfo>();
+  const currentRef = useRef<Piece | undefined>(undefined);
+  const nextPieceRef = useRef<ShapeInfo | undefined>(undefined);
   const holdRef    = useRef<Piece|null>(null);
   const usedHoldRef= useRef(false);
   
