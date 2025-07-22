@@ -1129,9 +1129,16 @@ export default function Page() {
                 border: '3px solid #10b981',
                 boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
               }}>
-                <div style={{ marginBottom: '20px' }}>
-                  <img src="/game-icon.png" alt="Game Icon" width="64" height="64" />
-                </div>
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  backgroundImage: 'url(/tetris-blocks.png)',
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}></div>
                 <h2 style={{ 
                   fontSize: '32px', 
                   marginBottom: '15px', 
