@@ -286,7 +286,7 @@ export default function Page() {
     clearPersistedState();
   };
 
-  // Enhanced wallet connection that checks for existing connection
+  // Enhanced wallet connection that checks for existing connection and handles authentication
   const handleWalletConnection = async () => {
     const ethereum = (window as any).ethereum;
     if (!ethereum) {
@@ -295,15 +295,6 @@ export default function Page() {
     }
     
     try {
-      // Check if wallet is already connected
-      const accounts = await ethereum.request({ method: 'eth_accounts' });
-      
-      if (accounts.length > 0 && authed) {
-        // Already connected and authenticated, just proceed to payment
-        console.log('Wallet already connected and authenticated');
-        return;
-      }
-      
       // Request account access
       const requestedAccounts: string[] = await ethereum.request({ 
         method: 'eth_requestAccounts' 
@@ -312,6 +303,22 @@ export default function Page() {
       if (requestedAccounts.length > 0) {
         setAddress(requestedAccounts[0]);
         console.log('Wallet connected:', requestedAccounts[0]);
+        
+        // Automatically proceed to authentication
+        try {
+          const provider = new ethers.BrowserProvider(ethereum);
+          const signer = await provider.getSigner();
+          
+          await signer.signMessage(`Authenticate @375 Tetris at ${Date.now()}`);
+          setAuthed(true);
+          console.log('Authentication successful');
+        } catch (authError: any) {
+          if (authError.code === 4001) {
+            alert('Authentication cancelled by user');
+          } else {
+            alert('Authentication failed: ' + authError.message);
+          }
+        }
       }
     } catch (e: any) {
       if (e.code === 4001) {
@@ -321,6 +328,27 @@ export default function Page() {
       }
     }
   };
+
+  // Bruce Mascot Component - Fixed positioning for all pages
+  const BruceMascot = () => (
+    <img 
+      src="/bruce.png" 
+      alt="Bruce - 375ai Mascot" 
+      style={{ 
+        position: 'fixed',
+        top: '25%', // 20% more up
+        left: '7%', // 10% more to the right (was -3%)
+        width: '31.25vw', // 25% bigger (was 25vw)
+        height: 'auto',
+        minWidth: '375px', // 25% bigger (was 300px)
+        maxWidth: '625px', // 25% bigger (was 500px)
+        opacity: 0.6,
+        filter: 'drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5))',
+        zIndex: 1,
+        pointerEvents: 'none'
+      }} 
+    />
+  );
 
   // Leaderboard Component - Only show during gameplay
   const LeaderboardPanel = () => {
@@ -651,8 +679,8 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Right Side - Wallet Status & Disconnect */}
-      {address && address !== '0x0000000000000000000000000000000000000000' && !isOfflineMode && (
+      {/* Right Side - Wallet Status & Disconnect - Only show when connected and authenticated */}
+      {address && address !== '0x0000000000000000000000000000000000000000' && authed && !isOfflineMode && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ 
             background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(80, 255, 214, 0.05) 100%)',
@@ -837,6 +865,7 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
+        <BruceMascot />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
@@ -892,7 +921,8 @@ export default function Page() {
         <style>{mobileStyles}</style>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div className="arcade-container" style={{ padding: '100px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+        <BruceMascot />
+        <div className="arcade-container" style={{ padding: '130px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
             <div style={{ marginBottom: '60px' }}>
               <img 
@@ -1008,25 +1038,6 @@ export default function Page() {
                 <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
               </div>
             </div>
-            
-            {/* Large Bruce mascot positioned center-left */}
-            <img 
-              src="/bruce.png" 
-              alt="Bruce - 375ai Mascot" 
-              style={{ 
-                position: 'absolute',
-                top: '45%',
-                left: '-3%',
-                width: '25vw',
-                height: 'auto',
-                minWidth: '300px',
-                maxWidth: '500px',
-                opacity: 0.6,
-                filter: 'drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5))',
-                zIndex: 1,
-                pointerEvents: 'none'
-              }} 
-            />
           </div>
           
           <Footer />
@@ -1042,15 +1053,16 @@ export default function Page() {
     );
   }
 
-  // Show connected state with different UI if wallet is connected and authenticated
+  // Show connected and authenticated state - moved game boxes up 30%
   if (address && address !== '0x0000000000000000000000000000000000000000' && authed && !isPaid && !gameStarted && !gameOver) {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+        <BruceMascot />
+        <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
-            <div style={{ marginBottom: '60px' }}>
+            <div style={{ marginBottom: '40px' }}>
               <img 
                 src="/arcade-title.png" 
                 alt="375 Arcade - Built on Irys"
@@ -1061,23 +1073,6 @@ export default function Page() {
                   filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
                 }} 
               />
-            </div>
-
-            {/* Connected wallet status */}
-            <div style={{ 
-              marginBottom: '40px',
-              padding: '15px 25px',
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: '12px',
-              display: 'inline-block'
-            }}>
-              <div style={{ color: '#10b981', fontSize: '14px', fontWeight: '600', marginBottom: '5px' }}>
-                ✅ Connected
-              </div>
-              <div style={{ color: '#B9C1C1', fontSize: '12px', fontFamily: 'Monaco, monospace' }}>
-                {address.slice(0, 6)}...{address.slice(-4)}
-              </div>
             </div>
 
             <div style={{ 
@@ -1092,10 +1087,12 @@ export default function Page() {
                 minWidth: '280px',
                 maxWidth: '320px',
                 opacity: 0.6,
-                filter: 'blur(2px)'
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
               }}>
                 <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
-                <h3 style={{ color: '#B9C1C1', margin: '0' }}>COMING SOON</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
               </div>
 
               <div style={{
@@ -1147,10 +1144,12 @@ export default function Page() {
                 minWidth: '280px',
                 maxWidth: '320px',
                 opacity: 0.6,
-                filter: 'blur(2px)'
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
               }}>
                 <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
-                <h3 style={{ color: '#B9C1C1', margin: '0' }}>COMING SOON</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
               </div>
             </div>
           </div>
@@ -1167,61 +1166,13 @@ export default function Page() {
     );
   }
 
-  // Sign auth - Skip for offline users
-  if (!authed && address !== '0x0000000000000000000000000000000000000000') {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
-            <h2 style={{ marginBottom: '20px' }}>Authentication Required</h2>
-            <p style={{ marginBottom: '10px', color: '#B9C1C1' }}>
-              <strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}
-            </p>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
-              Sign a message to verify your identity
-            </p>
-            <button
-              style={buttonStyle}
-              onClick={async () => {
-                try {
-                  const ethereum = (window as any).ethereum;
-                  if (!ethereum) {
-                    throw new Error('No wallet found');
-                  }
-
-                  const provider = new ethers.BrowserProvider(ethereum);
-                  const signer = await provider.getSigner();
-                  
-                  await signer.signMessage(`Authenticate @375 Tetris at ${Date.now()}`);
-                  setAuthed(true);
-                  console.log('Authentication successful');
-                } catch (e: any) {
-                  if (e.code === 4001) {
-                    alert('Authentication cancelled by user');
-                  } else {
-                    alert('Authentication failed: ' + e.message);
-                  }
-                }
-              }}
-            >
-              🔐 Sign Message
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
   // Pay to play - Skip for offline users (but this case is handled above now)
   if (!isPaid && address !== '0x0000000000000000000000000000000000000000') {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
+        <BruceMascot />
         <div style={{ padding: '90px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
           <div style={{
             ...cardStyle,
@@ -1264,6 +1215,7 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
+        <BruceMascot />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
@@ -1304,6 +1256,7 @@ export default function Page() {
     <div style={containerStyle}>
       <NavigationHeader />
       <LeaderboardPanel />
+      <BruceMascot />
       <div style={{ 
         padding: '80px 20px 20px', 
         display: 'flex', 
