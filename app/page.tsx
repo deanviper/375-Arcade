@@ -337,7 +337,7 @@ export default function Page() {
       style={{ 
         position: 'fixed',
         top: '25%', // 20% more up
-        left: '-1%', // 7% more to the right (was -8%)
+        left: '-3%', // 2% more to the left (was -1%)
         width: '31.25vw', // 25% bigger (was 25vw)
         height: 'auto',
         minWidth: '375px', // 25% bigger (was 300px)
@@ -1083,8 +1083,14 @@ export default function Page() {
                   const signer = await provider.getSigner();
                   
                   await signer.signMessage(`Authenticate @375 Tetris at ${Date.now()}`);
+                  
+                  // Set authenticated and reset payment state
                   setAuthed(true);
-                  console.log('Authentication successful');
+                  setIsPaid(false); // Force to game selection page
+                  setGameStarted(false);
+                  setGameOver(false);
+                  
+                  console.log('Authentication successful - redirecting to game selection');
                 } catch (e: any) {
                   if (e.code === 4001) {
                     alert('Authentication cancelled by user');
