@@ -336,8 +336,8 @@ export default function Page() {
       alt="Bruce - 375ai Mascot" 
       style={{ 
         position: 'fixed',
-        top: '25%', // 20% more up
-        left: '-3%', // 2% more to the left (was -1%)
+        bottom: '10px', // Changed from top: 25% to bottom: 10px to align foot with footer
+        left: '-3%',
         width: '31.25vw', // 25% bigger (was 25vw)
         height: 'auto',
         minWidth: '375px', // 25% bigger (was 300px)
@@ -1155,8 +1155,8 @@ export default function Page() {
                 ...cardStyle,
                 minWidth: '320px',
                 maxWidth: '400px',
-                border: '3px solid #10b981',
-                boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
+                border: '3px solid #50FFD6',
+                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.3)'
               }}>
                 <div style={{ 
                   width: '64px', 
@@ -1171,7 +1171,7 @@ export default function Page() {
                 <h2 style={{ 
                   fontSize: '32px', 
                   marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #10b981, #FF3D14)', 
+                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
                   WebkitBackgroundClip: 'text', 
                   WebkitTextFillColor: 'transparent',
                   fontWeight: '700'
