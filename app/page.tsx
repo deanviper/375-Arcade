@@ -1130,7 +1130,7 @@ export default function Page() {
                 boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
               }}>
                 <div style={{ marginBottom: '20px' }}>
-                  <img src="/tetris-blocks.png" alt="Tetris Blocks" width="64" height="64" />
+                  <img src="/game-icon.png" alt="Game Icon" width="64" height="64" />
                 </div>
                 <h2 style={{ 
                   fontSize: '32px', 
