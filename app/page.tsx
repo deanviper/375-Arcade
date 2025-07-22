@@ -1131,8 +1131,8 @@ export default function Page() {
               }}>
                 <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
                   <img 
-                    src="/tetris-blocks.png"
-                    alt="Tetris Blocks"
+                    src="/blocks.png"
+                    alt="Game Blocks"
                     style={{ 
                       width: '80px', 
                       height: '80px',
