@@ -1229,31 +1229,34 @@ export default function Page() {
     );
   }
 
-  // Game active
-  return (
-    <div style={containerStyle}>
-      <NavigationHeader />
-      <LeaderboardPanel />
-      <BruceMascot />
-      <div style={{ 
-        padding: '80px 20px 20px', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        minHeight: '100vh'
-      }}>
-        <CanvasTetris
-          start={gameStarted}
-          onGameOver={(score, lines) => {
-            setGameOver(true);
-            setGameStarted(false);
-          }}
-          onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
-          onPublishScore={handlePublishScore}
-          playerAddress={isOfflineMode ? undefined : address}
-        />
+  // Game active - Show when game has started (both paid and offline mode)
+  if (gameStarted) {
+    console.log('Game active condition met:', { gameStarted, isOfflineMode, isPaid });
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ 
+          padding: '80px 20px 20px', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          minHeight: '100vh'
+        }}>
+          <CanvasTetris
+            start={gameStarted}
+            onGameOver={(score, lines) => {
+              setGameOver(true);
+              setGameStarted(false);
+            }}
+            onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
+            onPublishScore={handlePublishScore}
+            playerAddress={isOfflineMode ? undefined : address}
+          />
+        </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
-  );
+    );
+  }
 }
