@@ -158,9 +158,16 @@ export default function Page() {
 
   // Spacebar → start game (works for both paid and offline mode)
   useEffect(() => {
-    if ((!isPaid && !isOfflineMode) || gameStarted || gameOver) return;
+    // Allow spacebar if: (paid OR offline) AND game not started AND game not over
+    const canStartGame = (isPaid || isOfflineMode) && !gameStarted && !gameOver;
+    
+    if (!canStartGame) return;
+    
+    console.log('Spacebar listener active:', { isPaid, isOfflineMode, gameStarted, gameOver, canStartGame });
+    
     const handler = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
+        console.log('Spacebar detected in offline mode! Starting game...');
         setGameStarted(true);
         setGameOver(false);
       }
