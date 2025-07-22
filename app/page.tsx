@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { useWeb3Modal } from '@web3modal/wagmi/react';
+import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
 import BlurredPreview from '../components/BlurredPreview';
 import CanvasTetris from '../components/CanvasTetris';
 
@@ -20,7 +22,6 @@ const IRYS_PARAMS = {
   nativeCurrency: { name: 'Irys', symbol: 'IRYS', decimals: 18 },
   blockExplorerUrls: ['https://testnet-explorer.irys.xyz'],
 };
-const IRYS_CHAIN_ID = IRYS_PARAMS.chainId.toLowerCase();
 
 interface LeaderboardEntry {
   rank: number;
@@ -41,8 +42,11 @@ const STORAGE_KEYS = {
 };
 
 export default function Page() {
-  const [chainId, setChainId] = useState('');
-  const [address, setAddress] = useState('');
+  const { open } = useWeb3Modal();
+  const { address, isConnected, chainId } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
+  
   const [authed, setAuthed] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -56,23 +60,21 @@ export default function Page() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    const savedAddress = localStorage.getItem(STORAGE_KEYS.WALLET_ADDRESS);
     const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
     const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
     
-    if (savedAddress && savedAuth) {
-      console.log('Restoring wallet session:', savedAddress);
-      setAddress(savedAddress);
+    if (address && savedAuth) {
+      console.log('Restoring wallet session:', address);
       setAuthed(true);
       setIsPaid(savedPaid);
     }
-  }, []);
+  }, [address]);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    if (address && address !== '0x0000000000000000000000000000000000000000') {
+    if (address) {
       localStorage.setItem(STORAGE_KEYS.WALLET_ADDRESS, address);
     }
   }, [address]);
@@ -127,49 +129,19 @@ export default function Page() {
     loadLeaderboard();
   }, []);
 
-  // Track chain with universal wallet support
+  // Handle wallet connection changes
   useEffect(() => {
-    const ethereum = (window as any).ethereum;
-    if (!ethereum) return;
-    
-    // Get current chain
-    ethereum.request({ method: 'eth_chainId' }).then((id: string) => {
-      setChainId(id.toLowerCase());
-    }).catch(console.error);
-    
-    // Listen for chain changes
-    const handleChainChanged = (id: string) => setChainId(id.toLowerCase());
-    ethereum.on('chainChanged', handleChainChanged);
-    
-    // Listen for account changes (wallet disconnect/switch)
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (accounts.length === 0) {
-        // User disconnected wallet
-        console.log('Wallet disconnected - clearing all state');
-        setAddress('');
-        setAuthed(false);
-        setIsPaid(false);
-        setGameStarted(false);
-        setGameOver(false);
-        clearPersistedState();
-      } else if (accounts[0] !== address) {
-        // User switched account - clear auth/payment but keep new address
-        console.log('Account switched from', address, 'to', accounts[0]);
-        setAddress(accounts[0]);
-        setAuthed(false);
-        setIsPaid(false);
-        setGameStarted(false);
-        setGameOver(false);
-        clearPersistedState();
-      }
-    };
-    ethereum.on('accountsChanged', handleAccountsChanged);
-    
-    return () => {
-      ethereum.removeListener('chainChanged', handleChainChanged);
-      ethereum.removeListener('accountsChanged', handleAccountsChanged);
-    };
-  }, [address]);
+    if (!isConnected) {
+      // User disconnected wallet
+      console.log('Wallet disconnected - clearing all state');
+      setAuthed(false);
+      setIsPaid(false);
+      setGameStarted(false);
+      setGameOver(false);
+      setIsOfflineMode(false);
+      clearPersistedState();
+    }
+  }, [isConnected]);
 
   // Spacebar → start game
   useEffect(() => {
@@ -263,7 +235,6 @@ export default function Page() {
     
     // For offline mode, also reset the address to return to landing
     if (isOfflineMode) {
-      setAddress('');
       setAuthed(false);
       setIsOfflineMode(false);
     }
@@ -277,7 +248,7 @@ export default function Page() {
   // Handle wallet disconnection
   const handleDisconnectWallet = () => {
     console.log('Disconnecting wallet...');
-    setAddress('');
+    disconnect();
     setAuthed(false);
     setIsPaid(false);
     setGameStarted(false);
@@ -286,46 +257,13 @@ export default function Page() {
     clearPersistedState();
   };
 
-  // Enhanced wallet connection that checks for existing connection and handles authentication
+  // Enhanced wallet connection using WalletConnect
   const handleWalletConnection = async () => {
-    const ethereum = (window as any).ethereum;
-    if (!ethereum) {
-      alert('No wallet found. Please install MetaMask, OKX, Rabby, Trust Wallet, or another Web3 wallet.');
-      return;
-    }
-    
     try {
-      // Request account access
-      const requestedAccounts: string[] = await ethereum.request({ 
-        method: 'eth_requestAccounts' 
-      });
-      
-      if (requestedAccounts.length > 0) {
-        setAddress(requestedAccounts[0]);
-        console.log('Wallet connected:', requestedAccounts[0]);
-        
-        // Automatically proceed to authentication
-        try {
-          const provider = new ethers.BrowserProvider(ethereum);
-          const signer = await provider.getSigner();
-          
-          await signer.signMessage(`Authenticate @375 Tetris at ${Date.now()}`);
-          setAuthed(true);
-          console.log('Authentication successful');
-        } catch (authError: any) {
-          if (authError.code === 4001) {
-            alert('Authentication cancelled by user');
-          } else {
-            alert('Authentication failed: ' + authError.message);
-          }
-        }
-      }
-    } catch (e: any) {
-      if (e.code === 4001) {
-        alert('Wallet connection cancelled by user');
-      } else {
-        alert('Failed to connect wallet: ' + e.message);
-      }
+      await open();
+    } catch (error: any) {
+      console.error('Failed to open wallet modal:', error);
+      alert('Failed to open wallet connection modal: ' + error.message);
     }
   };
 
@@ -370,7 +308,7 @@ export default function Page() {
       return acc;
     }, []).sort((a, b) => b.score - a.score);
 
-    const userScore = address && address !== '0x0000000000000000000000000000000000000000' && authed 
+    const userScore = address && authed 
       ? uniqueLeaderboard.find(entry => 
           (entry as any).walletAddress?.toLowerCase() === address.toLowerCase()
         )
@@ -680,7 +618,7 @@ export default function Page() {
       </div>
 
       {/* Right Side - Wallet Status & Disconnect - Only show when connected and authenticated */}
-      {address && address !== '0x0000000000000000000000000000000000000000' && authed && !isOfflineMode && (
+      {address && isConnected && authed && !isOfflineMode && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ 
             background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(80, 255, 214, 0.05) 100%)',
@@ -860,7 +798,7 @@ export default function Page() {
   );
 
   // Wrong chain
-  if (chainId && chainId !== IRYS_CHAIN_ID && !isOfflineMode) {
+  if (chainId && chainId !== 1270 && !isOfflineMode) {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
@@ -915,7 +853,7 @@ export default function Page() {
   }
 
   // Landing page
-  if (!address) {
+  if (!address && !isConnected) {
     return (
       <div style={containerStyle}>
         <style>{mobileStyles}</style>
@@ -1014,10 +952,9 @@ export default function Page() {
                       minWidth: '200px'
                     }}
                     onClick={() => {
-                      setAddress('0x0000000000000000000000000000000000000000');
+                      setIsOfflineMode(true);
                       setAuthed(true);
                       setIsPaid(true);
-                      setIsOfflineMode(true);
                     }}
                   >
                     Just Play
@@ -1054,7 +991,7 @@ export default function Page() {
   }
 
   // Sign auth - Skip for offline users
-  if (!authed && address !== '0x0000000000000000000000000000000000000000') {
+  if (!authed && address && isConnected) {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
@@ -1074,15 +1011,8 @@ export default function Page() {
               style={buttonStyle}
               onClick={async () => {
                 try {
-                  const ethereum = (window as any).ethereum;
-                  if (!ethereum) {
-                    throw new Error('No wallet found');
-                  }
-
-                  const provider = new ethers.BrowserProvider(ethereum);
-                  const signer = await provider.getSigner();
-                  
-                  await signer.signMessage(`Authenticate @375 Tetris at ${Date.now()}`);
+                  const message = `Authenticate @375 Tetris at ${Date.now()}`;
+                  await signMessageAsync({ message });
                   
                   // Set authenticated and reset payment state
                   setAuthed(true);
@@ -1092,7 +1022,7 @@ export default function Page() {
                   
                   console.log('Authentication successful - redirecting to game selection');
                 } catch (e: any) {
-                  if (e.code === 4001) {
+                  if (e.message.includes('User rejected')) {
                     alert('Authentication cancelled by user');
                   } else {
                     alert('Authentication failed: ' + e.message);
@@ -1110,7 +1040,7 @@ export default function Page() {
   }
 
   // Show connected and authenticated state - the game selection page
-  if (address && address !== '0x0000000000000000000000000000000000000000' && authed && !isPaid && !gameStarted && !gameOver) {
+  if (address && isConnected && authed && !isPaid && !gameStarted && !gameOver) {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
@@ -1246,7 +1176,7 @@ export default function Page() {
             <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
               <p>🎯 Clear lines to score points</p>
               <p>⚡ Speed increases every 4 lines</p>
-              {address !== '0x0000000000000000000000000000000000000000' && (
+              {address && address !== '0x0000000000000000000000000000000000000000' && (
                 <p>🏆 Publish scores to blockchain leaderboard!</p>
               )}
             </div>
