@@ -66,7 +66,7 @@ export default function CanvasTetris({
   const levelRef = useRef(1);
   const comboRef = useRef(0);
   
-  const timerRef  = useRef<number>();
+  const timerRef = useRef<number | undefined>(undefined);
   const gameOverRef = useRef(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
