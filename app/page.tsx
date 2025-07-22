@@ -892,8 +892,8 @@ export default function Page() {
         <style>{mobileStyles}</style>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div className="arcade-container" style={{ padding: '100px 20px 120px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
+        <div className="arcade-container" style={{ padding: '100px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-60px' }}>
             <div style={{ marginBottom: '60px' }}>
               <img 
                 src="/arcade-title.png" 
@@ -1018,15 +1018,15 @@ export default function Page() {
               alt="Bruce - 375ai Mascot" 
               style={{ 
                 position: 'absolute',
-                bottom: '10%',
-                left: 'calc(50% - 500px)',
-                width: '15vw',
+                top: '5%',
+                left: '-5%',
+                width: '25vw',
                 height: 'auto',
-                minWidth: '200px',
-                maxWidth: '300px',
-                opacity: 0.4,
-                filter: 'drop-shadow(0 8px 32px rgba(0, 0, 0, 0.4))',
-                zIndex: 2,
+                minWidth: '300px',
+                maxWidth: '500px',
+                opacity: 0.6,
+                filter: 'drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5))',
+                zIndex: 1,
                 pointerEvents: 'none'
               }} 
             />
