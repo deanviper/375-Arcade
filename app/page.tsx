@@ -301,10 +301,10 @@ export default function Page() {
     />
   );
 
-  // Leaderboard Component - Only show during gameplay, NOT in offline mode
+  // Leaderboard Component - Show when paid (including offline mode)
   const LeaderboardPanel = () => {
-    // Only show leaderboard when in game states AND not in offline mode
-    if (!isPaid || isOfflineMode) return null;
+    // Show leaderboard when in game states (including offline mode)
+    if (!isPaid && !isOfflineMode) return null;
     
     const uniqueLeaderboard = leaderboard.reduce((acc: LeaderboardEntry[], current) => {
       const existingIndex = acc.findIndex(entry => 
@@ -866,7 +866,7 @@ export default function Page() {
   }
 
   // Landing page
-  if (!address && !isConnected) {
+  if (!address && !isConnected && !isOfflineMode) {
     return (
       <div style={containerStyle}>
         <style>{mobileStyles}</style>
@@ -965,10 +965,14 @@ export default function Page() {
                       minWidth: '200px'
                     }}
                     onClick={() => {
-                      // Set offline mode and simulate being authenticated/paid
+                      console.log('Just Play clicked!'); // Debug log
+                      // Set offline mode first, then other states
                       setIsOfflineMode(true);
                       setAuthed(true);
                       setIsPaid(true);
+                      setGameStarted(false);
+                      setGameOver(false);
+                      console.log('Offline mode set:', { isOfflineMode: true, authed: true, isPaid: true });
                     }}
                   >
                     Just Play
@@ -1166,8 +1170,9 @@ export default function Page() {
     );
   }
 
-  // Ready to start - ONLY after payment is complete OR in offline mode  
+  // Ready to start - Show for offline mode OR after payment
   if (isOfflineMode || (isPaid && !gameStarted && !gameOver)) {
+    console.log('Ready to Play condition met:', { isOfflineMode, isPaid, gameStarted, gameOver });
     return (
       <div style={containerStyle}>
         <NavigationHeader />
