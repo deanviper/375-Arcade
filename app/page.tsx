@@ -1129,7 +1129,16 @@ export default function Page() {
                 border: '3px solid #10b981',
                 boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
               }}>
-                <img src="/blocks.png" alt="Blocks" width={64} height={64} style={{ marginBottom: '20px' }} />
+                <div style={{ 
+                  width: 64, 
+                  height: 64, 
+                  backgroundImage: 'url(/blocks.png)', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: 20,
+                  margin: '0 auto 20px auto'
+                }}></div>
                 <h2 style={{ 
                   fontSize: '32px', 
                   marginBottom: '15px', 
