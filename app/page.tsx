@@ -1109,8 +1109,121 @@ export default function Page() {
     );
   }
 
-  // Ready to start
-  if (!gameStarted && !gameOver) {
+  // Show connected and authenticated state - the game selection page
+  if (address && address !== '0x0000000000000000000000000000000000000000' && authed && !isPaid && !gameStarted && !gameOver) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '40px' }}>
+              <img 
+                src="/arcade-title.png" 
+                alt="375 Arcade - Built on Irys"
+                style={{ 
+                  maxWidth: '400px',
+                  width: '100%',
+                  height: 'auto',
+                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                }} 
+              />
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              gap: '40px', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+
+              <div style={{
+                ...cardStyle,
+                minWidth: '320px',
+                maxWidth: '400px',
+                border: '3px solid #10b981',
+                boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
+              }}>
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  backgroundImage: 'url(/blocks.png)', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}></div>
+                <h2 style={{ 
+                  fontSize: '32px', 
+                  marginBottom: '15px', 
+                  background: 'linear-gradient(90deg, #10b981, #FF3D14)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '700'
+                }}>
+                  TETRIS
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
+                  Play a classic game of Tetris for 0.01 Irys!
+                </p>
+                
+                <button
+                  style={{ 
+                    ...buttonStyle, 
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
+                  }}
+                  onClick={handlePayment}
+                  disabled={isProcessingPayment}
+                >
+                  {isProcessingPayment ? '⏳ Processing...' : 'Play'}
+                </button>
+              </div>
+
+              <div style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+            </div>
+          </div>
+          <Footer />
+        </div>
+        
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Ready to start - ONLY after payment is complete
+  if (isPaid && !gameStarted && !gameOver) {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
