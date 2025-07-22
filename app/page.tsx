@@ -1129,17 +1129,8 @@ export default function Page() {
                 border: '3px solid #10b981',
                 boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
               }}>
-                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-                  <img 
-                    src="/blocks.png"
-                    alt="Game Blocks"
-                    style={{ 
-                      width: '80px', 
-                      height: '80px',
-                      objectFit: 'contain',
-                      filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))'
-                    }} 
-                  />
+                <div style={{ marginBottom: '20px' }}>
+                  <img src="/tetris-blocks.png" alt="Tetris Blocks" width="64" height="64" />
                 </div>
                 <h2 style={{ 
                   fontSize: '32px', 
