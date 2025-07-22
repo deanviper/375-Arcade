@@ -1240,7 +1240,7 @@ export default function Page() {
     );
   }
 
-  // Pay to play - Skip for "Just Play" users (but this case is handled above now)
+  // Pay to play - Skip for offline users (but this case is handled above now)
   if (!isPaid && address !== '0x0000000000000000000000000000000000000000') {
     return (
       <div style={containerStyle}>
