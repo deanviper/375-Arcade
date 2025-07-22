@@ -114,6 +114,6 @@ export async function GET() {
     message: 'IRYS devnet upload endpoint with signature verification',
     status: 'ready',
     network: 'devnet',
-    note: 'Requires user signature - Free uploads up to 100KB, data expires after 60 days' 
+    note: 'Requires user signature - Free uploads up to 100KB, data expires after 60 days'
   });
 }
