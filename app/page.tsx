@@ -976,22 +976,28 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '40px', marginBottom: '15px' }}>💎</div>
-            <h2 style={{ marginBottom: '15px', fontSize: '24px' }}>Welcome Champion!</h2>
-            <p style={{ marginBottom: '8px', color: '#B9C1C1', fontSize: '14px' }}>
-              <strong>Player:</strong> {address.slice(0, 6)}...{address.slice(-4)}
+        <div style={{ padding: '80px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+          <div style={{
+            ...cardStyle,
+            padding: '25px',
+            maxWidth: '350px'
+          }}>
+            <div style={{ fontSize: '32px', marginBottom: '10px' }}>💎</div>
+            <h2 style={{ marginBottom: '10px', fontSize: '20px' }}>Welcome Champion!</h2>
+            <p style={{ marginBottom: '8px', color: '#B9C1C1', fontSize: '13px' }}>
+              {address.slice(0, 6)}...{address.slice(-4)}
             </p>
-            <div style={{ margin: '20px 0', transform: 'scale(0.8)' }}>
+            <div style={{ margin: '15px 0', transform: 'scale(0.6)' }}>
               <BlurredPreview />
             </div>
-            <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
-              Pay <strong>{process.env.NEXT_PUBLIC_GAME_FEE} IRYS</strong> to start playing
+            <p style={{ marginBottom: '15px', color: '#B9C1C1', fontSize: '14px' }}>
+              Pay <strong>{process.env.NEXT_PUBLIC_GAME_FEE} IRYS</strong> to play
             </p>
             <button
               style={{ 
                 ...buttonStyle, 
+                padding: '12px 24px',
+                fontSize: '14px',
                 ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : pulseStyle)
               }}
               onClick={handlePayment}
@@ -1000,15 +1006,7 @@ export default function Page() {
               {isProcessingPayment ? '⏳ Processing...' : `💰 Pay ${process.env.NEXT_PUBLIC_GAME_FEE} IRYS`}
             </button>
           </div>
-          <Footer />
         </div>
-        
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-          }
-        `}</style>
       </div>
     );
   }
