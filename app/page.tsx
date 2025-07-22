@@ -625,6 +625,18 @@ export default function Page() {
     );
   };
 
+  // Handle wallet disconnection
+  const handleDisconnectWallet = () => {
+    console.log('Disconnecting wallet...');
+    setAddress('');
+    setAuthed(false);
+    setIsPaid(false);
+    setGameStarted(false);
+    setGameOver(false);
+    setIsOfflineMode(false);
+    clearPersistedState();
+  };
+
   // Navigation Header
   const NavigationHeader = () => (
     <div style={{
@@ -638,7 +650,7 @@ export default function Page() {
       borderBottom: '1px solid rgba(255, 61, 20, 0.2)',
       padding: '12px 20px',
       display: 'flex',
-      justifyContent: 'flex-start',
+      justifyContent: 'space-between',
       alignItems: 'center'
     }}>
       {/* Left Side - Navigation Links */}
@@ -709,6 +721,48 @@ export default function Page() {
           375ai Leaderboards
         </button>
       </div>
+
+      {/* Right Side - Wallet Status & Disconnect */}
+      {address && address !== '0x0000000000000000000000000000000000000000' && !isOfflineMode && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ 
+            background: 'rgba(16, 185, 129, 0.1)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '8px',
+            padding: '6px 12px',
+            fontSize: '12px',
+            color: '#10b981',
+            fontFamily: 'Monaco, monospace'
+          }}>
+            {address.slice(0, 6)}...{address.slice(-4)}
+          </div>
+          <button
+            onClick={handleDisconnectWallet}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(185, 193, 193, 0.3)',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              color: '#B9C1C1',
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(231, 76, 60, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(231, 76, 60, 0.3)';
+              e.currentTarget.style.color = '#e74c3c';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'rgba(185, 193, 193, 0.3)';
+              e.currentTarget.style.color = '#B9C1C1';
+            }}
+          >
+            Disconnect
+          </button>
+        </div>
+      )}
     </div>
   );
 
