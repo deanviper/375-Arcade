@@ -261,6 +261,13 @@ export default function Page() {
     setGameOver(false);
     setIsPaid(false); // Reset payment state so user needs to pay again
     
+    // For offline mode, also reset the address to return to landing
+    if (isOfflineMode) {
+      setAddress('');
+      setAuthed(false);
+      setIsOfflineMode(false);
+    }
+    
     // Only clear payment from localStorage, keep wallet and auth
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEYS.IS_PAID, 'false');
@@ -348,10 +355,10 @@ export default function Page() {
         right: '20px',
         width: '320px',
         background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.95) 0%, rgba(15, 15, 20, 0.95) 100%)',
-        border: '1px solid rgba(80, 255, 214, 0.2)',
+        border: '1px solid rgba(255, 61, 20, 0.3)',
         borderRadius: '16px',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.15)',
+        boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.4)',
         zIndex: 1000,
         overflow: 'hidden',
         maxHeight: 'calc(100vh - 100px)'
@@ -361,7 +368,7 @@ export default function Page() {
           padding: '20px',
           background: 'linear-gradient(135deg, rgba(15, 15, 20, 0.8) 0%, rgba(25, 25, 35, 0.8) 100%)',
           textAlign: 'center',
-          borderBottom: '1px solid rgba(80, 255, 214, 0.1)'
+          borderBottom: '1px solid rgba(255, 61, 20, 0.2)'
         }}>
           <h2 style={{
             margin: 0,
@@ -533,18 +540,8 @@ export default function Page() {
       justifyContent: 'space-between',
       alignItems: 'center'
     }}>
-      {/* Left Side - Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <img 
-          src="/bruce.png" 
-          alt="Bruce - 375ai Mascot" 
-          style={{ 
-            width: '32px', 
-            height: '32px',
-            borderRadius: '6px'
-          }} 
-        />
-        
+      {/* Left Side - Navigation Links Only */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>        
         {/* Navigation Links */}
         <div style={{ display: 'flex', gap: '16px' }}>
           <button
@@ -895,7 +892,7 @@ export default function Page() {
         <style>{mobileStyles}</style>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div className="arcade-container" style={{ padding: '100px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+        <div className="arcade-container" style={{ padding: '100px 20px 120px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
             <div style={{ marginBottom: '60px' }}>
               <img 
@@ -922,7 +919,9 @@ export default function Page() {
                 minWidth: '280px',
                 maxWidth: '320px',
                 opacity: 0.6,
-                filter: 'blur(2px)'
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
               }}>
                 <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
                 <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
@@ -1004,32 +1003,34 @@ export default function Page() {
                 minWidth: '280px',
                 maxWidth: '320px',
                 opacity: 0.6,
-                filter: 'blur(2px)'
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
               }}>
                 <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
                 <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
               </div>
             </div>
+            
+            {/* Large Bruce mascot positioned center-left */}
+            <img 
+              src="/bruce.png" 
+              alt="Bruce - 375ai Mascot" 
+              style={{ 
+                position: 'absolute',
+                bottom: '10%',
+                left: 'calc(50% - 500px)',
+                width: '15vw',
+                height: 'auto',
+                minWidth: '200px',
+                maxWidth: '300px',
+                opacity: 0.4,
+                filter: 'drop-shadow(0 8px 32px rgba(0, 0, 0, 0.4))',
+                zIndex: 2,
+                pointerEvents: 'none'
+              }} 
+            />
           </div>
-          
-          {/* Large Bruce mascot as background element */}
-          <img 
-            src="/bruce.png" 
-            alt="Bruce - 375ai Mascot" 
-            style={{ 
-              position: 'fixed',
-              bottom: '-10%',
-              left: '-2%',
-              width: '15vw',
-              height: 'auto',
-              minWidth: '200px',
-              maxWidth: '300px',
-              opacity: 0.3,
-              filter: 'blur(1px) drop-shadow(0 8px 32px rgba(0, 0, 0, 0.4))',
-              zIndex: 1,
-              pointerEvents: 'none'
-            }} 
-          />
           
           <Footer />
         </div>
