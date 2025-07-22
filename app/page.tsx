@@ -1191,7 +1191,7 @@ export default function Page() {
     );
   }
 
-  // Sign auth - Skip for "Just Play" users
+  // Sign auth - Skip for offline users
   if (!authed && address !== '0x0000000000000000000000000000000000000000') {
     return (
       <div style={containerStyle}>
