@@ -2,8 +2,6 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-// Remove Irys imports for now - we'll use direct API calls
-import { ethers } from 'ethers';
 
 const COLS = 10;
 const ROWS = 20;
@@ -55,8 +53,8 @@ export default function CanvasTetris({
 
   const currentRef = useRef<Piece | undefined>(undefined);
   const nextPieceRef = useRef<ShapeInfo | undefined>(undefined);
-  const holdRef    = useRef<Piece|null>(null);
-  const usedHoldRef= useRef(false);
+  const holdRef = useRef<Piece|null>(null);
+  const usedHoldRef = useRef(false);
   
   const [score, setScore] = useState(0);
   const [lines, setLines] = useState(0);
@@ -582,7 +580,7 @@ export default function CanvasTetris({
       console.log('Publishing score to Irys blockchain...');
       
       // Check if wallet is available
-      if (!window.ethereum) {
+      if (!(window as any).ethereum) {
         throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
       }
 
@@ -614,7 +612,8 @@ export default function CanvasTetris({
       console.log('Tags:', tags);
 
       // For now, let's use our server endpoint but have the user sign the data
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const { ethers } = await import('ethers');
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
       
       // Sign the score data for verification
