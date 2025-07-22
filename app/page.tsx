@@ -337,7 +337,7 @@ export default function Page() {
       style={{ 
         position: 'fixed',
         top: '25%', // 20% more up
-        left: '-8%', // 15% to the left (was 7%)
+        left: '-1%', // 7% more to the right (was -8%)
         width: '31.25vw', // 25% bigger (was 25vw)
         height: 'auto',
         minWidth: '375px', // 25% bigger (was 300px)
