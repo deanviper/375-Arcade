@@ -976,28 +976,29 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div style={{ padding: '80px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <div style={{ padding: '90px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
           <div style={{
             ...cardStyle,
-            padding: '25px',
-            maxWidth: '350px'
+            padding: '20px',
+            maxWidth: '300px'
           }}>
-            <div style={{ fontSize: '32px', marginBottom: '10px' }}>💎</div>
-            <h2 style={{ marginBottom: '10px', fontSize: '20px' }}>Welcome Champion!</h2>
-            <p style={{ marginBottom: '8px', color: '#B9C1C1', fontSize: '13px' }}>
+            <div style={{ fontSize: '28px', marginBottom: '8px' }}>💎</div>
+            <h2 style={{ marginBottom: '8px', fontSize: '18px' }}>Welcome Champion!</h2>
+            <p style={{ marginBottom: '6px', color: '#B9C1C1', fontSize: '12px' }}>
               {address.slice(0, 6)}...{address.slice(-4)}
             </p>
-            <div style={{ margin: '15px 0', transform: 'scale(0.6)' }}>
+            <div style={{ margin: '10px 0', transform: 'scale(0.6)' }}>
               <BlurredPreview />
             </div>
-            <p style={{ marginBottom: '15px', color: '#B9C1C1', fontSize: '14px' }}>
+            <p style={{ marginBottom: '12px', color: '#B9C1C1', fontSize: '13px' }}>
               Pay <strong>{process.env.NEXT_PUBLIC_GAME_FEE} IRYS</strong> to play
             </p>
             <button
               style={{ 
                 ...buttonStyle, 
-                padding: '12px 24px',
-                fontSize: '14px',
+                padding: '10px 20px',
+                fontSize: '13px',
+                minWidth: '180px',
                 ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : pulseStyle)
               }}
               onClick={handlePayment}
