@@ -1,4 +1,7 @@
-'use client';
+<div style={{
+                ...cardStyle,
+                minWidth: '320px',
+                max'use client';
 
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
@@ -315,8 +318,11 @@ export default function Page() {
     }
   };
 
-  // Leaderboard Component
+  // Leaderboard Component - Only show during gameplay
   const LeaderboardPanel = () => {
+    // Only show leaderboard when in game states (ready to start, playing, or game over)
+    if (!isPaid) return null;
+    
     const uniqueLeaderboard = leaderboard.reduce((acc: LeaderboardEntry[], current) => {
       const existingIndex = acc.findIndex(entry => 
         entry.displayAddress === current.displayAddress || 
@@ -344,11 +350,11 @@ export default function Page() {
         top: '70px',
         right: '20px',
         width: '320px',
-        background: 'linear-gradient(135deg, rgba(5, 6, 7, 0.95) 0%, rgba(25, 25, 25, 0.95) 100%)',
-        border: '2px solid rgba(255, 61, 20, 0.3)',
+        background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.95) 0%, rgba(15, 15, 20, 0.95) 100%)',
+        border: '1px solid rgba(80, 255, 214, 0.2)',
         borderRadius: '16px',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+        boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.15)',
         zIndex: 1000,
         overflow: 'hidden',
         maxHeight: 'calc(100vh - 100px)'
@@ -356,25 +362,26 @@ export default function Page() {
         <div style={{
           position: 'relative',
           padding: '20px',
-          background: 'linear-gradient(90deg, #FF3D14 0%, #10b981 100%)',
-          textAlign: 'center'
+          background: 'linear-gradient(135deg, rgba(15, 15, 20, 0.8) 0%, rgba(25, 25, 35, 0.8) 100%)',
+          textAlign: 'center',
+          borderBottom: '1px solid rgba(80, 255, 214, 0.1)'
         }}>
           <h2 style={{
             margin: 0,
-            color: 'white',
-            fontSize: '18px',
-            fontWeight: '700',
-            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-          }}>🏆 TOP PLAYERS</h2>
+            color: '#E5E7EB',
+            fontSize: '16px',
+            fontWeight: '600',
+            letterSpacing: '0.5px'
+          }}>🏆 TETRIS LEADERBOARD</h2>
         </div>
         
         <div style={{ padding: '16px', maxHeight: '300px', overflowY: 'auto' }}>
           {isLoadingLeaderboard ? (
-            <div style={{ textAlign: 'center', color: '#B9C1C1', padding: '20px', fontSize: '14px' }}>
+            <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px', fontSize: '14px' }}>
               Loading...
             </div>
           ) : uniqueLeaderboard.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#B9C1C1', padding: '20px' }}>
+            <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px' }}>
               <div style={{ fontSize: '24px', marginBottom: '10px' }}>🎯</div>
               <div style={{ fontSize: '14px' }}>No scores yet!</div>
               <div style={{ fontSize: '12px', marginTop: '5px' }}>Be the first to publish to blockchain!</div>
@@ -387,17 +394,17 @@ export default function Page() {
                   alignItems: 'center',
                   gap: '12px',
                   padding: '12px',
-                  background: 'rgba(25, 25, 25, 0.4)',
-                  border: '1px solid rgba(185, 193, 193, 0.2)',
+                  background: 'rgba(15, 15, 20, 0.4)',
+                  border: '1px solid rgba(55, 65, 81, 0.3)',
                   borderRadius: '8px',
                   transition: 'all 0.2s'
                 }}>
                   <div style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
+                    fontSize: '14px',
+                    fontWeight: '600',
                     minWidth: '32px',
                     textAlign: 'center',
-                    color: '#FCFFFF'
+                    color: '#E5E7EB'
                   }}>
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                   </div>
@@ -405,7 +412,7 @@ export default function Page() {
                     <div style={{
                       fontFamily: 'Monaco, Menlo, monospace',
                       fontSize: '12px',
-                      color: '#B9C1C1',
+                      color: '#9CA3AF',
                       marginBottom: '2px'
                     }}>
                       {entry.displayAddress}
@@ -414,17 +421,17 @@ export default function Page() {
                       <span style={{
                         fontSize: '14px',
                         fontWeight: '600',
-                        color: '#FF3D14'
+                        color: '#50FFD6'
                       }}>
                         {entry.score?.toLocaleString() || '0'}
                       </span>
                       <span style={{
-                        fontSize: '11px',
+                        fontSize: '10px',
                         padding: '2px 6px',
-                        background: 'rgba(16, 185, 129, 0.2)',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        background: 'rgba(80, 255, 214, 0.1)',
+                        border: '1px solid rgba(80, 255, 214, 0.2)',
                         borderRadius: '4px',
-                        color: '#10b981'
+                        color: '#50FFD6'
                       }}>
                         Lv.{entry.level || 1}
                       </span>
@@ -437,12 +444,7 @@ export default function Page() {
         </div>
 
         {/* Personal High Score Section */}
-        <div style={{ borderTop: '1px solid rgba(185, 193, 193, 0.1)' }}>
-          <div style={{
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(255, 61, 20, 0.3), transparent)',
-            margin: '0 16px'
-          }}></div>
+        <div style={{ borderTop: '1px solid rgba(55, 65, 81, 0.2)' }}>
           <div style={{
             padding: '16px',
             transition: 'all 0.3s',
@@ -455,26 +457,26 @@ export default function Page() {
               gap: '8px',
               marginBottom: '12px'
             }}>
-              <span style={{ fontSize: '16px' }}>👤</span>
+              <span style={{ fontSize: '14px' }}>👤</span>
               <span style={{
                 fontSize: '12px',
-                color: '#B9C1C1',
-                fontWeight: '600'
+                color: '#9CA3AF',
+                fontWeight: '500'
               }}>Your Personal Best</span>
             </div>
             {userScore && authed ? (
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontSize: '20px',
-                  fontWeight: '700',
-                  color: '#10b981',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#50FFD6',
                   marginBottom: '4px'
                 }}>
                   {userScore.score.toLocaleString()}
                 </div>
                 <div style={{
                   fontSize: '11px',
-                  color: '#B9C1C1'
+                  color: '#9CA3AF'
                 }}>
                   Level {userScore.level} • {userScore.lines} lines
                 </div>
@@ -482,15 +484,15 @@ export default function Page() {
             ) : (
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontSize: '14px',
-                  color: '#666',
+                  fontSize: '13px',
+                  color: '#4B5563',
                   marginBottom: '4px'
                 }}>
                   Connect & sign to view
                 </div>
                 <div style={{
                   fontSize: '11px',
-                  color: '#555'
+                  color: '#374151'
                 }}>
                   Your personal high score
                 </div>
@@ -502,31 +504,16 @@ export default function Page() {
         {/* Blockchain Features Info */}
         <div style={{
           padding: '12px 16px',
-          borderTop: '1px solid rgba(185, 193, 193, 0.1)',
-          background: 'rgba(5, 6, 7, 0.5)'
+          borderTop: '1px solid rgba(55, 65, 81, 0.2)',
+          background: 'rgba(8, 8, 12, 0.6)'
         }}>
           <div style={{
             fontSize: '10px',
-            color: '#B9C1C1',
+            color: '#6B7280',
             marginBottom: '4px',
             textAlign: 'center'
           }}>
-            - Stored on a datachain
-          </div>
-          <div style={{
-            fontSize: '10px',
-            color: '#B9C1C1',
-            marginBottom: '4px',
-            textAlign: 'center'
-          }}>
-            - 60-day refreshing leaderboarding
-          </div>
-          <div style={{
-            fontSize: '10px',
-            color: '#B9C1C1',
-            textAlign: 'center'
-          }}>
-            - Immutable scores
+            🔗 Permanent • ⚡ 60-day devnet • 🏆 Immutable
           </div>
         </div>
       </div>
@@ -541,98 +528,168 @@ export default function Page() {
       left: 0,
       right: 0,
       zIndex: 1100,
-      background: 'rgba(5, 6, 7, 0.9)',
-      backdropFilter: 'blur(8px)',
-      borderBottom: '1px solid rgba(255, 61, 20, 0.2)',
+      background: 'rgba(8, 8, 12, 0.9)',
+      backdropFilter: 'blur(12px)',
+      borderBottom: '1px solid rgba(80, 255, 214, 0.15)',
       padding: '12px 20px',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center'
     }}>
-      {/* Left Side - Navigation Links */}
-      <div style={{ display: 'flex', gap: '15px' }}>
-        <button
-          onClick={handleHomeClick}
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(255, 61, 20, 0.3)',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            color: '#FF3D14',
-            fontSize: '14px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          Home
-        </button>
-        <button
-          onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            color: '#10b981',
-            fontSize: '14px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          Faucet
-        </button>
-        <button
-          onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(185, 193, 193, 0.3)',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            color: '#B9C1C1',
-            fontSize: '14px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          375ai Leaderboards
-        </button>
+      {/* Left Side - Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <img 
+          src="/bruce.png" 
+          alt="Bruce - 375ai Mascot" 
+          style={{ 
+            width: '32px', 
+            height: '32px',
+            borderRadius: '6px'
+          }} 
+        />
+        
+        {/* Navigation Links */}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={handleHomeClick}
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 61, 20, 0.1) 0%, rgba(80, 255, 214, 0.1) 100%)',
+              border: '1px solid rgba(255, 61, 20, 0.3)',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              color: '#FF3D14',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.2) 0%, rgba(80, 255, 214, 0.15) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 61, 20, 0.2)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.1) 0%, rgba(80, 255, 214, 0.1) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            🏠 Home
+          </button>
+          
+          <button
+            onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
+            style={{
+              background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)',
+              border: '1px solid rgba(80, 255, 214, 0.3)',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              color: '#50FFD6',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(80, 255, 214, 0.5)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(80, 255, 214, 0.2)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(80, 255, 214, 0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            💧 Faucet
+          </button>
+          
+          <button
+            onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
+            style={{
+              background: 'linear-gradient(135deg, rgba(75, 85, 99, 0.1) 0%, rgba(107, 114, 128, 0.1) 100%)',
+              border: '1px solid rgba(107, 114, 128, 0.3)',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              color: '#9CA3AF',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(75, 85, 99, 0.2) 0%, rgba(107, 114, 128, 0.15) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(156, 163, 175, 0.4)';
+              e.currentTarget.style.color = '#E5E7EB';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(107, 114, 128, 0.15)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(75, 85, 99, 0.1) 0%, rgba(107, 114, 128, 0.1) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.3)';
+              e.currentTarget.style.color = '#9CA3AF';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            📊 Global Leaderboards
+          </button>
+        </div>
       </div>
 
       {/* Right Side - Wallet Status & Disconnect */}
       {address && address !== '0x0000000000000000000000000000000000000000' && !isOfflineMode && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ 
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
+            background: 'rgba(80, 255, 214, 0.1)',
+            border: '1px solid rgba(80, 255, 214, 0.3)',
             borderRadius: '8px',
             padding: '6px 12px',
             fontSize: '12px',
-            color: '#10b981',
-            fontFamily: 'Monaco, monospace'
+            color: '#50FFD6',
+            fontFamily: 'Monaco, monospace',
+            fontWeight: '500'
           }}>
             {address.slice(0, 6)}...{address.slice(-4)}
           </div>
           <button
             onClick={handleDisconnectWallet}
             style={{
-              background: 'transparent',
-              border: '1px solid rgba(185, 193, 193, 0.3)',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: '8px',
               padding: '6px 12px',
-              color: '#B9C1C1',
+              color: '#EF4444',
               fontSize: '12px',
+              fontWeight: '500',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
-            Disconnect
+            🚪 Disconnect
           </button>
         </div>
       )}
     </div>
   );
 
-  // Styles
+  // Updated container and card styles with mobile responsiveness
   const containerStyle = {
     minHeight: '100vh',
     maxHeight: '100vh',
@@ -643,18 +700,18 @@ export default function Page() {
   };
 
   const cardStyle = {
-    background: 'linear-gradient(135deg, rgba(5, 6, 7, 0.9) 0%, rgba(25, 25, 25, 0.9) 100%)',
-    border: '2px solid rgba(255, 61, 20, 0.3)',
+    background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.9) 0%, rgba(25, 25, 35, 0.9) 100%)',
+    border: '2px solid rgba(80, 255, 214, 0.3)',
     borderRadius: '20px',
     padding: '40px',
     backdropFilter: 'blur(12px)',
-    boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.2)',
+    boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.2)',
     textAlign: 'center' as const,
     transition: 'all 0.3s ease'
   };
 
   const buttonStyle = {
-    background: 'linear-gradient(135deg, #FF3D14 0%, #10b981 100%)',
+    background: 'linear-gradient(135deg, #FF3D14 0%, #50FFD6 100%)',
     border: 'none',
     borderRadius: '12px',
     padding: '16px 32px',
@@ -663,9 +720,43 @@ export default function Page() {
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.2s',
-    boxShadow: '0 4px 15px rgba(255, 61, 20, 0.4)',
+    boxShadow: '0 4px 15px rgba(80, 255, 214, 0.4)',
     minWidth: '200px'
   };
+
+  // Add CSS for mobile responsiveness
+  const mobileStyles = `
+    @media (max-width: 768px) {
+      .arcade-container {
+        padding: 80px 10px 40px !important;
+      }
+      .arcade-cards {
+        flex-direction: column !important;
+        gap: 20px !important;
+      }
+      .arcade-card {
+        min-width: 280px !important;
+        max-width: 350px !important;
+        margin: 0 auto !important;
+      }
+      .leaderboard-panel {
+        position: relative !important;
+        top: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        margin-bottom: 20px !important;
+        max-height: 400px !important;
+      }
+      .nav-buttons {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .nav-button {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+      }
+    }
+  `;
 
   // Footer component
   const Footer = () => (
@@ -693,9 +784,9 @@ export default function Page() {
             fontWeight: '600'
           }}
         >
-          dean.
+          dean
         </a>
-        {' '}para mi amore, <em>vivr</em>
+        {' '}Para mi amore, <em>VIVR</em>
       </div>
       
       <div style={{ 
@@ -785,40 +876,32 @@ export default function Page() {
   if (!address) {
     return (
       <div style={containerStyle}>
+        <style>{mobileStyles}</style>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+        <div className="arcade-container" style={{ padding: '100px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
             <div style={{ marginBottom: '60px' }}>
-              <h1 style={{ 
-                fontSize: '48px', 
-                marginBottom: '10px', 
-                color: '#FF3D14',
-                fontWeight: '800',
-                fontFamily: 'Oswald, sans-serif'
-              }}>
-                375 ARCADE
-              </h1>
-              <p style={{ 
-                fontSize: '18px', 
-                color: '#10b981', 
-                margin: '0',
-                fontWeight: '600',
-                fontStyle: 'italic',
-                fontFamily: 'Georgia, serif'
-              }}>
-                built on Irys
-              </p>
+              <img 
+                src="/arcade-title.png" 
+                alt="375 Arcade - Built on Irys"
+                style={{ 
+                  maxWidth: '400px',
+                  width: '100%',
+                  height: 'auto',
+                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                }} 
+              />
             </div>
 
-            <div style={{ 
+            <div className="arcade-cards" style={{ 
               display: 'flex', 
               gap: '40px', 
               alignItems: 'center', 
               justifyContent: 'center',
               flexWrap: 'wrap'
             }}>
-              <div style={{
+              <div className="arcade-card" style={{
                 ...cardStyle,
                 minWidth: '280px',
                 maxWidth: '320px',
@@ -826,15 +909,15 @@ export default function Page() {
                 filter: 'blur(2px)'
               }}>
                 <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
-                <h3 style={{ color: '#B9C1C1', margin: '0' }}>COMING SOON</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
               </div>
 
-              <div style={{
+              <div className="arcade-card" style={{
                 ...cardStyle,
                 minWidth: '320px',
                 maxWidth: '400px',
-                border: '3px solid #10b981',
-                boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
+                border: '3px solid #50FFD6',
+                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.4)'
               }}>
                 <div style={{ 
                   width: '64px', 
@@ -849,17 +932,17 @@ export default function Page() {
                 <h2 style={{ 
                   fontSize: '32px', 
                   marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #10b981, #FF3D14)', 
+                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
                   WebkitBackgroundClip: 'text', 
                   WebkitTextFillColor: 'transparent',
                   fontWeight: '700'
                 }}>
                   TETRIS
                 </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
+                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
                   Play a classic game of Tetris for 0.01 Irys!
                 </p>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '14px' }}>
+                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '14px' }}>
                   Compatible with MetaMask, OKX, Rabby, Trust Wallet & more
                 </p>
                 
@@ -871,17 +954,17 @@ export default function Page() {
                     🔗 Connect Wallet & Play
                   </button>
                   
-                  <p style={{ fontSize: '13px', color: '#B9C1C1', margin: '10px 0 5px' }}>
+                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
                     Don't want to connect your wallet and publish your scores? No worries!
                   </p>
                   
                   <button
                     style={{
-                      background: 'rgba(25, 25, 25, 0.5)',
-                      border: '2px solid rgba(185, 193, 193, 0.3)',
+                      background: 'rgba(25, 25, 35, 0.5)',
+                      border: '2px solid rgba(107, 114, 128, 0.3)',
                       borderRadius: '12px',
                       padding: '12px 24px',
-                      color: '#B9C1C1',
+                      color: '#9CA3AF',
                       fontSize: '14px',
                       fontWeight: '500',
                       cursor: 'pointer',
@@ -900,7 +983,7 @@ export default function Page() {
                 </div>
               </div>
 
-              <div style={{
+              <div className="arcade-card" style={{
                 ...cardStyle,
                 minWidth: '280px',
                 maxWidth: '320px',
@@ -908,10 +991,28 @@ export default function Page() {
                 filter: 'blur(2px)'
               }}>
                 <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
-                <h3 style={{ color: '#B9C1C1', margin: '0' }}>COMING SOON</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
               </div>
             </div>
           </div>
+          
+          {/* Bruce mascot positioned in corner */}
+          <img 
+            src="/bruce.png" 
+            alt="Bruce - 375ai Mascot" 
+            style={{ 
+              position: 'fixed',
+              bottom: '20px',
+              left: '20px',
+              width: '80px',
+              height: '80px',
+              borderRadius: '12px',
+              opacity: 0.8,
+              filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))',
+              zIndex: 500
+            }} 
+          />
+          
           <Footer />
         </div>
         
@@ -934,25 +1035,16 @@ export default function Page() {
         <div style={{ padding: '100px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
             <div style={{ marginBottom: '60px' }}>
-              <h1 style={{ 
-                fontSize: '48px', 
-                marginBottom: '10px', 
-                color: '#FF3D14',
-                fontWeight: '800',
-                fontFamily: 'Oswald, sans-serif'
-              }}>
-                375 ARCADE
-              </h1>
-              <p style={{ 
-                fontSize: '18px', 
-                color: '#10b981', 
-                margin: '0',
-                fontWeight: '600',
-                fontStyle: 'italic',
-                fontFamily: 'Georgia, serif'
-              }}>
-                built on Irys
-              </p>
+              <img 
+                src="/arcade-title.png" 
+                alt="375 Arcade - Built on Irys"
+                style={{ 
+                  maxWidth: '400px',
+                  width: '100%',
+                  height: 'auto',
+                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                }} 
+              />
             </div>
 
             {/* Connected wallet status */}
@@ -1030,7 +1122,7 @@ export default function Page() {
                   onClick={handlePayment}
                   disabled={isProcessingPayment}
                 >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play'}
+                  {isProcessingPayment ? '⏳ Processing...' : '🎮 Play'}
                 </button>
               </div>
 
@@ -1158,7 +1250,7 @@ export default function Page() {
         <LeaderboardPanel />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎮</div>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
             <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play!</h2>
             <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
               Press <kbd style={{ 
