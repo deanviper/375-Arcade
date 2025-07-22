@@ -395,7 +395,7 @@ export default function Page() {
         {/* Blockchain Features Info */}
         <div className="blockchain-info">
           <div className="info-item">🔗 Permanent storage</div>
-          <div className="info-item">⚡ 60-day refresing leaderboard</div>
+          <div className="info-item">⚡ 60-day devnet</div>
           <div className="info-item">🏆 Immutable scores</div>
         </div>
         
@@ -934,7 +934,7 @@ export default function Page() {
                 marginBottom: '10px', 
                 color: '#FF3D14',
                 fontWeight: '800',
-                fontFamily: '"Oswald", sans-serif'
+                fontFamily: 'Oswald, sans-serif'
               }}>
                 375 ARCADE
               </h1>
@@ -944,7 +944,7 @@ export default function Page() {
                 margin: '0',
                 fontWeight: '600',
                 fontStyle: 'italic',
-                fontFamily: '"Georgia", serif'
+                fontFamily: 'Georgia, serif'
               }}>
                 built on Irys
               </p>
@@ -1071,7 +1071,7 @@ export default function Page() {
                 marginBottom: '10px', 
                 color: '#FF3D14',
                 fontWeight: '800',
-                fontFamily: '"Oswald", sans-serif'
+                fontFamily: 'Oswald, sans-serif'
               }}>
                 375 ARCADE
               </h1>
@@ -1081,7 +1081,7 @@ export default function Page() {
                 margin: '0',
                 fontWeight: '600',
                 fontStyle: 'italic',
-                fontFamily: '"Georgia", serif'
+                fontFamily: 'Georgia, serif'
               }}>
                 built on Irys
               </p>
@@ -1164,7 +1164,7 @@ export default function Page() {
                   onClick={handlePayment}
                   disabled={isProcessingPayment}
                 >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play'}
+                  {isProcessingPayment ? '⏳ Processing...' : '🎮 Play'}
                 </button>
               </div>
 
