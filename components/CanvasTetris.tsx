@@ -43,7 +43,7 @@ export default function CanvasTetris({
   playerAddress?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const ctxRef    = useRef<CanvasRenderingContext2D>();
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   
   // Use a ref for the grid to avoid stale state issues
   const gridRef = useRef<string[][]>(
