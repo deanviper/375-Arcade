@@ -33,6 +33,13 @@ interface LeaderboardEntry {
   walletAddress?: string;
 }
 
+// Local storage keys for persistence
+const STORAGE_KEYS = {
+  WALLET_ADDRESS: 'tetris_wallet_address',
+  IS_AUTHENTICATED: 'tetris_is_authenticated',
+  IS_PAID: 'tetris_is_paid'
+};
+
 export default function Page() {
   const [chainId, setChainId] = useState('');
   const [address, setAddress] = useState('');
@@ -44,6 +51,49 @@ export default function Page() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+
+  // Load persisted state on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const savedAddress = localStorage.getItem(STORAGE_KEYS.WALLET_ADDRESS);
+    const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
+    const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
+    
+    if (savedAddress && savedAuth) {
+      console.log('Restoring wallet session:', savedAddress);
+      setAddress(savedAddress);
+      setAuthed(true);
+      setIsPaid(savedPaid);
+    }
+  }, []);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    if (address && address !== '0x0000000000000000000000000000000000000000') {
+      localStorage.setItem(STORAGE_KEYS.WALLET_ADDRESS, address);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, authed.toString());
+  }, [authed]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.IS_PAID, isPaid.toString());
+  }, [isPaid]);
+
+  // Clear persisted state when wallet disconnects
+  const clearPersistedState = () => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(STORAGE_KEYS.WALLET_ADDRESS);
+    localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED);
+    localStorage.removeItem(STORAGE_KEYS.IS_PAID);
+  };
 
   // Load leaderboard ONCE on page load, then only refresh when needed
   useEffect(() => {
@@ -95,18 +145,22 @@ export default function Page() {
     const handleAccountsChanged = (accounts: string[]) => {
       if (accounts.length === 0) {
         // User disconnected wallet
+        console.log('Wallet disconnected - clearing all state');
         setAddress('');
         setAuthed(false);
         setIsPaid(false);
         setGameStarted(false);
         setGameOver(false);
+        clearPersistedState();
       } else if (accounts[0] !== address) {
-        // User switched account
+        // User switched account - clear auth/payment but keep new address
+        console.log('Account switched from', address, 'to', accounts[0]);
         setAddress(accounts[0]);
         setAuthed(false);
         setIsPaid(false);
         setGameStarted(false);
         setGameOver(false);
+        clearPersistedState();
       }
     };
     ethereum.on('accountsChanged', handleAccountsChanged);
@@ -197,6 +251,55 @@ export default function Page() {
       console.error('Frontend: Failed to refresh leaderboard:', error);
     } finally {
       setIsLoadingLeaderboard(false);
+    }
+  };
+
+  // Home button handler that preserves auth state
+  const handleHomeClick = () => {
+    // Reset game state but preserve wallet connection and auth
+    setGameStarted(false);
+    setGameOver(false);
+    setIsPaid(false); // Reset payment state so user needs to pay again
+    
+    // Only clear payment from localStorage, keep wallet and auth
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.IS_PAID, 'false');
+    }
+  };
+
+  // Enhanced wallet connection that checks for existing connection
+  const handleWalletConnection = async () => {
+    const ethereum = (window as any).ethereum;
+    if (!ethereum) {
+      alert('No wallet found. Please install MetaMask, OKX, Rabby, Trust Wallet, or another Web3 wallet.');
+      return;
+    }
+    
+    try {
+      // Check if wallet is already connected
+      const accounts = await ethereum.request({ method: 'eth_accounts' });
+      
+      if (accounts.length > 0 && authed) {
+        // Already connected and authenticated, just proceed to payment
+        console.log('Wallet already connected and authenticated');
+        return;
+      }
+      
+      // Request account access
+      const requestedAccounts: string[] = await ethereum.request({ 
+        method: 'eth_requestAccounts' 
+      });
+      
+      if (requestedAccounts.length > 0) {
+        setAddress(requestedAccounts[0]);
+        console.log('Wallet connected:', requestedAccounts[0]);
+      }
+    } catch (e: any) {
+      if (e.code === 4001) {
+        alert('Wallet connection cancelled by user');
+      } else {
+        alert('Failed to connect wallet: ' + e.message);
+      }
     }
   };
 
@@ -292,7 +395,7 @@ export default function Page() {
         {/* Blockchain Features Info */}
         <div className="blockchain-info">
           <div className="info-item">🔗 Permanent storage</div>
-          <div className="info-item">⚡ 60-day devnet</div>
+          <div className="info-item">⚡ 60-day refereshing leaderboard</div>
           <div className="info-item">🏆 Immutable scores</div>
         </div>
         
@@ -541,7 +644,7 @@ export default function Page() {
       {/* Left Side - Navigation Links */}
       <div style={{ display: 'flex', gap: '15px' }}>
         <button
-          onClick={() => window.location.reload()}
+          onClick={handleHomeClick}
           style={{
             background: 'transparent',
             border: '1px solid rgba(255, 61, 20, 0.3)',
@@ -713,370 +816,4 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
-            <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Wrong Network</h2>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
-              Please switch to <strong>Irys Testnet</strong> to continue
-            </p>
-            <button
-              style={buttonStyle}
-              onClick={async () => {
-                const ethereum = (window as any).ethereum;
-                if (!ethereum) {
-                  alert('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
-                  return;
-                }
-                
-                try {
-                  // Try to add the network first
-                  await ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [IRYS_PARAMS],
-                  });
-                } catch (addError: any) {
-                  console.log('Add network failed:', addError);
-                }
-                
-                try {
-                  // Switch to the network
-                  await ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: IRYS_PARAMS.chainId }],
-                  });
-                } catch (switchError: any) {
-                  if (switchError.code === 4001) {
-                    alert('Network switch cancelled by user');
-                  } else {
-                    alert('Failed to switch network: ' + switchError.message);
-                  }
-                }
-              }}
-            >
-              Switch to Irys Testnet
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Landing page with arcade layout
-  if (!address) {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
-            <div style={{ marginBottom: '60px' }}>
-              <h1 style={{ 
-                fontSize: '48px', 
-                marginBottom: '10px', 
-                color: '#FF3D14',
-                fontWeight: '800',
-                fontFamily: '"Oswald", sans-serif'
-              }}>
-                375 ARCADE
-              </h1>
-              <p style={{ 
-                fontSize: '18px', 
-                color: '#10b981', 
-                margin: '0',
-                fontWeight: '600',
-                fontStyle: 'italic',
-                fontFamily: '"Georgia", serif'
-              }}>
-                built on Irys
-              </p>
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              gap: '40px', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                opacity: 0.6,
-                filter: 'blur(2px)'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
-                <h3 style={{ color: '#B9C1C1', margin: '0' }}>COMING SOON</h3>
-              </div>
-
-              <div style={{
-                ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #10b981',
-                boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
-              }}>
-                <div style={{ fontSize: '64px', marginBottom: '20px' }}>🎮</div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #10b981, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  TETRIS
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
-                  Play a classic game of Tetris for 0.01 Irys!
-                </p>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '14px' }}>
-                  Compatible with MetaMask, OKX, Rabby, Trust Wallet & more
-                </p>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <button
-                    style={{ ...buttonStyle, ...pulseStyle }}
-                    onClick={async () => {
-                      const ethereum = (window as any).ethereum;
-                      if (!ethereum) {
-                        alert('No wallet found. Please install MetaMask, OKX, Rabby, Trust Wallet, or another Web3 wallet.');
-                        return;
-                      }
-                      
-                      try {
-                        const accounts: string[] = await ethereum.request({ 
-                          method: 'eth_requestAccounts' 
-                        });
-                        
-                        if (accounts.length > 0) {
-                          setAddress(accounts[0]);
-                          console.log('Wallet connected:', accounts[0]);
-                        }
-                      } catch (e: any) {
-                        if (e.code === 4001) {
-                          alert('Wallet connection cancelled by user');
-                        } else {
-                          alert('Failed to connect wallet: ' + e.message);
-                        }
-                      }
-                    }}
-                  >
-                    🔗 Connect Wallet & Play
-                  </button>
-                  
-                  <p style={{ fontSize: '13px', color: '#B9C1C1', margin: '10px 0 5px' }}>
-                    Don't want to connect your wallet and publish your scores? No worries!
-                  </p>
-                  
-                  <button
-                    style={{
-                      background: 'rgba(25, 25, 25, 0.5)',
-                      border: '2px solid rgba(185, 193, 193, 0.3)',
-                      borderRadius: '12px',
-                      padding: '12px 24px',
-                      color: '#B9C1C1',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      minWidth: '200px'
-                    }}
-                    onClick={() => {
-                      setAddress('0x0000000000000000000000000000000000000000');
-                      setAuthed(true);
-                      setIsPaid(true);
-                      setIsOfflineMode(true);
-                    }}
-                  >
-                    Just Play
-                  </button>
-                </div>
-              </div>
-
-              <div style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                opacity: 0.6,
-                filter: 'blur(2px)'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
-                <h3 style={{ color: '#B9C1C1', margin: '0' }}>COMING SOON</h3>
-              </div>
-            </div>
-          </div>
-          <Footer />
-        </div>
-        
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Sign auth - Skip for "Just Play" users
-  if (!authed && address !== '0x0000000000000000000000000000000000000000') {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
-            <h2 style={{ marginBottom: '20px' }}>Authentication Required</h2>
-            <p style={{ marginBottom: '10px', color: '#B9C1C1' }}>
-              <strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}
-            </p>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
-              Sign a message to verify your identity
-            </p>
-            <button
-              style={buttonStyle}
-              onClick={async () => {
-                try {
-                  const ethereum = (window as any).ethereum;
-                  if (!ethereum) {
-                    throw new Error('No wallet found');
-                  }
-
-                  const provider = new ethers.BrowserProvider(ethereum);
-                  const signer = await provider.getSigner();
-                  
-                  await signer.signMessage(`Authenticate @375 Tetris at ${Date.now()}`);
-                  setAuthed(true);
-                  console.log('Authentication successful');
-                } catch (e: any) {
-                  if (e.code === 4001) {
-                    alert('Authentication cancelled by user');
-                  } else {
-                    alert('Authentication failed: ' + e.message);
-                  }
-                }
-              }}
-            >
-              🔐 Sign Message
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Pay to play - Skip for "Just Play" users
-  if (!isPaid && address !== '0x0000000000000000000000000000000000000000') {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '90px 20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-          <div style={{
-            ...cardStyle,
-            padding: '20px',
-            maxWidth: '300px'
-          }}>
-            <div style={{ fontSize: '28px', marginBottom: '8px' }}>💎</div>
-            <h2 style={{ marginBottom: '8px', fontSize: '18px' }}>Welcome Champion!</h2>
-            <p style={{ marginBottom: '6px', color: '#B9C1C1', fontSize: '12px' }}>
-              {address.slice(0, 6)}...{address.slice(-4)}
-            </p>
-            <div style={{ margin: '10px 0', transform: 'scale(0.6)' }}>
-              <BlurredPreview />
-            </div>
-            <p style={{ marginBottom: '12px', color: '#B9C1C1', fontSize: '13px' }}>
-              Pay <strong>{process.env.NEXT_PUBLIC_GAME_FEE} IRYS</strong> to play
-            </p>
-            <button
-              style={{ 
-                ...buttonStyle, 
-                padding: '10px 20px',
-                fontSize: '13px',
-                minWidth: '180px',
-                ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : pulseStyle)
-              }}
-              onClick={handlePayment}
-              disabled={isProcessingPayment}
-            >
-              {isProcessingPayment ? '⏳ Processing...' : `💰 Pay ${process.env.NEXT_PUBLIC_GAME_FEE} IRYS`}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Ready to start
-  if (!gameStarted && !gameOver) {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
-            <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play!</h2>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', ...pulseStyle }}>
-              Press <kbd style={{ 
-                background: 'rgba(255, 61, 20, 0.2)', 
-                padding: '8px 12px', 
-                borderRadius: '6px', 
-                border: '1px solid rgba(255, 61, 20, 0.3)',
-                color: '#FF3D14',
-                fontFamily: 'Monaco, monospace'
-              }}>SPACEBAR</kbd> to start
-            </p>
-            <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
-              <p>🎯 Clear lines to score points</p>
-              <p>⚡ Speed increases every 4 lines</p>
-              {address !== '0x0000000000000000000000000000000000000000' && (
-  <p>🏆 Publish scores to blockchain leaderboard!</p>
-)}
-            </div>
-          </div>
-        </div>
-        <Footer />
-        
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Game active
-  return (
-    <div style={containerStyle}>
-      <NavigationHeader />
-      <LeaderboardPanel />
-      <div style={{ 
-        padding: '80px 20px 20px', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        minHeight: '100vh'
-      }}>
-        <CanvasTetris
-          start={gameStarted}
-          onGameOver={(score, lines) => {
-            setGameOver(true);
-            setGameStarted(false);
-          }}
-          onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
-          onPublishScore={handlePublishScore}
-          playerAddress={address}
-        />
-      </div>
-      <Footer />
-    </div>
-  );
-}
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent:
