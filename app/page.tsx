@@ -973,13 +973,22 @@ export default function Page() {
                     }}
                     onClick={() => {
                       console.log('Just Play clicked!'); // Debug log
+                      console.log('Before setting states:', { isOfflineMode, authed, isPaid, gameStarted, gameOver });
+                      
                       // Set offline mode first, then other states
                       setIsOfflineMode(true);
                       setAuthed(true);
                       setIsPaid(true);
                       setGameStarted(false);
                       setGameOver(false);
-                      console.log('Offline mode set:', { isOfflineMode: true, authed: true, isPaid: true });
+                      
+                      console.log('After setting states - should be:', { 
+                        isOfflineMode: true, 
+                        authed: true, 
+                        isPaid: true, 
+                        gameStarted: false, 
+                        gameOver: false 
+                      });
                     }}
                   >
                     Just Play
