@@ -288,10 +288,10 @@ export default function Page() {
     />
   );
 
-  // Leaderboard Component - Only show during gameplay
+  // Leaderboard Component - Only show during gameplay, NOT in offline mode
   const LeaderboardPanel = () => {
-    // Only show leaderboard when in game states (ready to start, playing, or game over)
-    if (!isPaid) return null;
+    // Only show leaderboard when in game states AND not in offline mode
+    if (!isPaid || isOfflineMode) return null;
     
     const uniqueLeaderboard = leaderboard.reduce((acc: LeaderboardEntry[], current) => {
       const existingIndex = acc.findIndex(entry => 
@@ -1153,8 +1153,8 @@ export default function Page() {
     );
   }
 
-  // Ready to start - ONLY after payment is complete
-  if (isPaid && !gameStarted && !gameOver) {
+  // Ready to start - ONLY after payment is complete OR in offline mode
+  if ((isPaid && !gameStarted && !gameOver) || (isOfflineMode && authed && !gameStarted && !gameOver)) {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
