@@ -29,6 +29,8 @@ interface LeaderboardEntry {
   lines: number;
   level: number;
   timestamp: number;
+  txId?: string;
+  walletAddress?: string;
 }
 
 export default function Page() {
