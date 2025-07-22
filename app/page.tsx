@@ -395,7 +395,7 @@ export default function Page() {
         {/* Blockchain Features Info */}
         <div className="blockchain-info">
           <div className="info-item">🔗 Permanent storage</div>
-          <div className="info-item">⚡ 60-day refereshing leaderboard</div>
+          <div className="info-item">⚡ 60-day devnet</div>
           <div className="info-item">🏆 Immutable scores</div>
         </div>
         
@@ -816,4 +816,7 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent:
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
+            <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Wrong Network</h
