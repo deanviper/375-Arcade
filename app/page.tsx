@@ -1034,11 +1034,9 @@ export default function Page() {
             <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
               <p>🎯 Clear lines to score points</p>
               <p>⚡ Speed increases every 4 lines</p>
-              {address !== '0x0000000000000000000000000000000000000000' ? (
-                <p>🏆 Publish scores to blockchain leaderboard!</p>
-              ) : (
-                <p>🎮 Playing in offline mode</p>
-              )}
+              {address !== '0x0000000000000000000000000000000000000000' && (
+  <p>🏆 Publish scores to blockchain leaderboard!</p>
+)}
             </div>
           </div>
         </div>
