@@ -494,12 +494,23 @@ export default function CanvasTetris({
       }
 
       if(e.code==='ArrowUp'){
-        const rot = rotateCW(cur.shape);
-        if(!collide(cur.x,cur.y,rot)) {
-          cur.shape=rot;
-          needsRedraw = true;
-        }
+  const rot = rotateCW(cur.shape);
+  // Try rotation at current position first
+  if(!collide(cur.x,cur.y,rot)) {
+    cur.shape=rot;
+    needsRedraw = true;
+  } else {
+    // Try wall kicks (move left/right to allow rotation)
+    for(let offset of [-1, 1, -2, 2]) {
+      if(!collide(cur.x + offset, cur.y, rot)) {
+        cur.x += offset;
+        cur.shape=rot;
+        needsRedraw = true;
+        break;
       }
+    }
+  }
+}
 
       if(e.code==='KeyC' && !usedHoldRef.current){
         if(!holdRef.current){
