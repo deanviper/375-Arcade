@@ -797,9 +797,9 @@ export default function Page() {
             fontWeight: '600'
           }}
         >
-          dean
+          Dean
         </a>
-        {' '}Para mi amore, <em>VIVR</em>
+        . para mi amore, <em>vivr</em>
       </div>
       
       <div style={{ 
@@ -893,7 +893,7 @@ export default function Page() {
         <NavigationHeader />
         <LeaderboardPanel />
         <div className="arcade-container" style={{ padding: '100px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-60px' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
             <div style={{ marginBottom: '60px' }}>
               <img 
                 src="/arcade-title.png" 
@@ -957,9 +957,6 @@ export default function Page() {
                 <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
                   Play a classic game of Tetris for 0.01 Irys!
                 </p>
-                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '14px' }}>
-                  Compatible with MetaMask, OKX, Rabby, Trust Wallet & more
-                </p>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   <button
@@ -1018,8 +1015,8 @@ export default function Page() {
               alt="Bruce - 375ai Mascot" 
               style={{ 
                 position: 'absolute',
-                top: '5%',
-                left: '-5%',
+                top: '45%',
+                left: '-3%',
                 width: '25vw',
                 height: 'auto',
                 minWidth: '300px',
