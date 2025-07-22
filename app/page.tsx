@@ -511,7 +511,7 @@ export default function Page() {
             marginBottom: '4px',
             textAlign: 'center'
           }}>
-            🔗 Permanent storage
+            - Stored on a datachain
           </div>
           <div style={{
             fontSize: '10px',
@@ -519,14 +519,14 @@ export default function Page() {
             marginBottom: '4px',
             textAlign: 'center'
           }}>
-            ⚡ 60-day devnet
+            - 60-day refreshing leaderboarding
           </div>
           <div style={{
             fontSize: '10px',
             color: '#B9C1C1',
             textAlign: 'center'
           }}>
-            🏆 Immutable scores
+            - Immutable scores
           </div>
         </div>
       </div>
@@ -1029,7 +1029,7 @@ export default function Page() {
                   onClick={handlePayment}
                   disabled={isProcessingPayment}
                 >
-                  {isProcessingPayment ? '⏳ Processing...' : '🎮 Play'}
+                  {isProcessingPayment ? '⏳ Processing...' : 'Play'}
                 </button>
               </div>
 
@@ -1157,7 +1157,7 @@ export default function Page() {
         <LeaderboardPanel />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎮</div>
             <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play!</h2>
             <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
               Press <kbd style={{ 
