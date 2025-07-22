@@ -693,9 +693,9 @@ export default function Page() {
             fontWeight: '600'
           }}
         >
-          dean
+          dean.
         </a>
-        {' '}Para mi amore, <em>VIVR</em>
+        {' '}para mi amore, <em>vivr</em>
       </div>
       
       <div style={{ 
