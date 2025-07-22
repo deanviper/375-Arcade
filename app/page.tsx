@@ -56,19 +56,22 @@ export default function Page() {
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
 
-  // Load persisted state on mount
+  // Load persisted state on mount - only for existing sessions
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
-    const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
-    
-    if (address && savedAuth) {
-      console.log('Restoring wallet session:', address);
-      setAuthed(true);
-      setIsPaid(savedPaid);
+    // Only restore state if wallet is already connected
+    if (address && isConnected) {
+      const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
+      const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
+      
+      if (savedAuth) {
+        console.log('Restoring wallet session:', address);
+        setAuthed(true);
+        setIsPaid(savedPaid);
+      }
     }
-  }, [address]);
+  }, [address, isConnected]);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -132,7 +135,7 @@ export default function Page() {
   // Handle wallet connection changes
   useEffect(() => {
     if (!isConnected) {
-      // User disconnected wallet
+      // User disconnected wallet - clear ALL state including persisted
       console.log('Wallet disconnected - clearing all state');
       setAuthed(false);
       setIsPaid(false);
@@ -140,8 +143,18 @@ export default function Page() {
       setGameOver(false);
       setIsOfflineMode(false);
       clearPersistedState();
+    } else if (isConnected && address) {
+      // Wallet just connected - check if we have persisted auth
+      const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
+      const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
+      
+      if (savedAuth) {
+        setAuthed(true);
+        setIsPaid(savedPaid);
+      }
+      // If no saved auth, user needs to authenticate (this prevents bypass)
     }
-  }, [isConnected]);
+  }, [isConnected, address]);
 
   // Spacebar → start game
   useEffect(() => {
@@ -1153,8 +1166,8 @@ export default function Page() {
     );
   }
 
-  // Ready to start - ONLY after payment is complete OR in offline mode
-  if ((isPaid && !gameStarted && !gameOver) || (isOfflineMode && authed && !gameStarted && !gameOver)) {
+  // Ready to start - ONLY after payment is complete OR in offline mode  
+  if (isOfflineMode || (isPaid && !gameStarted && !gameOver)) {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
@@ -1177,7 +1190,7 @@ export default function Page() {
             <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
               <p>🎯 Clear lines to score points</p>
               <p>⚡ Speed increases every 4 lines</p>
-              {address && address !== '0x0000000000000000000000000000000000000000' && (
+              {address && !isOfflineMode && (
                 <p>🏆 Publish scores to blockchain leaderboard!</p>
               )}
             </div>
@@ -1216,7 +1229,7 @@ export default function Page() {
           }}
           onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
           onPublishScore={handlePublishScore}
-          playerAddress={address}
+          playerAddress={isOfflineMode ? undefined : address}
         />
       </div>
       <Footer />
