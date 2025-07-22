@@ -534,7 +534,7 @@ export default function Page() {
       alignItems: 'center'
     }}>
       {/* Left Side - Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <img 
           src="/bruce.png" 
           alt="Bruce - 375ai Mascot" 
@@ -546,140 +546,159 @@ export default function Page() {
         />
         
         {/* Navigation Links */}
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '16px' }}>
           <button
             onClick={handleHomeClick}
             style={{
-              background: 'linear-gradient(135deg, rgba(255, 61, 20, 0.1) 0%, rgba(80, 255, 214, 0.1) 100%)',
-              border: '1px solid rgba(255, 61, 20, 0.3)',
-              borderRadius: '8px',
-              padding: '8px 16px',
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(255, 61, 20, 0.15) 0%, rgba(255, 61, 20, 0.05) 100%)',
+              border: '2px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 20px',
               color: '#FF3D14',
               fontSize: '14px',
-              fontWeight: '500',
+              fontWeight: '600',
               cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              position: 'relative',
-              overflow: 'hidden'
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.2) 0%, rgba(80, 255, 214, 0.15) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 61, 20, 0.2)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.25) 0%, rgba(255, 61, 20, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #FF3D14, #50FFD6) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 61, 20, 0.3), 0 0 20px rgba(255, 61, 20, 0.1)';
+              e.currentTarget.style.color = '#FFF';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.1) 0%, rgba(80, 255, 214, 0.1) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.15) 0%, rgba(255, 61, 20, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
               e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#FF3D14';
             }}
           >
-            🏠 Home
+            Home
           </button>
           
           <button
             onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
             style={{
-              background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)',
-              border: '1px solid rgba(80, 255, 214, 0.3)',
-              borderRadius: '8px',
-              padding: '8px 16px',
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)',
+              border: '2px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 20px',
               color: '#50FFD6',
               fontSize: '14px',
-              fontWeight: '500',
+              fontWeight: '600',
               cursor: 'pointer',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(80, 255, 214, 0.5)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(80, 255, 214, 0.2)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.25) 0%, rgba(80, 255, 214, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #50FFD6, #FF3D14) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(80, 255, 214, 0.3), 0 0 20px rgba(80, 255, 214, 0.1)';
+              e.currentTarget.style.color = '#FFF';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(80, 255, 214, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
               e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#50FFD6';
             }}
           >
-            💧 Faucet
+            Faucet
           </button>
           
           <button
             onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
             style={{
-              background: 'linear-gradient(135deg, rgba(75, 85, 99, 0.1) 0%, rgba(107, 114, 128, 0.1) 100%)',
-              border: '1px solid rgba(107, 114, 128, 0.3)',
-              borderRadius: '8px',
-              padding: '8px 16px',
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)',
+              border: '2px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 20px',
               color: '#9CA3AF',
               fontSize: '14px',
-              fontWeight: '500',
+              fontWeight: '600',
               cursor: 'pointer',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(75, 85, 99, 0.2) 0%, rgba(107, 114, 128, 0.15) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(156, 163, 175, 0.4)';
-              e.currentTarget.style.color = '#E5E7EB';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(107, 114, 128, 0.15)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.25) 0%, rgba(156, 163, 175, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #9CA3AF, #E5E7EB) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(156, 163, 175, 0.3), 0 0 20px rgba(156, 163, 175, 0.1)';
+              e.currentTarget.style.color = '#FFF';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(75, 85, 99, 0.1) 0%, rgba(107, 114, 128, 0.1) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.3)';
-              e.currentTarget.style.color = '#9CA3AF';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
               e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#9CA3AF';
             }}
           >
-            📊 Global Leaderboards
+            Global Leaderboards
           </button>
         </div>
       </div>
 
       {/* Right Side - Wallet Status & Disconnect */}
       {address && address !== '0x0000000000000000000000000000000000000000' && !isOfflineMode && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ 
-            background: 'rgba(80, 255, 214, 0.1)',
+            background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(80, 255, 214, 0.05) 100%)',
             border: '1px solid rgba(80, 255, 214, 0.3)',
-            borderRadius: '8px',
-            padding: '6px 12px',
+            borderRadius: '10px',
+            padding: '8px 16px',
             fontSize: '12px',
             color: '#50FFD6',
             fontFamily: 'Monaco, monospace',
-            fontWeight: '500'
+            fontWeight: '600',
+            backdropFilter: 'blur(8px)'
           }}>
             {address.slice(0, 6)}...{address.slice(-4)}
           </div>
           <button
             onClick={handleDisconnectWallet}
             style={{
-              background: 'rgba(239, 68, 68, 0.1)',
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '8px',
-              padding: '6px 12px',
+              borderRadius: '10px',
+              padding: '8px 16px',
               color: '#EF4444',
               fontSize: '12px',
-              fontWeight: '500',
+              fontWeight: '600',
               cursor: 'pointer',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+              e.currentTarget.style.transform = 'translateY(-1px) scale(1.05)';
+              e.currentTarget.style.color = '#FFF';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)';
               e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.color = '#EF4444';
             }}
           >
-            🚪 Disconnect
+            Disconnect
           </button>
         </div>
       )}
@@ -993,20 +1012,22 @@ export default function Page() {
             </div>
           </div>
           
-          {/* Bruce mascot positioned in corner */}
+          {/* Large Bruce mascot as background element */}
           <img 
             src="/bruce.png" 
             alt="Bruce - 375ai Mascot" 
             style={{ 
               position: 'fixed',
-              bottom: '20px',
-              left: '20px',
-              width: '80px',
-              height: '80px',
-              borderRadius: '12px',
-              opacity: 0.8,
-              filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))',
-              zIndex: 500
+              bottom: '-10%',
+              left: '-2%',
+              width: '15vw',
+              height: 'auto',
+              minWidth: '200px',
+              maxWidth: '300px',
+              opacity: 0.3,
+              filter: 'blur(1px) drop-shadow(0 8px 32px rgba(0, 0, 0, 0.4))',
+              zIndex: 1,
+              pointerEvents: 'none'
             }} 
           />
           
@@ -1119,7 +1140,7 @@ export default function Page() {
                   onClick={handlePayment}
                   disabled={isProcessingPayment}
                 >
-                  {isProcessingPayment ? '⏳ Processing...' : '🎮 Play'}
+                  {isProcessingPayment ? '⏳ Processing...' : 'Play'}
                 </button>
               </div>
 
