@@ -952,8 +952,7 @@ export default function Page() {
                       minWidth: '200px'
                     }}
                     onClick={() => {
-                      // Set offline mode and simulate being connected/authenticated
-                      setAddress('0x0000000000000000000000000000000000000000');
+                      // Set offline mode and simulate being authenticated/paid
                       setIsOfflineMode(true);
                       setAuthed(true);
                       setIsPaid(true);
