@@ -267,6 +267,18 @@ export default function Page() {
     }
   };
 
+  // Handle wallet disconnection
+  const handleDisconnectWallet = () => {
+    console.log('Disconnecting wallet...');
+    setAddress('');
+    setAuthed(false);
+    setIsPaid(false);
+    setGameStarted(false);
+    setGameOver(false);
+    setIsOfflineMode(false);
+    clearPersistedState();
+  };
+
   // Enhanced wallet connection that checks for existing connection
   const handleWalletConnection = async () => {
     const ethereum = (window as any).ethereum;
@@ -303,11 +315,8 @@ export default function Page() {
     }
   };
 
-  // Leaderboard Component with blockchain info and personal high score
+  // Leaderboard Component
   const LeaderboardPanel = () => {
-    console.log('Rendering leaderboard panel with', leaderboard.length, 'entries');
-    
-    // Remove duplicates - keep highest score per address
     const uniqueLeaderboard = leaderboard.reduce((acc: LeaderboardEntry[], current) => {
       const existingIndex = acc.findIndex(entry => 
         entry.displayAddress === current.displayAddress || 
@@ -323,7 +332,6 @@ export default function Page() {
       return acc;
     }, []).sort((a, b) => b.score - a.score);
 
-    // Find user's personal best
     const userScore = address && address !== '0x0000000000000000000000000000000000000000' && authed 
       ? uniqueLeaderboard.find(entry => 
           (entry as any).walletAddress?.toLowerCase() === address.toLowerCase()
@@ -331,35 +339,95 @@ export default function Page() {
       : null;
     
     return (
-      <div className="leaderboard-panel">
-        <div className="leaderboard-header">
-          <h2>🏆 TOP PLAYERS</h2>
-          <div className="leaderboard-glow"></div>
+      <div style={{
+        position: 'fixed',
+        top: '70px',
+        right: '20px',
+        width: '320px',
+        background: 'linear-gradient(135deg, rgba(5, 6, 7, 0.95) 0%, rgba(25, 25, 25, 0.95) 100%)',
+        border: '2px solid rgba(255, 61, 20, 0.3)',
+        borderRadius: '16px',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+        zIndex: 1000,
+        overflow: 'hidden',
+        maxHeight: 'calc(100vh - 100px)'
+      }}>
+        <div style={{
+          position: 'relative',
+          padding: '20px',
+          background: 'linear-gradient(90deg, #FF3D14 0%, #10b981 100%)',
+          textAlign: 'center'
+        }}>
+          <h2 style={{
+            margin: 0,
+            color: 'white',
+            fontSize: '18px',
+            fontWeight: '700',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+          }}>🏆 TOP PLAYERS</h2>
         </div>
         
-        <div className="leaderboard-content">
+        <div style={{ padding: '16px', maxHeight: '300px', overflowY: 'auto' }}>
           {isLoadingLeaderboard ? (
-            <div className="loading-spinner">Loading...</div>
+            <div style={{ textAlign: 'center', color: '#B9C1C1', padding: '20px', fontSize: '14px' }}>
+              Loading...
+            </div>
           ) : uniqueLeaderboard.length === 0 ? (
-            <div className="empty-leaderboard">
-              <div style={{ textAlign: 'center', color: '#B9C1C1', padding: '20px' }}>
-                <div style={{ fontSize: '24px', marginBottom: '10px' }}>🎯</div>
-                <div style={{ fontSize: '14px' }}>No scores yet!</div>
-                <div style={{ fontSize: '12px', marginTop: '5px' }}>Be the first to publish to blockchain!</div>
-              </div>
+            <div style={{ textAlign: 'center', color: '#B9C1C1', padding: '20px' }}>
+              <div style={{ fontSize: '24px', marginBottom: '10px' }}>🎯</div>
+              <div style={{ fontSize: '14px' }}>No scores yet!</div>
+              <div style={{ fontSize: '12px', marginTop: '5px' }}>Be the first to publish to blockchain!</div>
             </div>
           ) : (
-            <div className="leaderboard-list">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {uniqueLeaderboard.slice(0, 10).map((entry, index) => (
-                <div key={`${entry.txId || 'entry'}-${index}`} className={`leaderboard-entry ${index < 3 ? 'top-three' : ''}`}>
-                  <div className="rank">
+                <div key={`entry-${index}`} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px',
+                  background: 'rgba(25, 25, 25, 0.4)',
+                  border: '1px solid rgba(185, 193, 193, 0.2)',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s'
+                }}>
+                  <div style={{
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    minWidth: '32px',
+                    textAlign: 'center',
+                    color: '#FCFFFF'
+                  }}>
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                   </div>
-                  <div className="player-info">
-                    <div className="address">{entry.displayAddress}</div>
-                    <div className="stats">
-                      <span className="score">{entry.score?.toLocaleString() || '0'}</span>
-                      <span className="level">Lv.{entry.level || 1}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontFamily: 'Monaco, Menlo, monospace',
+                      fontSize: '12px',
+                      color: '#B9C1C1',
+                      marginBottom: '2px'
+                    }}>
+                      {entry.displayAddress}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#FF3D14'
+                      }}>
+                        {entry.score?.toLocaleString() || '0'}
+                      </span>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '2px 6px',
+                        background: 'rgba(16, 185, 129, 0.2)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        borderRadius: '4px',
+                        color: '#10b981'
+                      }}>
+                        Lv.{entry.level || 1}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -369,272 +437,100 @@ export default function Page() {
         </div>
 
         {/* Personal High Score Section */}
-        <div className="personal-score-section">
-          <div className="section-divider"></div>
-          <div className={`personal-score ${!userScore || !authed ? 'blurred' : ''}`}>
-            <div className="personal-header">
-              <span className="personal-icon">👤</span>
-              <span className="personal-title">Your Personal Best</span>
+        <div style={{ borderTop: '1px solid rgba(185, 193, 193, 0.1)' }}>
+          <div style={{
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(255, 61, 20, 0.3), transparent)',
+            margin: '0 16px'
+          }}></div>
+          <div style={{
+            padding: '16px',
+            transition: 'all 0.3s',
+            filter: (!userScore || !authed) ? 'blur(4px)' : 'none',
+            opacity: (!userScore || !authed) ? 0.6 : 1
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '12px'
+            }}>
+              <span style={{ fontSize: '16px' }}>👤</span>
+              <span style={{
+                fontSize: '12px',
+                color: '#B9C1C1',
+                fontWeight: '600'
+              }}>Your Personal Best</span>
             </div>
             {userScore && authed ? (
-              <div className="personal-stats">
-                <div className="personal-main-score">{userScore.score.toLocaleString()}</div>
-                <div className="personal-details">
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '20px',
+                  fontWeight: '700',
+                  color: '#10b981',
+                  marginBottom: '4px'
+                }}>
+                  {userScore.score.toLocaleString()}
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#B9C1C1'
+                }}>
                   Level {userScore.level} • {userScore.lines} lines
                 </div>
               </div>
             ) : (
-              <div className="personal-placeholder">
-                <div className="placeholder-score">Connect & sign to view</div>
-                <div className="placeholder-details">Your personal high score</div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '14px',
+                  color: '#666',
+                  marginBottom: '4px'
+                }}>
+                  Connect & sign to view
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#555'
+                }}>
+                  Your personal high score
+                </div>
               </div>
             )}
           </div>
         </div>
         
         {/* Blockchain Features Info */}
-        <div className="blockchain-info">
-          <div className="info-item">🔗 Permanent storage</div>
-          <div className="info-item">⚡ 60-day devnet</div>
-          <div className="info-item">🏆 Immutable scores</div>
+        <div style={{
+          padding: '12px 16px',
+          borderTop: '1px solid rgba(185, 193, 193, 0.1)',
+          background: 'rgba(5, 6, 7, 0.5)'
+        }}>
+          <div style={{
+            fontSize: '10px',
+            color: '#B9C1C1',
+            marginBottom: '4px',
+            textAlign: 'center'
+          }}>
+            🔗 Permanent storage
+          </div>
+          <div style={{
+            fontSize: '10px',
+            color: '#B9C1C1',
+            marginBottom: '4px',
+            textAlign: 'center'
+          }}>
+            ⚡ 60-day devnet
+          </div>
+          <div style={{
+            fontSize: '10px',
+            color: '#B9C1C1',
+            textAlign: 'center'
+          }}>
+            🏆 Immutable scores
+          </div>
         </div>
-        
-        <style jsx>{`
-          .leaderboard-panel {
-            position: fixed;
-            top: 70px;
-            right: 20px;
-            width: 320px;
-            background: linear-gradient(135deg, rgba(5, 6, 7, 0.95) 0%, rgba(25, 25, 25, 0.95) 100%);
-            border: 2px solid rgba(255, 61, 20, 0.3);
-            border-radius: 16px;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 25px 50px -12px rgba(255, 61, 20, 0.3);
-            z-index: 1000;
-            overflow: hidden;
-            max-height: calc(100vh - 100px);
-          }
-          
-          .leaderboard-header {
-            position: relative;
-            padding: 20px;
-            background: linear-gradient(90deg, #FF3D14 0%, #10b981 100%);
-            text-align: center;
-          }
-          
-          .leaderboard-header h2 {
-            margin: 0;
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          }
-          
-          .leaderboard-glow {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
-            animation: shimmer 3s ease-in-out infinite;
-          }
-          
-          .leaderboard-content {
-            padding: 16px;
-            max-height: 300px;
-            overflow-y: auto;
-          }
-          
-          .leaderboard-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-          }
-          
-          .leaderboard-entry {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: rgba(25, 25, 25, 0.4);
-            border: 1px solid rgba(185, 193, 193, 0.2);
-            border-radius: 8px;
-            transition: all 0.2s;
-          }
-          
-          .leaderboard-entry:hover {
-            background: rgba(25, 25, 25, 0.7);
-            border-color: rgba(255, 61, 20, 0.5);
-            transform: translateY(-1px);
-          }
-          
-          .leaderboard-entry.top-three {
-            background: linear-gradient(135deg, rgba(255, 61, 20, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
-            border-color: rgba(255, 61, 20, 0.4);
-          }
-          
-          .rank {
-            font-size: 16px;
-            font-weight: 700;
-            min-width: 32px;
-            text-align: center;
-            color: #FCFFFF;
-          }
-          
-          .player-info {
-            flex: 1;
-          }
-          
-          .address {
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 12px;
-            color: #B9C1C1;
-            margin-bottom: 2px;
-          }
-          
-          .stats {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-          }
-          
-          .score {
-            font-size: 14px;
-            font-weight: 600;
-            color: #FF3D14;
-          }
-          
-          .level {
-            font-size: 11px;
-            padding: 2px 6px;
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 4px;
-            color: #10b981;
-          }
-          
-          .loading-spinner {
-            text-align: center;
-            color: #B9C1C1;
-            padding: 20px;
-            font-size: 14px;
-          }
-
-          .personal-score-section {
-            border-top: 1px solid rgba(185, 193, 193, 0.1);
-          }
-
-          .section-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 61, 20, 0.3), transparent);
-            margin: 0 16px;
-          }
-
-          .personal-score {
-            padding: 16px;
-            transition: all 0.3s;
-          }
-
-          .personal-score.blurred {
-            filter: blur(4px);
-            opacity: 0.6;
-          }
-
-          .personal-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-          }
-
-          .personal-icon {
-            font-size: 16px;
-          }
-
-          .personal-title {
-            font-size: 12px;
-            color: #B9C1C1;
-            font-weight: 600;
-          }
-
-          .personal-stats {
-            text-align: center;
-          }
-
-          .personal-main-score {
-            font-size: 20px;
-            font-weight: 700;
-            color: #10b981;
-            margin-bottom: 4px;
-          }
-
-          .personal-details {
-            font-size: 11px;
-            color: #B9C1C1;
-          }
-
-          .personal-placeholder {
-            text-align: center;
-          }
-
-          .placeholder-score {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 4px;
-          }
-
-          .placeholder-details {
-            font-size: 11px;
-            color: #555;
-          }
-          
-          .blockchain-info {
-            padding: 12px 16px;
-            border-top: 1px solid rgba(185, 193, 193, 0.1);
-            background: rgba(5, 6, 7, 0.5);
-          }
-          
-          .info-item {
-            font-size: 10px;
-            color: #B9C1C1;
-            margin-bottom: 4px;
-            text-align: center;
-          }
-          
-          .info-item:last-child {
-            margin-bottom: 0;
-          }
-          
-          @keyframes shimmer {
-            0%, 100% { transform: translateX(-100%); }
-            50% { transform: translateX(100%); }
-          }
-          
-          @media (max-width: 768px) {
-            .leaderboard-panel {
-              position: relative;
-              top: 0;
-              right: 0;
-              width: 100%;
-              margin-bottom: 20px;
-            }
-          }
-        `}</style>
       </div>
     );
-  };
-
-  // Handle wallet disconnection
-  const handleDisconnectWallet = () => {
-    console.log('Disconnecting wallet...');
-    setAddress('');
-    setAuthed(false);
-    setIsPaid(false);
-    setGameStarted(false);
-    setGameOver(false);
-    setIsOfflineMode(false);
-    clearPersistedState();
   };
 
   // Navigation Header
@@ -667,12 +563,6 @@ export default function Page() {
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 61, 20, 0.1)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'transparent';
-          }}
         >
           Home
         </button>
@@ -688,12 +578,6 @@ export default function Page() {
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'transparent';
-          }}
         >
           Faucet
         </button>
@@ -708,14 +592,6 @@ export default function Page() {
             fontSize: '14px',
             cursor: 'pointer',
             transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(185, 193, 193, 0.1)';
-            e.currentTarget.style.color = '#FCFFFF';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = '#B9C1C1';
           }}
         >
           375ai Leaderboards
@@ -748,16 +624,6 @@ export default function Page() {
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(231, 76, 60, 0.1)';
-              e.currentTarget.style.borderColor = 'rgba(231, 76, 60, 0.3)';
-              e.currentTarget.style.color = '#e74c3c';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.borderColor = 'rgba(185, 193, 193, 0.3)';
-              e.currentTarget.style.color = '#B9C1C1';
-            }}
           >
             Disconnect
           </button>
@@ -766,14 +632,14 @@ export default function Page() {
     </div>
   );
 
-  // Updated container and card styles with 375ai orange + Irys green branding
+  // Styles
   const containerStyle = {
     minHeight: '100vh',
     maxHeight: '100vh',
     background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2a2a2a 100%)',
     color: 'white',
     fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
-    overflow: 'hidden' // Prevent any scrolling
+    overflow: 'hidden'
   };
 
   const cardStyle = {
@@ -801,11 +667,7 @@ export default function Page() {
     minWidth: '200px'
   };
 
-  const pulseStyle = {
-    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-  };
-
-  // Footer component with credits and disclaimer - inline to prevent scrolling
+  // Footer component
   const Footer = () => (
     <div style={{
       position: 'absolute',
@@ -887,7 +749,6 @@ export default function Page() {
                 }
                 
                 try {
-                  // Try to add the network first
                   await ethereum.request({
                     method: 'wallet_addEthereumChain',
                     params: [IRYS_PARAMS],
@@ -897,7 +758,6 @@ export default function Page() {
                 }
                 
                 try {
-                  // Switch to the network
                   await ethereum.request({
                     method: 'wallet_switchEthereumChain',
                     params: [{ chainId: IRYS_PARAMS.chainId }],
@@ -920,7 +780,7 @@ export default function Page() {
     );
   }
 
-  // Landing page with arcade layout
+  // Landing page
   if (!address) {
     return (
       <div style={containerStyle}>
@@ -975,9 +835,16 @@ export default function Page() {
                 border: '3px solid #10b981',
                 boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
               }}>
-                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-                  <img 
-                    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFE0lEQVR4nO2dP2wbRRTGv5fEJnGcOE7iJE6c2I7jJHYSJ3ESJ3ESJ7FjO3ESJ3ESJ3ESJ3YSJ3ESJ3YSJ3ESJ3YSJ3ESJ3YSJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3ESJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ3YSJ
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  backgroundImage: 'url(/blocks.png)', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}></div>
                 <h2 style={{ 
                   fontSize: '32px', 
                   marginBottom: '15px', 
@@ -997,7 +864,7 @@ export default function Page() {
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   <button
-                    style={{ ...buttonStyle, ...pulseStyle }}
+                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
                     onClick={handleWalletConnection}
                   >
                     🔗 Connect Wallet & Play
@@ -1130,13 +997,13 @@ export default function Page() {
                 boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.3)'
               }}>
                 <div style={{ 
-                  width: 64, 
-                  height: 64, 
+                  width: '64px', 
+                  height: '64px', 
                   backgroundImage: 'url(/blocks.png)', 
                   backgroundSize: 'contain', 
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
-                  marginBottom: 20,
+                  marginBottom: '20px',
                   margin: '0 auto 20px auto'
                 }}></div>
                 <h2 style={{ 
@@ -1156,7 +1023,7 @@ export default function Page() {
                 <button
                   style={{ 
                     ...buttonStyle, 
-                    ...pulseStyle,
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
                   }}
                   onClick={handlePayment}
@@ -1269,7 +1136,7 @@ export default function Page() {
                 padding: '10px 20px',
                 fontSize: '13px',
                 minWidth: '180px',
-                ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : pulseStyle)
+                ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : { animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' })
               }}
               onClick={handlePayment}
               disabled={isProcessingPayment}
@@ -1292,7 +1159,7 @@ export default function Page() {
           <div style={cardStyle}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
             <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play!</h2>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', ...pulseStyle }}>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
               Press <kbd style={{ 
                 background: 'rgba(255, 61, 20, 0.2)', 
                 padding: '8px 12px', 
