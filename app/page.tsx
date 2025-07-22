@@ -156,9 +156,9 @@ export default function Page() {
     }
   }, [isConnected, address]);
 
-  // Spacebar → start game
+  // Spacebar → start game (works for both paid and offline mode)
   useEffect(() => {
-    if (!isPaid || gameStarted || gameOver) return;
+    if ((!isPaid && !isOfflineMode) || gameStarted || gameOver) return;
     const handler = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         setGameStarted(true);
@@ -167,7 +167,7 @@ export default function Page() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isPaid, gameStarted, gameOver]);
+  }, [isPaid, isOfflineMode, gameStarted, gameOver]);
 
   // Handle payment for new game
   const handlePayment = async () => {
