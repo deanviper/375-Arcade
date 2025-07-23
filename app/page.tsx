@@ -1186,8 +1186,8 @@ export default function Page() {
     );
   }
 
-  // Ready to start - Show for offline mode OR after payment
-  if (isOfflineMode || (isPaid && !gameStarted && !gameOver)) {
+  // Ready to start - Show for offline mode OR after payment (but NOT when game started)
+  if ((isOfflineMode || isPaid) && !gameStarted && !gameOver) {
     console.log('Ready to Play condition met:', { isOfflineMode, isPaid, gameStarted, gameOver });
     return (
       <div style={containerStyle}>
