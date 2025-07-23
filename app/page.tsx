@@ -30,19 +30,11 @@ interface LeaderboardEntry {
 
 type GameType = 'tetris' | 'pacman' | null;
 
-// ==== ADDED: Personal Best type ====
-type PersonalBest = {
-  tetris?: number;
-  pacman?: number;
-};
-
-// Local storage keys for persistence
 const STORAGE_KEYS = {
   WALLET_ADDRESS: 'arcade_wallet_address',
   IS_AUTHENTICATED: 'arcade_is_authenticated',
   IS_PAID: 'arcade_is_paid',
-  SELECTED_GAME: 'arcade_selected_game',
-  PERSONAL_BEST: 'arcade_pb' // ADDED
+  SELECTED_GAME: 'arcade_selected_game'
 };
 
 export default function Page() {
@@ -50,8 +42,7 @@ export default function Page() {
   const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
-  
-  // Initialize all state properly
+
   const [mounted, setMounted] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
@@ -60,141 +51,84 @@ export default function Page() {
   const [gameOver, setGameOver] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [tetrisBoard, setTetrisBoard] = useState<LeaderboardEntry[]>([]);
+  const [pacmanBoard, setPacmanBoard] = useState<LeaderboardEntry[]>([]);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
-  // ==== ADDED: Personal Best state ====
-  const [pb, setPb] = useState<PersonalBest>({});
+  useEffect(() => { setMounted(true); }, []);
 
-  // Prevent hydration mismatch - wait for client to mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Load persisted state only after mounting and when wallet is connected
   useEffect(() => {
     if (!mounted || !address || !isConnected) return;
-    
     try {
       const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
       const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
       const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
-      const savedPB = localStorage.getItem(STORAGE_KEYS.PERSONAL_BEST); // ADDED
-      if (savedPB) setPb(JSON.parse(savedPB)); // ADDED
-      
       if (savedAuth) {
-        console.log('Restoring wallet session:', address);
         setAuthed(true);
         setIsPaid(savedPaid);
         if (savedGame) setSelectedGame(savedGame);
       }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
-    }
+    } catch (e) { console.error(e); }
   }, [mounted, address, isConnected]);
 
-  // Save state to localStorage whenever it changes (only after mounting)
   useEffect(() => {
     if (!mounted) return;
-    
-    try {
-      if (address) {
-        localStorage.setItem(STORAGE_KEYS.WALLET_ADDRESS, address);
-      }
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
+    try { if (address) localStorage.setItem(STORAGE_KEYS.WALLET_ADDRESS, address); } catch {}
   }, [mounted, address]);
 
   useEffect(() => {
     if (!mounted) return;
-    try {
-      localStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, authed.toString());
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
+    try { localStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, authed.toString()); } catch {}
   }, [mounted, authed]);
 
   useEffect(() => {
     if (!mounted) return;
-    try {
-      localStorage.setItem(STORAGE_KEYS.IS_PAID, isPaid.toString());
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
+    try { localStorage.setItem(STORAGE_KEYS.IS_PAID, isPaid.toString()); } catch {}
   }, [mounted, isPaid]);
 
   useEffect(() => {
     if (!mounted || !selectedGame) return;
-    try {
-      localStorage.setItem(STORAGE_KEYS.SELECTED_GAME, selectedGame);
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
+    try { localStorage.setItem(STORAGE_KEYS.SELECTED_GAME, selectedGame); } catch {}
   }, [mounted, selectedGame]);
 
-  // ==== ADDED: persist PB ====
-  useEffect(() => {
-    if (!mounted) return;
-    try {
-      localStorage.setItem(STORAGE_KEYS.PERSONAL_BEST, JSON.stringify(pb));
-    } catch (err) {
-      console.error('Error saving PB:', err);
-    }
-  }, [mounted, pb]);
-
-  // Clear persisted state when wallet disconnects
   const clearPersistedState = () => {
     if (!mounted) return;
-    try {
-      Object.values(STORAGE_KEYS).forEach(key => {
-        localStorage.removeItem(key);
-      });
-    } catch (error) {
-      console.error('Error clearing localStorage:', error);
-    }
+    try { Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k)); } catch {}
   };
 
-  // Load leaderboard ONCE on page load
   useEffect(() => {
     if (!mounted) return;
-    
     const loadLeaderboard = async () => {
       try {
-        console.log('Frontend: Loading leaderboard...');
         setIsLoadingLeaderboard(true);
-        
-        const response = await fetch('/api/leaderboard');
-        console.log('Frontend: API response status:', response.status);
-        
-        const data = await response.json();
-        console.log('Frontend: API response data:', data);
-        
+        const res = await fetch('/api/leaderboard');
+        const data = await res.json();
         if (data.success) {
-          console.log('Frontend: Setting leaderboard with', data.combined?.length || 0, 'entries');
           setLeaderboard(data.combined || data.leaderboard || []);
+          setTetrisBoard(data.tetris || []);
+          setPacmanBoard(data.pacman || []);
         } else {
-          console.error('Frontend: API returned error:', data.error);
           setLeaderboard([]);
+          setTetrisBoard([]);
+          setPacmanBoard([]);
         }
-      } catch (error) {
-        console.error('Frontend: Failed to load leaderboard:', error);
+      } catch (e) {
+        console.error(e);
         setLeaderboard([]);
+        setTetrisBoard([]);
+        setPacmanBoard([]);
       } finally {
         setIsLoadingLeaderboard(false);
       }
     };
-    
     loadLeaderboard();
   }, [mounted]);
 
-  // Handle wallet connection changes
   useEffect(() => {
     if (!mounted) return;
-    
     if (!isConnected) {
-      console.log('Wallet disconnected - clearing all state');
       setAuthed(false);
       setIsPaid(false);
       setSelectedGame(null);
@@ -207,33 +141,21 @@ export default function Page() {
         const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
         const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
         const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
-        const savedPB = localStorage.getItem(STORAGE_KEYS.PERSONAL_BEST); // ADDED
-        if (savedPB) setPb(JSON.parse(savedPB)); // ADDED
-        
         if (savedAuth) {
           setAuthed(true);
           setIsPaid(savedPaid);
           if (savedGame) setSelectedGame(savedGame);
         }
-      } catch (error) {
-        console.error('Error restoring state:', error);
-      }
+      } catch (e) { console.error(e); }
     }
   }, [mounted, isConnected, address]);
 
-  // Spacebar → start game
   useEffect(() => {
     if (!mounted) return;
-    
-    const canStartGame = (isPaid || isOfflineMode) && selectedGame && !gameStarted && !gameOver;
-    
-    if (!canStartGame) return;
-    
-    console.log('Spacebar listener active:', { isPaid, isOfflineMode, selectedGame, gameStarted, gameOver, canStartGame });
-    
+    const canStart = (isPaid || isOfflineMode) && selectedGame && !gameStarted && !gameOver;
+    if (!canStart) return;
     const handler = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
-        console.log('Spacebar detected! Starting game...');
         setGameStarted(true);
         setGameOver(false);
       }
@@ -242,129 +164,81 @@ export default function Page() {
     return () => window.removeEventListener('keydown', handler);
   }, [mounted, isPaid, isOfflineMode, selectedGame, gameStarted, gameOver]);
 
-  // Add Google Fonts only after mounting
   useEffect(() => {
     if (!mounted) return;
-    
     const link = document.createElement('link');
     link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;700;800&display=swap';
     link.rel = 'stylesheet';
     document.head.appendChild(link);
   }, [mounted]);
 
-  // ==== ADDED: helper to update PB ====
-  const savePB = (game: GameType, score: number) => {
-    if (!game) return;
-    setPb(prev => {
-      const prevVal = prev[game] ?? 0;
-      if (score > prevVal) {
-        const updated = { ...prev, [game]: score };
-        try { localStorage.setItem(STORAGE_KEYS.PERSONAL_BEST, JSON.stringify(updated)); } catch {}
-        return updated;
-      }
-      return prev;
-    });
-  };
+  if (!mounted) return null;
 
-  // Don't render anything until mounted to prevent hydration issues
-  if (!mounted) {
-    return null;
-  }
-
-  // Handle payment for new game
   const handlePayment = async (gameType: GameType) => {
     if (!gameType) return;
-    
     setIsProcessingPayment(true);
     try {
       const ethereum = (window as any).ethereum;
-      if (!ethereum) {
-        throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
-      }
-
+      if (!ethereum) throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
       const provider = new ethers.BrowserProvider(ethereum);
       await provider.send('eth_requestAccounts', []);
-      
       const signer = await provider.getSigner();
       const tx = await signer.sendTransaction({
         to: process.env.NEXT_PUBLIC_GAME_WALLET_ADDRESS,
-        value: ethers.parseEther(process.env.NEXT_PUBLIC_GAME_FEE!),
+        value: ethers.parseEther(process.env.NEXT_PUBLIC_GAME_FEE!)
       });
-      
-      console.log('Payment transaction sent:', tx.hash);
       await tx.wait();
-      console.log('Payment confirmed');
-      
       setSelectedGame(gameType);
       setIsPaid(true);
       setGameStarted(false);
       setGameOver(false);
-      setIsProcessingPayment(false);
     } catch (e: any) {
-      console.error('Payment failed:', e);
-      
-      if (e.code === 4001) {
-        alert('Payment cancelled by user');
-      } else if (e.message.includes('insufficient funds')) {
-        alert('Insufficient funds. Please add more IRYS to your wallet.');
-      } else {
-        alert('Payment failed: ' + e.message);
-      }
+      if (e.code === 4001) alert('Payment cancelled by user');
+      else if (e.message?.includes('insufficient funds')) alert('Insufficient funds. Please add more IRYS to your wallet.');
+      else alert('Payment failed: ' + e.message);
+    } finally {
       setIsProcessingPayment(false);
     }
   };
 
-  // Handle offline restart (no payment)
   const handleOfflineRestart = () => {
     setGameStarted(false);
     setGameOver(false);
   };
 
-  // Handle score publishing with proper leaderboard refresh
-  const handlePublishScore = async (score: number, linesOrLevel: number) => {
-    console.log('Frontend: Score published, refreshing leaderboard...');
-    
+  const handlePublishScore = async (_score: number, _aux: number) => {
     try {
       setIsLoadingLeaderboard(true);
-      const response = await fetch('/api/leaderboard');
-      const data = await response.json();
-      
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
       if (data.success) {
-        console.log('Frontend: Leaderboard refreshed with', data.combined?.length || 0, 'entries');
         setLeaderboard(data.combined || data.leaderboard || []);
-      } else {
-        console.error('Frontend: Failed to refresh leaderboard:', data.error);
+        setTetrisBoard(data.tetris || []);
+        setPacmanBoard(data.pacman || []);
       }
-    } catch (error) {
-      console.error('Frontend: Failed to refresh leaderboard:', error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsLoadingLeaderboard(false);
     }
   };
 
-  // Home button handler
   const handleHomeClick = () => {
     setGameStarted(false);
     setGameOver(false);
     setIsPaid(false);
     setSelectedGame(null);
-    
     if (isOfflineMode) {
       setAuthed(false);
       setIsOfflineMode(false);
     }
-    
     try {
       localStorage.setItem(STORAGE_KEYS.IS_PAID, 'false');
       localStorage.removeItem(STORAGE_KEYS.SELECTED_GAME);
-    } catch (error) {
-      console.error('Error updating localStorage:', error);
-    }
+    } catch {}
   };
 
-  // Handle wallet disconnection
   const handleDisconnectWallet = () => {
-    console.log('Disconnecting wallet...');
     disconnect();
     setAuthed(false);
     setIsPaid(false);
@@ -375,63 +249,23 @@ export default function Page() {
     clearPersistedState();
   };
 
-  // Enhanced wallet connection
   const handleWalletConnection = async () => {
-    try {
-      await open();
-    } catch (error: any) {
-      console.error('Failed to open wallet modal:', error);
-      alert('Failed to open wallet connection modal: ' + error.message);
-    }
+    try { await open(); }
+    catch (e: any) { alert('Failed to open wallet connection modal: ' + e.message); }
   };
 
-  // Responsive styles based on screen size
   const getResponsiveStyles = () => {
     if (typeof window === 'undefined') {
-      return {
-        fontSize: '16px',
-        padding: '20px',
-        cardPadding: '40px',
-        titleMaxWidth: '400px'
-      };
+      return { fontSize: '16px', padding: '20px', cardPadding: '40px', titleMaxWidth: '400px' };
     }
-
-    const width = window.innerWidth;
-    
-    if (width < 480) { // Mobile
-      return {
-        fontSize: '14px',
-        padding: '10px',
-        cardPadding: '20px',
-        titleMaxWidth: '280px'
-      };
-    } else if (width < 768) { // Tablet
-      return {
-        fontSize: '15px',
-        padding: '15px',
-        cardPadding: '30px',
-        titleMaxWidth: '350px'
-      };
-    } else if (width < 1024) { // Small laptop
-      return {
-        fontSize: '16px',
-        padding: '18px',
-        cardPadding: '35px',
-        titleMaxWidth: '380px'
-      };
-    } else { // Desktop
-      return {
-        fontSize: '16px',
-        padding: '20px',
-        cardPadding: '40px',
-        titleMaxWidth: '400px'
-      };
-    }
+    const w = window.innerWidth;
+    if (w < 480) return { fontSize: '14px', padding: '10px', cardPadding: '20px', titleMaxWidth: '280px' };
+    if (w < 768) return { fontSize: '15px', padding: '15px', cardPadding: '30px', titleMaxWidth: '350px' };
+    if (w < 1024) return { fontSize: '16px', padding: '18px', cardPadding: '35px', titleMaxWidth: '380px' };
+    return { fontSize: '16px', padding: '20px', cardPadding: '40px', titleMaxWidth: '400px' };
   };
-
   const responsiveStyles = getResponsiveStyles();
 
-  // Styles
   const containerStyle = {
     minHeight: '100vh',
     maxHeight: '100vh',
@@ -466,45 +300,18 @@ export default function Page() {
     minWidth: '200px'
   };
 
-  // Game carousel configuration
   const games = [
-    { 
-      id: 'tetris' as GameType, 
-      name: 'TETRIS', 
-      icon: '/blocks.png', 
-      description: 'Play a classic game of Tetris for 0.01 Irys!',
-      borderColor: '#50FFD6'
-    },
-    { 
-      id: 'pacman' as GameType, 
-      name: 'PACMAN', 
-      icon: '/pacman.png', 
-      description: 'Play the classic Pacman for 0.01 Irys!',
-      borderColor: '#FFD700'
-    },
-    { 
-      id: null, 
-      name: 'COMING SOON', 
-      icon: '🎲', 
-      description: 'More games coming soon!',
-      borderColor: '#FF3D14'
-    }
+    { id: 'tetris' as GameType, name: 'TETRIS', icon: '/blocks.png', description: 'Play a classic game of Tetris for 0.01 Irys!', borderColor: '#50FFD6' },
+    { id: 'pacman' as GameType, name: 'PACMAN', icon: '/pacman.png', description: 'Play the classic Pacman for 0.01 Irys!', borderColor: '#FFD700' },
+    { id: null, name: 'COMING SOON', icon: '🎲', description: 'More games coming soon!', borderColor: '#FF3D14' }
   ];
-
   const currentGame = games[carouselIndex];
   const leftGame = games[(carouselIndex - 1 + games.length) % games.length];
   const rightGame = games[(carouselIndex + 1) % games.length];
 
-  // Smooth carousel navigation
-  const handleCarouselNext = () => {
-    setCarouselIndex((prev) => (prev + 1) % games.length);
-  };
+  const handleCarouselNext = () => setCarouselIndex(p => (p + 1) % games.length);
+  const handleCarouselPrev = () => setCarouselIndex(p => (p - 1 + games.length) % games.length);
 
-  const handleCarouselPrev = () => {
-    setCarouselIndex((prev) => (prev - 1 + games.length) % games.length);
-  };
-
-  // Mobile styles
   const mobileStyles = `
     @media (max-width: 1440px) {
       .arcade-container {
@@ -515,7 +322,6 @@ export default function Page() {
         margin-bottom: 50px !important;
       }
     }
-    
     @media (max-width: 768px) {
       .arcade-container {
         padding: 100px 10px 100px !important;
@@ -534,97 +340,32 @@ export default function Page() {
         height: 350px !important;
       }
     }
-    
-    .carousel-transition {
-      transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-    }
-    
+    .carousel-transition { transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; }
     .carousel-game-center, .carousel-game-side {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 450px !important;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; height: 450px !important;
     }
   `;
 
-  // ==== MODIFIED: Leaderboard Panel to include PB under title ====
   const LeaderboardPanel = () => {
     if (!isPaid && !isOfflineMode) return null;
-    
-    const gameFilteredLeaderboard = selectedGame 
-      ? leaderboard.filter(entry => entry.gameType === selectedGame)
-      : leaderboard;
-    
-    const uniqueLeaderboard = gameFilteredLeaderboard.reduce((acc: LeaderboardEntry[], current) => {
-      const existingIndex = acc.findIndex(entry => 
-        entry.displayAddress === current.displayAddress || 
-        (entry as any).walletAddress === (current as any).walletAddress
+
+    const dataSource = selectedGame === 'tetris'
+      ? (tetrisBoard.length ? tetrisBoard : leaderboard.filter(e => e.gameType === 'tetris'))
+      : selectedGame === 'pacman'
+        ? (pacmanBoard.length ? pacmanBoard : leaderboard.filter(e => e.gameType === 'pacman'))
+        : leaderboard;
+
+    const uniqueLeaderboard = dataSource.reduce((acc: LeaderboardEntry[], cur) => {
+      const i = acc.findIndex(e =>
+        e.displayAddress === cur.displayAddress ||
+        (e as any).walletAddress === (cur as any).walletAddress
       );
-      
-      if (existingIndex === -1) {
-        acc.push(current);
-      } else if (current.score > acc[existingIndex].score) {
-        acc[existingIndex] = current;
-      }
-      
+      if (i === -1) acc.push(cur);
+      else if (cur.score > acc[i].score) acc[i] = cur;
       return acc;
     }, []).sort((a, b) => b.score - a.score);
 
-    const userScore = address && authed 
-      ? uniqueLeaderboard.find(entry => 
-          (entry as any).walletAddress?.toLowerCase() === address.toLowerCase()
-        )
-      : null;
-
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    
-    // ADDED: helper to render PB Box
-    const renderPBBox = () => {
-      if (!selectedGame) return null;
-      const value = (pb[selectedGame] ?? 0).toLocaleString();
-      const blur = isOfflineMode || !address || !authed;
-      
-      return (
-        <div style={{
-          marginTop: '8px',
-          padding: '10px 14px',
-          border: '1px solid rgba(255, 61, 20, 0.25)',
-          borderRadius: '8px',
-          background: 'rgba(15,15,20,0.45)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{ 
-            fontSize: '11px', 
-            color: '#9CA3AF', 
-            marginBottom: '4px', 
-            textAlign: 'center',
-            letterSpacing: '0.4px'
-          }}>
-            Personal Best
-          </div>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: 700,
-            textAlign: 'center',
-            color: blur ? '#9CA3AF' : (selectedGame === 'pacman' ? '#FFD700' : '#50FFD6'),
-            filter: blur ? 'blur(5px)' : 'none',
-            userSelect: 'none'
-          }}>
-            {value}
-          </div>
-          {blur && (
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(0,0,0,0.25)',
-              pointerEvents: 'none'
-            }} />
-          )}
-        </div>
-      );
-    };
 
     return (
       <div style={{
@@ -648,25 +389,14 @@ export default function Page() {
           textAlign: 'center',
           borderBottom: '1px solid rgba(255, 61, 20, 0.2)'
         }}>
-          <h2 style={{
-            margin: 0,
-            color: '#E5E7EB',
-            fontSize: isMobile ? '14px' : '16px',
-            fontWeight: '600',
-            letterSpacing: '0.5px'
-          }}>
+          <h2 style={{ margin: 0, color: '#E5E7EB', fontSize: isMobile ? '14px' : '16px', fontWeight: '600', letterSpacing: '0.5px' }}>
             🏆 {selectedGame === 'tetris' ? 'TETRIS' : selectedGame === 'pacman' ? 'PACMAN' : 'ARCADE'} LEADERBOARD
           </h2>
-
-          {/* ADDED: PB box right under the title */}
-          { (selectedGame === 'tetris' || selectedGame === 'pacman') && renderPBBox() }
         </div>
-        
+
         <div style={{ padding: isMobile ? '12px' : '16px', maxHeight: isMobile ? '250px' : '300px', overflowY: 'auto' }}>
           {isLoadingLeaderboard ? (
-            <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px', fontSize: '14px' }}>
-              Loading...
-            </div>
+            <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px', fontSize: '14px' }}>Loading...</div>
           ) : uniqueLeaderboard.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px' }}>
               <div style={{ fontSize: '24px', marginBottom: '10px' }}>🎯</div>
@@ -704,11 +434,7 @@ export default function Page() {
                       {entry.displayAddress}
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{
-                        fontSize: isMobile ? '12px' : '14px',
-                        fontWeight: '600',
-                        color: '#50FFD6'
-                      }}>
+                      <span style={{ fontSize: isMobile ? '12px' : '14px', fontWeight: '600', color: '#50FFD6' }}>
                         {entry.score?.toLocaleString() || '0'}
                       </span>
                       <span style={{
@@ -732,7 +458,6 @@ export default function Page() {
     );
   };
 
-  // Navigation Header with responsive design
   const NavigationHeader = () => (
     <div style={{
       position: 'fixed',
@@ -750,7 +475,7 @@ export default function Page() {
       flexWrap: 'wrap',
       gap: '10px'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>        
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           <button
             onClick={handleHomeClick}
@@ -770,7 +495,7 @@ export default function Page() {
           >
             Home
           </button>
-          
+
           <button
             onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
             style={{
@@ -789,7 +514,7 @@ export default function Page() {
           >
             Faucet
           </button>
-          
+
           <button
             onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
             style={{
@@ -813,12 +538,12 @@ export default function Page() {
 
       {address && isConnected && authed && !isOfflineMode && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ 
+          <div style={{
             background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(80, 255, 214, 0.05) 100%)',
             border: '1px solid rgba(80, 255, 214, 0.3)',
             borderRadius: '10px',
             padding: '8px 16px',
-                        fontSize: '12px',
+            fontSize: '12px',
             color: '#50FFD6',
             fontFamily: 'Monaco, monospace',
             fontWeight: '600',
@@ -849,7 +574,6 @@ export default function Page() {
     </div>
   );
 
-  // Footer component with responsive design
   const Footer = () => (
     <div style={{
       position: 'fixed',
@@ -859,57 +583,47 @@ export default function Page() {
       textAlign: 'center',
       zIndex: 500
     }}>
-      <div style={{ 
-        fontSize: '11px', 
-        color: '#B9C1C1',
-        marginBottom: '5px'
-      }}>
+      <div style={{ fontSize: '11px', color: '#B9C1C1', marginBottom: '5px' }}>
         Made with love by{' '}
-        <a 
-          href="https://x.com/cryptdean" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ 
-            color: '#FF3D14', 
-            textDecoration: 'none',
-            fontWeight: '600'
-          }}
-        >
+        <a href="https://x.com/cryptdean" target="_blank" rel="noopener noreferrer" style={{ color: '#FF3D14', textDecoration: 'none', fontWeight: '600' }}>
           Dean
         </a>
         . para mi amore, <em>vivr</em>
       </div>
-      
-      <div style={{ 
-        fontSize: '8px', 
-        color: '#666',
-        lineHeight: '1.2',
-        maxWidth: '800px',
-        margin: '0 auto'
-      }}>
-        <strong>Disclaimer:</strong> 375 Arcade is not in any way, shape, or form affiliated with the 375ai or Irys team. This is a game made for the community. There will be no financial transactions, solicitations, donations, or anything related to user spending. For official updates visit{' '}
-        <a 
-          href="https://x.com/375ai_" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ color: '#FF3D14', textDecoration: 'none' }}
-        >
+      <div style={{ fontSize: '8px', color: '#666', lineHeight: '1.2', maxWidth: '800px', margin: '0 auto' }}>
+        <strong>Disclaimer:</strong> 375 Arcade is not in any way, shape, or form affiliated with the 375ai or Irys team. This is a game made for the community. There will be no financial transactions,
+        solicitations, donations, or anything related to user spending. For official updates visit{' '}
+        <a href="https://x.com/375ai_" target="_blank" rel="noopener noreferrer" style={{ color: '#FF3D14', textDecoration: 'none' }}>
           375ai
-        </a>
-        {' '}and{' '}
-        <a 
-          href="https://x.com/irys_xyz" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ color: '#10b981', textDecoration: 'none' }}
-        >
+        </a>{' '}and{' '}
+        <a href="https://x.com/irys_xyz" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none' }}>
           Irys
         </a>
       </div>
     </div>
   );
 
-  // Wrong chain
+  // BIG LEFT TITLE (Ready + In-Game + GameOver)
+  const BigLeftTitle = () => (
+    <div style={{
+      position: 'fixed',
+      top: '140px',
+      left: '20px',
+      zIndex: 1000
+    }}>
+      <img
+        src="/arcade-title.png"
+        alt="375 Arcade - Built on Irys"
+        style={{
+          maxWidth: '500px',
+          width: '100%',
+          height: 'auto',
+          filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
+        }}
+      />
+    </div>
+  );
+
   if (chainId && chainId !== 1270 && !isOfflineMode) {
     return (
       <div style={containerStyle}>
@@ -919,38 +633,17 @@ export default function Page() {
           <div style={cardStyle}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
             <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Wrong Network</h2>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
-              Please switch to <strong>Irys Testnet</strong> to continue
-            </p>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>Please switch to <strong>Irys Testnet</strong> to continue</p>
             <button
               style={buttonStyle}
               onClick={async () => {
                 const ethereum = (window as any).ethereum;
-                if (!ethereum) {
-                  alert('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
-                  return;
-                }
-                
-                try {
-                  await ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [IRYS_PARAMS],
-                  });
-                } catch (addError: any) {
-                  console.log('Add network failed:', addError);
-                }
-                
-                try {
-                  await ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: IRYS_PARAMS.chainId }],
-                  });
-                } catch (switchError: any) {
-                  if (switchError.code === 4001) {
-                    alert('Network switch cancelled by user');
-                  } else {
-                    alert('Failed to switch network: ' + switchError.message);
-                  }
+                if (!ethereum) { alert('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.'); return; }
+                try { await ethereum.request({ method: 'wallet_addEthereumChain', params: [IRYS_PARAMS] }); } catch {}
+                try { await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: IRYS_PARAMS.chainId }] }); }
+                catch (err: any) {
+                  if (err.code === 4001) alert('Network switch cancelled by user');
+                  else alert('Failed to switch network: ' + err.message);
                 }
               }}
             >
@@ -963,41 +656,30 @@ export default function Page() {
     );
   }
 
-  // Landing page with fixed title and smooth carousel
+  // Landing (wallet not connected, not offline)
   if (!address && !isConnected && !isOfflineMode) {
     return (
       <div style={containerStyle}>
         <style>{mobileStyles}</style>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div className="arcade-container" style={{ padding: '130px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
-            <div style={{ 
-              marginBottom: '70px',
-              position: 'relative',
-              zIndex: 10
-            }}>
-              <img 
-                src="/arcade-title.png" 
+        <div className="arcade-container" style={{ padding: '150px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '8vh' }}>
+            <div style={{ marginBottom: '70px', position: 'relative', zIndex: 10 }}>
+              <img
+                src="/arcade-title.png"
                 alt="375 Arcade - Built on Irys"
                 className="arcade-title-fixed"
-                style={{ 
+                style={{
                   maxWidth: responsiveStyles.titleMaxWidth,
                   width: '100%',
                   height: 'auto',
                   filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
-                }} 
+                }}
               />
             </div>
 
-            <div className="carousel-container" style={{ 
-              display: 'flex', 
-              gap: '40px', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              position: 'relative',
-              minHeight: '400px'
-            }}>
+            <div className="carousel-container" style={{ display: 'flex', gap: '40px', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: '400px' }}>
               <button
                 onClick={handleCarouselPrev}
                 style={{
@@ -1022,33 +704,16 @@ export default function Page() {
               </button>
 
               <div className="carousel-game-side carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '300px',
-                height: '450px',
-                opacity: 0.4,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
-                transform: 'scale(0.8)',
-                pointerEvents: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
+                ...cardStyle, minWidth: '280px', maxWidth: '300px', height: '450px',
+                opacity: 0.4, filter: 'blur(2px)', border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)', transform: 'scale(0.8)', pointerEvents: 'none'
               }}>
-                <div style={{ 
-                  width: '80px', 
-                  height: '80px', 
-                  backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '20px',
-                  fontSize: leftGame.icon.startsWith('/') ? '0' : '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                <div style={{
+                  width: '80px', height: '80px',
+                  backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none',
+                  backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
+                  marginBottom: '20px', fontSize: leftGame.icon.startsWith('/') ? '0' : '80px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
                   {!leftGame.icon.startsWith('/') && leftGame.icon}
                 </div>
@@ -1056,47 +721,30 @@ export default function Page() {
               </div>
 
               <div className="carousel-game-center carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '400px',
-                maxWidth: '440px',
-                height: '450px',
+                ...cardStyle, minWidth: '400px', maxWidth: '440px', height: '450px',
                 border: `3px solid ${currentGame.borderColor}`,
                 boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
-                transform: 'scale(1.05)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
+                transform: 'scale(1.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
               }}>
-                <div style={{ 
-                  width: '120px', 
-                  height: '120px', 
-                  backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '25px',
-                  fontSize: currentGame.icon.startsWith('/') ? '0' : '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                <div style={{
+                  width: '120px', height: '120px',
+                  backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none',
+                  backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
+                  marginBottom: '25px', fontSize: currentGame.icon.startsWith('/') ? '0' : '120px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
                   {!currentGame.icon.startsWith('/') && currentGame.icon}
                 </div>
-                <h2 style={{ 
-                  fontSize: '36px', 
-                  marginBottom: '15px', 
-                  color: currentGame.borderColor,
-                  fontWeight: '700',
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                  textAlign: 'center'
+                <h2 style={{
+                  fontSize: '36px', marginBottom: '15px', color: currentGame.borderColor,
+                  fontWeight: '700', textShadow: '2px 2px 4px rgba(0,0,0,0.5)', textAlign: 'center'
                 }}>
                   {currentGame.name}
                 </h2>
                 <p style={{ marginBottom: '30px', color: '#9CA3AF', fontSize: responsiveStyles.fontSize, textAlign: 'center' }}>
                   {currentGame.description}
                 </p>
-                
+
                 {currentGame.id && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
                     <button
@@ -1105,11 +753,11 @@ export default function Page() {
                     >
                       🔗 Connect Wallet & Play
                     </button>
-                    
+
                     <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px', textAlign: 'center' }}>
                       Don't want to connect your wallet and publish your scores? No worries!
                     </p>
-                    
+
                     <button
                       style={{
                         background: 'rgba(25, 25, 35, 0.5)',
@@ -1139,33 +787,16 @@ export default function Page() {
               </div>
 
               <div className="carousel-game-side carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '300px',
-                height: '450px',
-                opacity: 0.4,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
-                transform: 'scale(0.8)',
-                pointerEvents: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
+                ...cardStyle, minWidth: '280px', maxWidth: '300px', height: '450px',
+                opacity: 0.4, filter: 'blur(2px)', border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)', transform: 'scale(0.8)', pointerEvents: 'none'
               }}>
-                <div style={{ 
-                  width: '80px', 
-                  height: '80px', 
-                  backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '20px',
-                  fontSize: rightGame.icon.startsWith('/') ? '0' : '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                <div style={{
+                  width: '80px', height: '80px',
+                  backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none',
+                  backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
+                  marginBottom: '20px', fontSize: rightGame.icon.startsWith('/') ? '0' : '80px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
                   {!rightGame.icon.startsWith('/') && rightGame.icon}
                 </div>
@@ -1196,10 +827,10 @@ export default function Page() {
               </button>
             </div>
           </div>
-          
+
           <Footer />
         </div>
-        
+
         <style jsx>{`
           @keyframes pulse {
             0%, 100% { transform: scale(1.05); }
@@ -1223,27 +854,21 @@ export default function Page() {
             <p style={{ marginBottom: '10px', color: '#B9C1C1' }}>
               <strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}
             </p>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
-              Sign a message to verify your identity
-            </p>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>Sign a message to verify your identity</p>
             <button
               style={buttonStyle}
               onClick={async () => {
                 try {
                   const message = `Authenticate @375 Arcade at ${Date.now()}`;
                   await signMessageAsync({ message });
-                  
                   setAuthed(true);
                   setIsPaid(false);
                   setSelectedGame(null);
                   setGameStarted(false);
                   setGameOver(false);
                 } catch (e: any) {
-                  if (e.message.includes('User rejected')) {
-                    alert('Authentication cancelled by user');
-                  } else {
-                    alert('Authentication failed: ' + e.message);
-                  }
+                  if (e.message?.includes('User rejected')) alert('Authentication cancelled by user');
+                  else alert('Authentication failed: ' + e.message);
                 }
               }}
             >
@@ -1256,7 +881,7 @@ export default function Page() {
     );
   }
 
-  // Connected and authenticated - game selection
+  // Game selection after auth
   if (address && isConnected && authed && !isPaid && !gameStarted && !gameOver) {
     return (
       <div style={containerStyle}>
@@ -1264,31 +889,20 @@ export default function Page() {
         <LeaderboardPanel />
         <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
-            <div style={{ 
-              marginBottom: '50px',
-              position: 'relative',
-              zIndex: 10
-            }}>
-              <img 
-                src="/arcade-title.png" 
+            <div style={{ marginBottom: '50px', position: 'relative', zIndex: 10 }}>
+              <img
+                src="/arcade-title.png"
                 alt="375 Arcade - Built on Irys"
-                style={{ 
+                style={{
                   maxWidth: responsiveStyles.titleMaxWidth,
                   width: '100%',
                   height: 'auto',
                   filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
-                }} 
+                }}
               />
             </div>
 
-            <div style={{ 
-              display: 'flex', 
-              gap: '40px', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              position: 'relative',
-              minHeight: '400px'
-            }}>
+            <div style={{ display: 'flex', gap: '40px', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: '400px' }}>
               <button
                 onClick={handleCarouselPrev}
                 style={{
@@ -1312,29 +926,15 @@ export default function Page() {
               </button>
 
               <div className="carousel-game-side carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '300px',
-                height: '450px',
-                opacity: 0.4,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                transform: 'scale(0.8)',
-                pointerEvents: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
+                ...cardStyle, minWidth: '280px', maxWidth: '300px', height: '450px',
+                opacity: 0.4, filter: 'blur(2px)', border: '2px solid rgba(255, 61, 20, 0.4)',
+                transform: 'scale(0.8)', pointerEvents: 'none'
               }}>
-                <div style={{ 
-                  width: '80px', 
-                  height: '80px', 
-                  backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '20px',
-                  fontSize: leftGame.icon.startsWith('/') ? '0' : '80px'
+                <div style={{
+                  width: '80px', height: '80px',
+                  backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none',
+                  backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
+                  marginBottom: '20px', fontSize: leftGame.icon.startsWith('/') ? '0' : '80px'
                 }}>
                   {!leftGame.icon.startsWith('/') && leftGame.icon}
                 </div>
@@ -1342,34 +942,21 @@ export default function Page() {
               </div>
 
               <div className="carousel-game-center carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '400px',
-                maxWidth: '440px',
-                height: '450px',
+                ...cardStyle, minWidth: '400px', maxWidth: '440px', height: '450px',
                 border: `3px solid ${currentGame.borderColor}`,
                 boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
-                transform: 'scale(1.05)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
+                transform: 'scale(1.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
               }}>
-                <div style={{ 
-                  width: '100px', 
-                  height: '100px', 
-                  backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '25px',
-                  fontSize: currentGame.icon.startsWith('/') ? '0' : '100px'
+                <div style={{
+                  width: '100px', height: '100px',
+                  backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none',
+                  backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
+                  marginBottom: '25px', fontSize: currentGame.icon.startsWith('/') ? '0' : '100px'
                 }}>
                   {!currentGame.icon.startsWith('/') && currentGame.icon}
                 </div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  color: currentGame.borderColor,
+                <h2 style={{
+                  fontSize: '32px', marginBottom: '15px', color: currentGame.borderColor,
                   fontWeight: '700'
                 }}>
                   {currentGame.name}
@@ -1377,11 +964,11 @@ export default function Page() {
                 <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: responsiveStyles.fontSize }}>
                   {currentGame.description}
                 </p>
-                
+
                 {currentGame.id && (
                   <button
-                    style={{ 
-                      ...buttonStyle, 
+                    style={{
+                      ...buttonStyle,
                       animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                       ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
                     }}
@@ -1394,29 +981,15 @@ export default function Page() {
               </div>
 
               <div className="carousel-game-side carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '300px',
-                height: '450px',
-                opacity: 0.4,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                transform: 'scale(0.8)',
-                pointerEvents: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
+                ...cardStyle, minWidth: '280px', maxWidth: '300px', height: '450px',
+                opacity: 0.4, filter: 'blur(2px)', border: '2px solid rgba(255, 61, 20, 0.4)',
+                transform: 'scale(0.8)', pointerEvents: 'none'
               }}>
-                <div style={{ 
-                  width: '80px', 
-                  height: '80px', 
-                  backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '20px',
-                  fontSize: rightGame.icon.startsWith('/') ? '0' : '80px'
+                <div style={{
+                  width: '80px', height: '80px',
+                  backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none',
+                  backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
+                  marginBottom: '20px', fontSize: rightGame.icon.startsWith('/') ? '0' : '80px'
                 }}>
                   {!rightGame.icon.startsWith('/') && rightGame.icon}
                 </div>
@@ -1452,51 +1025,29 @@ export default function Page() {
     );
   }
 
-  // Ready to start
+  // Ready screen
   if ((isOfflineMode || isPaid) && selectedGame && !gameStarted && !gameOver) {
     return (
       <div style={containerStyle}>
-        {/* Arcade title on left during in-game screens */}
-        <div style={{
-          position: 'fixed',
-          top: '140px',   /* >>> moved down */
-          left: '20px',
-          zIndex: 1000
-        }}>
-          <img 
-            src="/arcade-title.png" 
-            alt="375 Arcade - Built on Irys"
-            style={{ 
-              maxWidth: '500px', /* >>> ~2.5x */
-              width: '100%',
-              height: 'auto',
-              filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
-            }} 
-          />
-        </div>
-        
+        <BigLeftTitle />
         <NavigationHeader />
         <LeaderboardPanel />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
-            <div style={{ 
-              width: '64px', 
-              height: '64px', 
-              backgroundImage: selectedGame === 'tetris' ? 'url(/blocks.png)' : 'url(/pacman.png)', 
-              backgroundSize: 'contain', 
-              backgroundRepeat: 'no-repeat', 
-              backgroundPosition: 'center',
-              marginBottom: '20px',
-              margin: '0 auto 20px auto'
+            <div style={{
+              width: '64px', height: '64px',
+              backgroundImage: selectedGame === 'tetris' ? 'url(/blocks.png)' : 'url(/pacman.png)',
+              backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
+              marginBottom: '20px', margin: '0 auto 20px auto'
             }}></div>
             <h2 style={{ marginBottom: '20px', color: '#10b981' }}>
               ✅ Ready to Play {selectedGame === 'tetris' ? 'Tetris' : 'Pacman'}!
             </h2>
             <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px' }}>
-              Press <kbd style={{ 
-                background: 'rgba(255, 61, 20, 0.2)', 
-                padding: '8px 12px', 
-                borderRadius: '6px', 
+              Press <kbd style={{
+                background: 'rgba(255, 61, 20, 0.2)',
+                padding: '8px 12px',
+                borderRadius: '6px',
                 border: '1px solid rgba(255, 61, 20, 0.3)',
                 color: '#FF3D14',
                 fontFamily: 'Monaco, monospace'
@@ -1530,41 +1081,16 @@ export default function Page() {
   if (gameStarted || gameOver) {
     return (
       <div style={containerStyle}>
-        {/* Arcade title on left during gameplay */}
-        <div style={{
-          position: 'fixed',
-          top: '70px',
-          left: '20px',
-          zIndex: 1000
-        }}>
-          <img 
-            src="/arcade-title.png" 
-            alt="375 Arcade - Built on Irys"
-            style={{ 
-              maxWidth: '200px',
-              width: '100%',
-              height: 'auto',
-              filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
-            }} 
-          />
-        </div>
-        
+        <BigLeftTitle />
         <NavigationHeader />
         <LeaderboardPanel />
-        <div style={{ 
-          padding: '80px 20px 20px', 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          minHeight: '100vh'
-        }}>
+        <div style={{ padding: '80px 20px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
           {selectedGame === 'tetris' ? (
             <CanvasTetris
               start={gameStarted}
               onGameOver={(score, lines) => {
                 setGameOver(true);
                 setGameStarted(false);
-                savePB('tetris', score); // ADDED
               }}
               onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('tetris')}
               onPublishScore={handlePublishScore}
@@ -1576,7 +1102,6 @@ export default function Page() {
               onGameOver={(score, level) => {
                 setGameOver(true);
                 setGameStarted(false);
-                savePB('pacman', score); // ADDED
               }}
               onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('pacman')}
               onPublishScore={handlePublishScore}
@@ -1589,7 +1114,6 @@ export default function Page() {
     );
   }
 
-  // Fallback
   return (
     <div style={containerStyle}>
       <NavigationHeader />
