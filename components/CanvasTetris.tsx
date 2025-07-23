@@ -1,4 +1,3 @@
-// components/CanvasTetris.tsx
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
@@ -43,7 +42,6 @@ export default function CanvasTetris({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   
-  // Use a ref for the grid to avoid stale state issues
   const gridRef = useRef<string[][]>(
     Array.from({ length: ROWS }, () => Array(COLS).fill(''))
   );
@@ -69,33 +67,23 @@ export default function CanvasTetris({
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  // init context
   useEffect(()=>{
     ctxRef.current = canvasRef.current!.getContext('2d')!;
     draw();
   },[]);
 
-  // Generate next piece
   const generatePiece = (): ShapeInfo => {
     const index = Math.floor(Math.random() * SHAPES.length);
     const {shape, color, cw} = SHAPES[index];
-    return {
-      shape: shape.map(r=>[...r]),
-      color,
-      cw
-    };
+    return { shape: shape.map(r=>[...r]), color, cw };
   };
 
-  // spawn
   const spawn = () => {
     let pieceInfo: ShapeInfo;
-    
     if (!nextPieceRef.current) {
-      // First piece of the game
       pieceInfo = generatePiece();
       nextPieceRef.current = generatePiece();
     } else {
-      // Use the next piece and generate a new next piece
       pieceInfo = nextPieceRef.current;
       nextPieceRef.current = generatePiece();
     }
@@ -110,7 +98,6 @@ export default function CanvasTetris({
     usedHoldRef.current = false;
   };
 
-  // collision
   const collide = (x:number,y:number,m:number[][]) =>
     m.some((row,dy)=>row.some((v,dx)=>{
       if(!v) return false;
@@ -118,23 +105,18 @@ export default function CanvasTetris({
       return ny<0||ny>=ROWS||nx<0||nx>=COLS||gridRef.current[ny][nx]!=='';
     }));
 
-  // Calculate score based on lines cleared
   const calculateScore = (linesCleared: number): number => {
-    const basePoints = [0, 40, 100, 300, 1200]; // Single, Double, Triple, Tetris
+    const basePoints = [0, 40, 100, 300, 1200];
     let points = basePoints[linesCleared] * levelRef.current;
-    
-    // Combo bonus
     if (linesCleared > 0) {
       comboRef.current++;
       points += comboRef.current * 50 * levelRef.current;
     } else {
       comboRef.current = 0;
     }
-    
     return points;
   };
 
-  // merge + clear
   const merge = () => {
     const g = gridRef.current.map(r=>[...r]);
     const cur = currentRef.current!;
@@ -157,7 +139,7 @@ export default function CanvasTetris({
       const newLines = linesRef.current + cleared;
       const scoreIncrease = calculateScore(cleared);
       const newScore = scoreRef.current + scoreIncrease;
-      const newLevel = Math.floor(newLines / 4) + 1; // Level up every 4 lines for balanced progression
+      const newLevel = Math.floor(newLines / 4) + 1;
       
       linesRef.current = newLines;
       scoreRef.current = newScore;
@@ -167,40 +149,31 @@ export default function CanvasTetris({
       setScore(newScore);
       setLevel(newLevel);
     } else {
-      // Reset combo if no lines cleared
       comboRef.current = 0;
     }
     
-    // Update both ref and state
     gridRef.current = g;
     setGrid(g);
   };
 
-  // Get drop speed based on level - Balanced progression for 2-3 min gameplay
   const getDropSpeed = (): number => {
-    // More balanced speed curve - faster ramp but not exponentially crazy
-    const baseSpeed = 700; // Start at comfortable speed
-    const speedDecrease = 60; // Moderate decrease per level
-    const minSpeed = 100; // Playable minimum speed (not too fast)
-    
+    const baseSpeed = 700;
+    const speedDecrease = 60;
+    const minSpeed = 100;
     const speed = baseSpeed - (levelRef.current - 1) * speedDecrease;
     return Math.max(minSpeed, speed);
   };
 
-  // draw everything
   const draw = () => {
     const ctx = ctxRef.current, cur = currentRef.current;
     if(!ctx||!cur) return;
 
-    // Clear entire canvas
     ctx.clearRect(0, 0, COLS*BLOCK + 180, ROWS*BLOCK);
 
-    // Main game board
     ctx.fillStyle='#111'; ctx.fillRect(0,0,COLS*BLOCK,ROWS*BLOCK);
     ctx.strokeStyle='#333'; ctx.lineWidth=1;
     ctx.strokeRect(0,0,COLS*BLOCK,ROWS*BLOCK);
 
-    // settled blocks
     gridRef.current.forEach((row,r)=>row.forEach((c,x)=>{ 
       if(c){
         ctx.fillStyle=c;
@@ -208,7 +181,6 @@ export default function CanvasTetris({
       } 
     }));
 
-    // ghost piece with proper rotation preview
     let dropY=cur.y;
     while(!collide(cur.x,dropY+1,cur.shape)) dropY++;
     if (dropY !== cur.y) {
@@ -220,23 +192,20 @@ export default function CanvasTetris({
       }));
     }
 
-    // current piece
     ctx.fillStyle=cur.color;
     cur.shape.forEach((row,dy)=>row.forEach((v,dx)=>{ 
       if(v) ctx.fillRect((cur.x+dx)*BLOCK,(cur.y+dy)*BLOCK,BLOCK-1,BLOCK-1);
     }));
 
-    // Right side panel - centered content
     const panelWidth = 178;
     const panelX = COLS*BLOCK;
-    const centerX = panelX + panelWidth/2; // Center point for alignment
+    const centerX = panelX + panelWidth/2;
     
     ctx.fillStyle='#222'; 
     ctx.fillRect(panelX, 0, panelWidth, ROWS*BLOCK);
     ctx.strokeStyle='#fff'; ctx.lineWidth=2; 
     ctx.strokeRect(panelX, 0, panelWidth, ROWS*BLOCK);
     
-    // Centered text
     ctx.fillStyle='#fff'; 
     ctx.font='14px sans-serif';
     ctx.textAlign='center';
@@ -250,13 +219,11 @@ export default function CanvasTetris({
       ctx.fillStyle='#fff';
     }
 
-    // Speed indicator
     ctx.fillStyle='#888';
     ctx.font='10px sans-serif';
     ctx.fillText(`Speed: ${getDropSpeed()}ms`, centerX, 105);
 
-    // Hold piece display - bigger size
-    const boxSize = BLOCK * 3.2; // Increased from 2.5 to 3.2
+    const boxSize = BLOCK * 3.2;
     const holdX = centerX - boxSize/2;
     const holdY = 125;
     
@@ -269,7 +236,7 @@ export default function CanvasTetris({
     
     if(holdRef.current){
       const h = holdRef.current;
-      const scale = 0.8; // Increased from 0.7 to 0.8
+      const scale = 0.8;
       const pieceWidth = h.shape[0].length * (BLOCK * scale);
       const pieceHeight = h.shape.length * (BLOCK * scale);
       const offsetX = holdX + (boxSize - pieceWidth) / 2;
@@ -281,7 +248,6 @@ export default function CanvasTetris({
       }));
     }
 
-    // Next piece display - bigger size
     const nextY = holdY + boxSize + 20;
     const nextX = centerX - boxSize/2;
     
@@ -294,7 +260,7 @@ export default function CanvasTetris({
     
     if(nextPieceRef.current){
       const next = nextPieceRef.current;
-      const scale = 0.8; // Increased from 0.7 to 0.8
+      const scale = 0.8;
       const pieceWidth = next.shape[0].length * (BLOCK * scale);
       const pieceHeight = next.shape.length * (BLOCK * scale);
       const offsetX = nextX + (boxSize - pieceWidth) / 2;
@@ -306,7 +272,6 @@ export default function CanvasTetris({
       }));
     }
 
-    // Controls help - centered
     ctx.fillStyle='#666';
     ctx.font='10px sans-serif';
     ctx.textAlign='center';
@@ -317,11 +282,9 @@ export default function CanvasTetris({
     ctx.fillText('↑ Rotate', centerX, helpY + 45);
     ctx.fillText('C Hold', centerX, helpY + 60);
     
-    // Reset text alignment
     ctx.textAlign='left';
   };
 
-  // step (merge/spawn/draw/loop)
   const step = () => {
     if (gameOverRef.current) return;
     
@@ -331,13 +294,10 @@ export default function CanvasTetris({
       draw();
       timerRef.current = window.setTimeout(step, getDropSpeed());
     } else {
-      // Piece has landed
       merge();
       spawn();
       
-      // Check for game over after spawning new piece
       if(collide(currentRef.current!.x,currentRef.current!.y,currentRef.current!.shape)){
-        console.log('GAME OVER DETECTED!');
         clearTimeout(timerRef.current);
         gameOverRef.current = true;
         setIsGameOver(true);
@@ -350,27 +310,20 @@ export default function CanvasTetris({
     }
   };
 
-  // controls + start with improved responsiveness
   useEffect(()=>{
     if(!ctxRef.current) return;
     
-    console.log('Game effect running, start:', start);
-    
-    // Key state tracking for improved responsiveness
     const keyState = { left: false, right: false, down: false };
     let keyRepeatTimer: number | null = null;
     
-    // Only reset if we're actually starting a new game
     if (start) {
       clearTimeout(timerRef.current);
       gameOverRef.current = false;
       setIsGameOver(false);
       
-      // Reset grid ref when starting new game
       gridRef.current = Array.from({ length: ROWS }, () => Array(COLS).fill(''));
       setGrid(gridRef.current);
       
-      // Reset score refs
       scoreRef.current = 0;
       linesRef.current = 0;
       levelRef.current = 1;
@@ -379,7 +332,6 @@ export default function CanvasTetris({
       setLines(0);
       setLevel(1);
       
-      // Reset pieces
       nextPieceRef.current = undefined;
       holdRef.current = null;
       
@@ -388,34 +340,27 @@ export default function CanvasTetris({
     }
     
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent arrow keys from scrolling the page
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
         e.preventDefault();
       }
       
       if (gameOverRef.current) {
-        // Allow spacebar to show game over modal if it's hidden
         if (e.code === 'Space' && !isGameOver) {
           setIsGameOver(true);
         }
-        console.log('INPUT BLOCKED - GAME OVER STATE');
         return false;
       }
       
       const cur = currentRef.current;
       if (!cur) return;
-      
       let needsRedraw = false;
       
-      // Improved key handling with repeat for smooth movement
       if(e.code === 'ArrowLeft' && !keyState.left) {
         keyState.left = true;
         if (!collide(cur.x-1,cur.y,cur.shape)) {
           cur.x--;
           needsRedraw = true;
         }
-        
-        // Start repeat timer for held key
         keyRepeatTimer = window.setTimeout(() => {
           const repeatMove = () => {
             if (keyState.left && !collide(cur.x-1,cur.y,cur.shape)) {
@@ -423,11 +368,11 @@ export default function CanvasTetris({
               draw();
             }
             if (keyState.left) {
-              keyRepeatTimer = window.setTimeout(repeatMove, 50); // Fast repeat
+              keyRepeatTimer = window.setTimeout(repeatMove, 50);
             }
           };
           repeatMove();
-        }, 150); // Initial delay before repeat
+        }, 150);
       }
       
       if(e.code === 'ArrowRight' && !keyState.right) {
@@ -436,8 +381,6 @@ export default function CanvasTetris({
           cur.x++;
           needsRedraw = true;
         }
-        
-        // Start repeat timer for held key
         keyRepeatTimer = window.setTimeout(() => {
           const repeatMove = () => {
             if (keyState.right && !collide(cur.x+1,cur.y,cur.shape)) {
@@ -445,11 +388,11 @@ export default function CanvasTetris({
               draw();
             }
             if (keyState.right) {
-              keyRepeatTimer = window.setTimeout(repeatMove, 50); // Fast repeat
+              keyRepeatTimer = window.setTimeout(repeatMove, 50);
             }
           };
           repeatMove();
-        }, 150); // Initial delay before repeat
+        }, 150);
       }
       
       if(e.code === 'ArrowDown' && !keyState.down) {
@@ -458,8 +401,6 @@ export default function CanvasTetris({
           cur.y++;
           needsRedraw = true;
         }
-        
-        // Start repeat timer for held key (same as left/right)
         keyRepeatTimer = window.setTimeout(() => {
           const repeatMove = () => {
             if (keyState.down && !collide(cur.x,cur.y+1,cur.shape)) {
@@ -467,54 +408,47 @@ export default function CanvasTetris({
               draw();
             }
             if (keyState.down) {
-              keyRepeatTimer = window.setTimeout(repeatMove, 30); // Faster repeat for down
+              keyRepeatTimer = window.setTimeout(repeatMove, 30);
             }
           };
           repeatMove();
-        }, 100); // Shorter initial delay for down
+        }, 100);
       }
 
       if(e.code==='Space'){
         clearTimeout(timerRef.current);
-        
         while(!collide(cur.x,cur.y+1,cur.shape)) {
           cur.y++;
         }
-        
         merge();
         spawn();
-        
         if(collide(currentRef.current!.x,currentRef.current!.y,currentRef.current!.shape)){
-          console.log('GAME OVER FROM HARD DROP!');
           gameOverRef.current = true;
           setIsGameOver(true);
           onGameOver(scoreRef.current, linesRef.current);
           return false;
         }
-        
         draw();
         timerRef.current = window.setTimeout(step, getDropSpeed());
         return false;
       }
 
       if(e.code==='ArrowUp'){
-  const rot = rotateCW(cur.shape);
-  // Try rotation at current position first
-  if(!collide(cur.x,cur.y,rot)) {
-    cur.shape=rot;
-    needsRedraw = true;
-  } else {
-    // Try wall kicks (move left/right to allow rotation)
-    for(let offset of [-1, 1, -2, 2]) {
-      if(!collide(cur.x + offset, cur.y, rot)) {
-        cur.x += offset;
-        cur.shape=rot;
-        needsRedraw = true;
-        break;
+        const rot = rotateCW(cur.shape);
+        if(!collide(cur.x,cur.y,rot)) {
+          cur.shape=rot;
+          needsRedraw = true;
+        } else {
+          for(let offset of [-1, 1, -2, 2]) {
+            if(!collide(cur.x + offset, cur.y, rot)) {
+              cur.x += offset;
+              cur.shape=rot;
+              needsRedraw = true;
+              break;
+            }
+          }
+        }
       }
-    }
-  }
-}
 
       if(e.code==='KeyC' && !usedHoldRef.current){
         if(!holdRef.current){
@@ -541,7 +475,6 @@ export default function CanvasTetris({
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      // Stop key repeat when key is released
       if (e.code === 'ArrowLeft') {
         keyState.left = false;
         if (keyRepeatTimer) clearTimeout(keyRepeatTimer);
@@ -559,7 +492,6 @@ export default function CanvasTetris({
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     
-    // Start the game loop if start is true
     if(start) {
       timerRef.current = window.setTimeout(step, getDropSpeed());
     }
@@ -573,7 +505,6 @@ export default function CanvasTetris({
   },[start, isGameOver]);
 
   const handleRestart = () => {
-    console.log('RESTART CLICKED');
     if (onPlayAgain) {
       clearTimeout(timerRef.current);
       setIsGameOver(false);
@@ -585,12 +516,11 @@ export default function CanvasTetris({
   const handleTweetScore = () => {
     const gameType = 'TETRIS';
     const score = scoreRef.current;
-    const tweetText = `I scored ${score.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain`;
+    const tweetText = `I scored ${score.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain. https://375-arcade.vercel.app/`;
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
     window.open(tweetUrl, '_blank');
   };
 
-  // Direct Irys upload using browser-compatible approach
   const handlePublishScore = async () => {
     if (!playerAddress) {
       alert('No wallet connected');
@@ -600,14 +530,10 @@ export default function CanvasTetris({
     setIsPublishing(true);
     
     try {
-      console.log('Publishing score to Irys blockchain...');
-      
-      // Check if wallet is available
       if (!(window as any).ethereum) {
         throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
       }
 
-      // Prepare score data
       const scoreData = {
         walletAddress: playerAddress,
         score: scoreRef.current,
@@ -619,7 +545,6 @@ export default function CanvasTetris({
         version: '1.0'
       };
 
-      // Prepare tags for Irys
       const tags = [
         { name: 'Application', value: 'Tetris-Leaderboard' },
         { name: 'Type', value: 'Score' },
@@ -631,41 +556,22 @@ export default function CanvasTetris({
         { name: 'Content-Type', value: 'application/json' }
       ];
 
-      console.log('Score data:', scoreData);
-      console.log('Tags:', tags);
-
-      // For now, let's use our server endpoint but have the user sign the data
       const { ethers } = await import('ethers');
       const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
       
-      // Sign the score data for verification
       const message = `Publish Tetris Score: ${scoreRef.current} points, ${linesRef.current} lines at ${Date.now()}`;
       const signature = await signer.signMessage(message);
-      
-      console.log('User signed score publication');
 
-      // Send to our server endpoint with signature
       const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          data: scoreData, 
-          tags,
-          signature,
-          message
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: scoreData, tags, signature, message })
       });
 
       const result = await response.json();
       
       if (result.success) {
-        console.log('Score published successfully!');
-        console.log('Transaction ID:', result.txHash);
-
-        // Call the parent callback to refresh leaderboard
         if (onPublishScore) {
           onPublishScore(scoreRef.current, linesRef.current);
         }
@@ -677,7 +583,6 @@ export default function CanvasTetris({
 
     } catch (error: any) {
       console.error('Failed to publish score:', error);
-      
       if (error.code === 4001) {
         alert('Transaction cancelled by user');
       } else if (error.message.includes('User rejected')) {
@@ -690,24 +595,16 @@ export default function CanvasTetris({
     }
   };
 
-  // Calculate responsive sizes
   const getResponsiveSize = () => {
     if (typeof window === 'undefined') return { scale: 1 };
-    
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    
-    // Calculate scale based on screen size
     const maxGameWidth = Math.min(screenWidth * 0.6, 800);
     const maxGameHeight = Math.min(screenHeight * 0.7, 600);
-    
     const scaleX = maxGameWidth / (COLS * BLOCK + 180);
     const scaleY = maxGameHeight / (ROWS * BLOCK);
-    const scale = Math.min(scaleX, scaleY, 1.2); // Max scale of 1.2x
-    
-    return {
-      scale: Math.max(scale, 0.5) // Minimum scale of 0.5x
-    };
+    const scale = Math.min(scaleX, scaleY, 1.2);
+    return { scale: Math.max(scale, 0.5) };
   };
 
   const { scale } = getResponsiveSize();
@@ -752,11 +649,9 @@ export default function CanvasTetris({
             minWidth: '300px',
             position: 'relative'
           }}>
-            {/* Close Button */}
             <button
               onClick={() => {
                 setIsGameOver(false);
-                // Keep gameOver state true so spacebar works
               }}
               style={{
                 position: 'absolute',
