@@ -1,3 +1,4 @@
+// components/CanvasPacman.tsx
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
@@ -48,23 +49,27 @@ export default function CanvasPacman({
   playerAddress?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameLoopRef = useRef<number | undefined>(undefined);
+  const rafRef = useRef<number | undefined>(undefined);
+  const lastTimeRef = useRef<number>(0);
+  const accumulatorRef = useRef<number>(0);
+  const FIXED_DT = 50; // 20 updates/sec (authentic feel, smoother rendering via rAF)
+
   const mazeRef = useRef<number[][]>(MAZE.map(row => [...row]));
   
   // Game state
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   
-  // Player state with improved controls and authentic Pacman mechanics
+  // Player state
   const pacmanRef = useRef({ 
     x: 9, 
     y: 15, 
     dir: 'RIGHT' as Direction, 
     nextDir: 'RIGHT' as Direction,
-    moving: true, // Start moving
+    moving: true,
     respawning: false,
     respawnTimer: 0,
-    animFrame: 0 // For mouth animation
+    animFrame: 0
   });
   
   const ghostsRef = useRef<Ghost[]>([
@@ -114,26 +119,22 @@ export default function CanvasPacman({
   const movePacman = () => {
     const pacman = pacmanRef.current;
     
-    // Handle respawn timer with proper freeze mechanics
     if (pacman.respawning) {
       pacman.respawnTimer--;
       if (pacman.respawnTimer <= 0) {
         pacman.respawning = false;
-        pacman.moving = true; // Resume movement after respawn
+        pacman.moving = true;
       }
-      return; // Don't move while respawning
+      return;
     }
     
-    // Only move every few frames for smoother, more controlled movement (20% slower)
-    if (gameStateRef.current.frameCount % 3 !== 0) return;
-    
-    // Try to change direction if possible
+    // try direction change
     const nextOffset = getDirectionOffset(pacman.nextDir);
     if (canMove(pacman.x + nextOffset.dx, pacman.y + nextOffset.dy)) {
       pacman.dir = pacman.nextDir;
     }
     
-    // Move in current direction only if moving is enabled
+    // move if possible
     if (pacman.moving) {
       const offset = getDirectionOffset(pacman.dir);
       const newX = pacman.x + offset.dx;
@@ -143,11 +144,11 @@ export default function CanvasPacman({
         pacman.x = newX;
         pacman.y = newY;
         
-        // Handle tunnel (left-right wrap)
+        // tunnel wrap
         if (pacman.x < 0) pacman.x = COLS - 1;
         if (pacman.x >= COLS) pacman.x = 0;
         
-        // Eat dots
+        // eat
         const cell = mazeRef.current[pacman.y][pacman.x];
         if (cell === 1) {
           mazeRef.current[pacman.y][pacman.x] = 3;
@@ -159,77 +160,60 @@ export default function CanvasPacman({
           gameStateRef.current.score += 50;
           gameStateRef.current.dotsRemaining--;
           gameStateRef.current.powerMode = true;
-          gameStateRef.current.powerTimer = 120; // Slightly longer power mode
-          
-          // Make all ghosts vulnerable
-          ghostsRef.current.forEach(ghost => {
-            ghost.vulnerable = true;
-          });
-          
+          gameStateRef.current.powerTimer = 120;
+          ghostsRef.current.forEach(g => g.vulnerable = true);
           setScore(gameStateRef.current.score);
         }
         
-        // Update animation frame for mouth movement
         pacman.animFrame = (pacman.animFrame + 1) % 8;
       } else {
-        // Stop at walls like authentic Pacman
         pacman.moving = false;
       }
     }
   };
 
   const moveGhosts = () => {
-    // Ghosts move much slower (20% reduction) and only every few frames
-    if (gameStateRef.current.frameCount % 4 !== 0) return; // Slower ghost movement
+    // slower ghosts
+    if (gameStateRef.current.frameCount % 2 !== 0) return;
     
     ghostsRef.current.forEach(ghost => {
-      const directions: Direction[] = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
-      const possibleDirs = directions.filter(dir => {
-        const offset = getDirectionOffset(dir);
-        return canMove(ghost.x + offset.dx, ghost.y + offset.dy);
+      const dirs: Direction[] = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+      const possible = dirs.filter(d => {
+        const o = getDirectionOffset(d);
+        return canMove(ghost.x + o.dx, ghost.y + o.dy);
       });
       
-      if (possibleDirs.length > 0) {
-        // Authentic Pacman AI: prefer moving toward/away from Pacman based on vulnerability
-        const pacman = pacmanRef.current;
-        const dx = pacman.x - ghost.x;
-        const dy = pacman.y - ghost.y;
-        
-        let preferredDir: Direction;
+      if (possible.length > 0) {
+        const pac = pacmanRef.current;
+        const dx = pac.x - ghost.x;
+        const dy = pac.y - ghost.y;
+        let pref: Direction;
         if (Math.abs(dx) > Math.abs(dy)) {
-          preferredDir = dx > 0 ? 'RIGHT' : 'LEFT';
+          pref = dx > 0 ? 'RIGHT' : 'LEFT';
         } else {
-          preferredDir = dy > 0 ? 'DOWN' : 'UP';
+          pref = dy > 0 ? 'DOWN' : 'UP';
         }
-        
-        // If vulnerable, run away from Pacman
         if (ghost.vulnerable) {
-          switch (preferredDir) {
-            case 'UP': preferredDir = 'DOWN'; break;
-            case 'DOWN': preferredDir = 'UP'; break;
-            case 'LEFT': preferredDir = 'RIGHT'; break;
-            case 'RIGHT': preferredDir = 'LEFT'; break;
+          switch (pref) {
+            case 'UP': pref = 'DOWN'; break;
+            case 'DOWN': pref = 'UP'; break;
+            case 'LEFT': pref = 'RIGHT'; break;
+            case 'RIGHT': pref = 'LEFT'; break;
           }
         }
-        
-        // 50% chance to follow preferred direction, 50% random for better balance
-        if (possibleDirs.includes(preferredDir) && Math.random() < 0.5) {
-          ghost.dir = preferredDir;
+        if (possible.includes(pref) && Math.random() < 0.5) {
+          ghost.dir = pref;
         } else {
-          ghost.dir = possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
+          ghost.dir = possible[Math.floor(Math.random()*possible.length)];
         }
       }
       
-      // Move ghost
-      const offset = getDirectionOffset(ghost.dir);
-      const newX = ghost.x + offset.dx;
-      const newY = ghost.y + offset.dy;
-      
-      if (canMove(newX, newY)) {
-        ghost.x = newX;
-        ghost.y = newY;
-        
-        // Handle tunnel
+      const o = getDirectionOffset(ghost.dir);
+      const nx = ghost.x + o.dx;
+      const ny = ghost.y + o.dy;
+      if (canMove(nx, ny)) {
+        ghost.x = nx;
+        ghost.y = ny;
         if (ghost.x < 0) ghost.x = COLS - 1;
         if (ghost.x >= COLS) ghost.x = 0;
       }
@@ -237,25 +221,16 @@ export default function CanvasPacman({
   };
 
   const checkCollisions = () => {
-    const pacman = pacmanRef.current;
-    
-    // Don't check collisions while respawning
-    if (pacman.respawning) return;
+    const pac = pacmanRef.current;
+    if (pac.respawning) return;
     
     ghostsRef.current.forEach(ghost => {
-      if (ghost.x === pacman.x && ghost.y === pacman.y) {
+      if (ghost.x === pac.x && ghost.y === pac.y) {
         if (ghost.vulnerable) {
-          // Eat ghost - bonus points and respawn ghost
           gameStateRef.current.score += 200;
           setScore(gameStateRef.current.score);
-          
-          // Reset ghost to home position and make it non-vulnerable
-          ghost.x = 9;
-          ghost.y = 9;
-          ghost.vulnerable = false;
-          ghost.color = ghost.originalColor;
+          ghost.x = 9; ghost.y = 9; ghost.vulnerable = false; ghost.color = ghost.originalColor;
         } else {
-          // Pacman dies - authentic respawn logic with proper freeze
           gameStateRef.current.lives--;
           setLives(gameStateRef.current.lives);
           
@@ -264,33 +239,24 @@ export default function CanvasPacman({
             setIsGameOver(true);
             onGameOver(gameStateRef.current.score, gameStateRef.current.level);
           } else {
-            // Reset Pacman position with proper respawn mechanics
-            pacman.x = 9;
-            pacman.y = 15;
-            pacman.dir = 'RIGHT';
-            pacman.nextDir = 'RIGHT';
-            pacman.moving = false; // Stop moving during respawn
-            pacman.respawning = true;
-            pacman.respawnTimer = 90; // 4.5 second respawn delay at 20fps
-            pacman.animFrame = 0;
+            // respawn
+            pac.x = 9; pac.y = 15;
+            pac.dir = 'RIGHT'; pac.nextDir = 'RIGHT';
+            pac.moving = false;
+            pac.respawning = true;
+            pac.respawnTimer = 90;
+            pac.animFrame = 0;
             
-            // Reset ghosts and remove vulnerability
-            ghostsRef.current.forEach((g, i) => {
-              g.x = 9;
-              g.y = 9 + (i % 2);
+            ghostsRef.current.forEach((g,i)=> {
+              g.x = 9; g.y = 9 + (i%2);
               g.vulnerable = false;
               g.color = g.originalColor;
             });
-            
-            // Reset power mode
             gameStateRef.current.powerMode = false;
             gameStateRef.current.powerTimer = 0;
             
-            // Brief pause for dramatic effect
             gameStateRef.current.paused = true;
-            setTimeout(() => {
-              gameStateRef.current.paused = false;
-            }, 1500);
+            setTimeout(()=>{ gameStateRef.current.paused = false; }, 800);
           }
         }
       }
@@ -299,152 +265,138 @@ export default function CanvasPacman({
 
   const checkLevelComplete = () => {
     if (gameStateRef.current.dotsRemaining <= 0) {
-      // Level complete!
       gameStateRef.current.level++;
-      gameStateRef.current.score += 1000; // Level bonus
+      gameStateRef.current.score += 1000;
       setLevel(gameStateRef.current.level);
       setScore(gameStateRef.current.score);
       
-      // Reset maze
-      mazeRef.current = MAZE.map(row => [...row]);
-      gameStateRef.current.dotsRemaining = MAZE.flat().filter(cell => cell === 1 || cell === 2).length;
+      mazeRef.current = MAZE.map(r=>[...r]);
+      gameStateRef.current.dotsRemaining = MAZE.flat().filter(c=>c===1||c===2).length;
       
-      // Reset positions
-      const pacman = pacmanRef.current;
-      pacman.x = 9;
-      pacman.y = 15;
-      pacman.dir = 'RIGHT';
-      pacman.nextDir = 'RIGHT';
-      pacman.moving = true;
-      pacman.respawning = false;
-      pacman.animFrame = 0;
+      const pac = pacmanRef.current;
+      pac.x = 9; pac.y = 15; pac.dir='RIGHT'; pac.nextDir='RIGHT';
+      pac.moving = true; pac.respawning=false; pac.animFrame=0;
       
-      // Reset ghosts
-      ghostsRef.current.forEach((ghost, i) => {
-        ghost.x = 9;
-        ghost.y = 9 + (i % 2);
-        ghost.vulnerable = false;
-        ghost.color = ghost.originalColor;
+      ghostsRef.current.forEach((g,i)=>{
+        g.x=9; g.y=9+(i%2); g.vulnerable=false; g.color=g.originalColor;
       });
-      
-      // Reset power mode
-      gameStateRef.current.powerMode = false;
-      gameStateRef.current.powerTimer = 0;
+      gameStateRef.current.powerMode=false;
+      gameStateRef.current.powerTimer=0;
     }
   };
 
-  const gameLoop = () => {
+  // UPDATE one fixed step
+  const update = () => {
     if (gameStateRef.current.gameOver || gameStateRef.current.paused) return;
-    
     gameStateRef.current.frameCount++;
-    
+
     movePacman();
     moveGhosts();
     checkCollisions();
     checkLevelComplete();
-    
-    // Handle power mode timer
+
     if (gameStateRef.current.powerMode) {
       gameStateRef.current.powerTimer--;
       if (gameStateRef.current.powerTimer <= 0) {
         gameStateRef.current.powerMode = false;
-        // Reset all ghosts to normal state
-        ghostsRef.current.forEach(ghost => {
-          ghost.vulnerable = false;
-          ghost.color = ghost.originalColor;
+        ghostsRef.current.forEach(g => {
+          g.vulnerable = false;
+          g.color = g.originalColor;
         });
       }
     }
-    
+  };
+
+  const loop = (time: number) => {
+    if (gameStateRef.current.gameOver) return;
+
+    const prev = lastTimeRef.current || time;
+    let delta = time - prev;
+    lastTimeRef.current = time;
+    accumulatorRef.current += delta;
+
+    while (accumulatorRef.current >= FIXED_DT) {
+      update();
+      accumulatorRef.current -= FIXED_DT;
+    }
+
     draw();
-    // Smooth 20fps for authentic Pacman feel
-    gameLoopRef.current = window.setTimeout(gameLoop, 50);
+    rafRef.current = requestAnimationFrame(loop);
   };
 
   const draw = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
+    // Clear
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Draw maze
+    // Maze
     mazeRef.current.forEach((row, y) => {
       row.forEach((cell, x) => {
-        const pixelX = x * BLOCK;
-        const pixelY = y * BLOCK;
-        
+        const px = x * BLOCK;
+        const py = y * BLOCK;
         switch (cell) {
-          case 0: // Wall
+          case 0:
             ctx.fillStyle = '#0000FF';
-            ctx.fillRect(pixelX, pixelY, BLOCK, BLOCK);
+            ctx.fillRect(px, py, BLOCK, BLOCK);
             break;
-          case 1: // Dot
+          case 1:
             ctx.fillStyle = '#FFFF00';
             ctx.beginPath();
-            ctx.arc(pixelX + BLOCK/2, pixelY + BLOCK/2, 2, 0, Math.PI * 2);
+            ctx.arc(px + BLOCK/2, py + BLOCK/2, 2, 0, Math.PI*2);
             ctx.fill();
             break;
-          case 2: // Power pellet
+          case 2:
             ctx.fillStyle = '#FFFF00';
             ctx.beginPath();
-            ctx.arc(pixelX + BLOCK/2, pixelY + BLOCK/2, 6, 0, Math.PI * 2);
+            ctx.arc(px + BLOCK/2, py + BLOCK/2, 6, 0, Math.PI*2);
             ctx.fill();
             break;
         }
       });
     });
 
-    // Draw Pacman with FIXED COLORS: yellow body, black mouth (corrected)
-    const pacman = pacmanRef.current;
-    const pacX = pacman.x * BLOCK + BLOCK/2;
-    const pacY = pacman.y * BLOCK + BLOCK/2;
-    
-    // Don't draw if respawning and flashing
-    if (!pacman.respawning || pacman.respawnTimer % 10 < 5) {
-      // Draw yellow body first
+    // Pacman
+    const pac = pacmanRef.current;
+    const pacX = pac.x * BLOCK + BLOCK/2;
+    const pacY = pac.y * BLOCK + BLOCK/2;
+
+    if (!pac.respawning || pac.respawnTimer % 10 < 5) {
       ctx.fillStyle = '#FFFF00';
       ctx.beginPath();
-      ctx.arc(pacX, pacY, BLOCK/2 - 2, 0, Math.PI * 2);
+      ctx.arc(pacX, pacY, BLOCK/2 - 2, 0, Math.PI*2);
       ctx.fill();
-      
-      // Then cut out black mouth with animation
+
+      // mouth
       ctx.fillStyle = '#000';
-      ctx.beginPath();
-      const mouthAngle = Math.PI / 3;
-      
-      // Animate mouth opening/closing
-      const mouthOpen = pacman.animFrame < 4;
-      const actualMouthAngle = mouthOpen ? mouthAngle : Math.PI / 6;
-      
+      const mouthAngleBase = Math.PI/3;
+      const mouthOpen = pac.animFrame < 4;
+      const mouthAngle = mouthOpen ? mouthAngleBase : Math.PI/6;
       let startAngle = 0;
-      
-      switch (pacman.dir) {
-        case 'RIGHT': startAngle = actualMouthAngle/2; break;
-        case 'LEFT': startAngle = Math.PI + actualMouthAngle/2; break;
-        case 'UP': startAngle = Math.PI * 1.5 + actualMouthAngle/2; break;
-        case 'DOWN': startAngle = Math.PI * 0.5 + actualMouthAngle/2; break;
+      switch (pac.dir) {
+        case 'RIGHT': startAngle = mouthAngle/2; break;
+        case 'LEFT': startAngle = Math.PI + mouthAngle/2; break;
+        case 'UP': startAngle = 1.5*Math.PI + mouthAngle/2; break;
+        case 'DOWN': startAngle = 0.5*Math.PI + mouthAngle/2; break;
       }
-      
       if (mouthOpen) {
-        ctx.arc(pacX, pacY, BLOCK/2 - 2, startAngle, startAngle + (Math.PI * 2 - actualMouthAngle));
+        ctx.beginPath();
+        ctx.arc(pacX, pacY, BLOCK/2 - 2, startAngle, startAngle + (Math.PI*2 - mouthAngle));
         ctx.lineTo(pacX, pacY);
         ctx.fill();
       }
     }
 
-    // Draw ghosts
+    // Ghosts
     ghostsRef.current.forEach(ghost => {
-      const ghostX = ghost.x * BLOCK + BLOCK/2;
-      const ghostY = ghost.y * BLOCK + BLOCK/2;
-      
-      // Set ghost color based on vulnerability
+      const gx = ghost.x * BLOCK + BLOCK/2;
+      const gy = ghost.y * BLOCK + BLOCK/2;
+
       if (ghost.vulnerable) {
-        // Flash between blue and white when power mode is about to end
         if (gameStateRef.current.powerTimer < 30 && gameStateRef.current.powerTimer % 8 < 4) {
           ctx.fillStyle = '#FFF';
         } else {
@@ -453,59 +405,54 @@ export default function CanvasPacman({
       } else {
         ctx.fillStyle = ghost.originalColor;
       }
-      
-      // Ghost body
+
       ctx.beginPath();
-      ctx.arc(ghostX, ghostY - 2, BLOCK/2 - 2, Math.PI, 0);
-      ctx.fillRect(ghostX - BLOCK/2 + 2, ghostY - 2, BLOCK - 4, BLOCK/2);
+      ctx.arc(gx, gy - 2, BLOCK/2 - 2, Math.PI, 0);
+      ctx.fillRect(gx - BLOCK/2 + 2, gy - 2, BLOCK - 4, BLOCK/2);
       ctx.fill();
-      
-      // Ghost eyes
+
+      // eyes
       ctx.fillStyle = '#FFF';
-      ctx.fillRect(ghostX - 6, ghostY - 8, 4, 4);
-      ctx.fillRect(ghostX + 2, ghostY - 8, 4, 4);
+      ctx.fillRect(gx - 6, gy - 8, 4, 4);
+      ctx.fillRect(gx + 2, gy - 8, 4, 4);
       ctx.fillStyle = '#000';
-      ctx.fillRect(ghostX - 5, ghostY - 7, 2, 2);
-      ctx.fillRect(ghostX + 3, ghostY - 7, 2, 2);
+      ctx.fillRect(gx - 5, gy - 7, 2, 2);
+      ctx.fillRect(gx + 3, gy - 7, 2, 2);
     });
   };
 
-  // Enhanced controls with better responsiveness
+  // Controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameStateRef.current.gameOver) {
-        // Allow spacebar to show game over modal if it's hidden
-        if (e.code === 'Space' && !isGameOver) {
-          setIsGameOver(true);
-        }
+        if (e.code === 'Space' && !isGameOver) setIsGameOver(true);
         return;
       }
-      
-      const pacman = pacmanRef.current;
+      const pac = pacmanRef.current;
       switch (e.code) {
         case 'ArrowUp':
         case 'KeyW':
           e.preventDefault();
-          pacman.nextDir = 'UP';
-          if (!pacman.moving && !pacman.respawning) pacman.moving = true;
+          pac.nextDir = 'UP';
+          if (!pac.moving && !pac.respawning) pac.moving = true;
           break;
         case 'ArrowDown':
         case 'KeyS':
           e.preventDefault();
-          pacman.nextDir = 'DOWN';
-          if (!pacman.moving && !pacman.respawning) pacman.moving = true;
+          pac.nextDir = 'DOWN';
+          if (!pac.moving && !pac.respawning) pac.moving = true;
           break;
         case 'ArrowLeft':
         case 'KeyA':
           e.preventDefault();
-          pacman.nextDir = 'LEFT';
-          if (!pacman.moving && !pacman.respawning) pacman.moving = true;
+          pac.nextDir = 'LEFT';
+          if (!pac.moving && !pac.respawning) pac.moving = true;
           break;
         case 'ArrowRight':
         case 'KeyD':
           e.preventDefault();
-          pacman.nextDir = 'RIGHT';
-          if (!pacman.moving && !pacman.respawning) pacman.moving = true;
+          pac.nextDir = 'RIGHT';
+          if (!pac.moving && !pac.respawning) pac.moving = true;
           break;
       }
     };
@@ -514,10 +461,10 @@ export default function CanvasPacman({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isGameOver]);
 
-  // Game start/reset
+  // Start / reset
   useEffect(() => {
     if (start && !gameStateRef.current.gameOver) {
-      // Reset game state
+      // reset
       gameStateRef.current = {
         score: 0,
         level: 1,
@@ -525,46 +472,33 @@ export default function CanvasPacman({
         powerMode: false,
         powerTimer: 0,
         gameOver: false,
-        dotsRemaining: MAZE.flat().filter(cell => cell === 1 || cell === 2).length,
+        dotsRemaining: MAZE.flat().filter(c=>c===1||c===2).length,
         paused: false,
         frameCount: 0
       };
-      
-      setScore(0);
-      setLevel(1);
-      setLives(3);
-      setIsGameOver(false);
-      
-      // Reset maze
-      mazeRef.current = MAZE.map(row => [...row]);
-      
-      // Reset positions
+      setScore(0); setLevel(1); setLives(3); setIsGameOver(false);
+
+      mazeRef.current = MAZE.map(r=>[...r]);
+
       pacmanRef.current = { 
-        x: 9, 
-        y: 15, 
-        dir: 'RIGHT', 
-        nextDir: 'RIGHT',
-        moving: true, // Start moving immediately
-        respawning: false,
-        respawnTimer: 0,
-        animFrame: 0
+        x: 9, y: 15, dir: 'RIGHT', nextDir: 'RIGHT',
+        moving: true, respawning: false, respawnTimer: 0, animFrame: 0
       };
-      
+
       ghostsRef.current = [
         { x: 9, y: 9, dir: 'UP', color: '#FF0000', vulnerable: false, originalColor: '#FF0000' },
         { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF', vulnerable: false, originalColor: '#FFB8FF' },
         { x: 9, y: 10, dir: 'UP', color: '#00FFFF', vulnerable: false, originalColor: '#00FFFF' },
         { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847', vulnerable: false, originalColor: '#FFB847' }
       ];
-      
-      // Start game loop with smooth timing
-      gameLoopRef.current = window.setTimeout(gameLoop, 50);
+
+      lastTimeRef.current = performance.now();
+      accumulatorRef.current = 0;
+      rafRef.current = requestAnimationFrame(loop);
     }
-    
+
     return () => {
-      if (gameLoopRef.current) {
-        clearTimeout(gameLoopRef.current);
-      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [start]);
 
@@ -578,8 +512,8 @@ export default function CanvasPacman({
 
   const handleTweetScore = () => {
     const gameType = 'PACMAN';
-    const score = gameStateRef.current.score;
-    const tweetText = `I scored ${score.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain`;
+    const s = gameStateRef.current.score;
+    const tweetText = `I scored ${s.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain`;
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
     window.open(tweetUrl, '_blank');
   };
@@ -591,14 +525,9 @@ export default function CanvasPacman({
     }
 
     setIsPublishing(true);
-    
     try {
-      // Check if wallet is available
-      if (!(window as any).ethereum) {
-        throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
-      }
+      if (!(window as any).ethereum) throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
 
-      // Prepare score data
       const scoreData = {
         walletAddress: playerAddress,
         score: gameStateRef.current.score,
@@ -609,7 +538,6 @@ export default function CanvasPacman({
         version: '1.0'
       };
 
-      // Prepare tags for Irys
       const tags = [
         { name: 'Application', value: 'Pacman-Leaderboard' },
         { name: 'Type', value: 'Score' },
@@ -620,77 +548,49 @@ export default function CanvasPacman({
         { name: 'Content-Type', value: 'application/json' }
       ];
 
-      // Sign the score data for verification
       const { ethers } = await import('ethers');
       const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
-      
       const message = `Publish Pacman Score: ${gameStateRef.current.score} points, level ${gameStateRef.current.level} at ${Date.now()}`;
       const signature = await signer.signMessage(message);
 
-      // Send to our server endpoint with signature
       const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          data: scoreData, 
-          tags,
-          signature,
-          message
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: scoreData, tags, signature, message })
       });
 
       const result = await response.json();
-      
       if (result.success) {
-        if (onPublishScore) {
-          onPublishScore(gameStateRef.current.score, gameStateRef.current.level);
-        }
-
+        if (onPublishScore) onPublishScore(gameStateRef.current.score, gameStateRef.current.level);
         alert(`🎉 Score published to blockchain!\n\nTransaction ID: ${result.txHash}\n\nYour Pacman score is now permanently stored on the Irys blockchain!`);
       } else {
         throw new Error(result.error || 'Upload failed');
       }
-
-    } catch (error: any) {
-      console.error('Failed to publish score:', error);
-      
-      if (error.code === 4001) {
-        alert('Transaction cancelled by user');
-      } else if (error.message.includes('User rejected')) {
-        alert('Transaction rejected by user');
-      } else {
-        alert(`Failed to publish score: ${error.message}`);
-      }
+    } catch (e: any) {
+      console.error('Failed to publish score:', e);
+      if (e.code === 4001) alert('Transaction cancelled by user');
+      else if (e.message.includes('User rejected')) alert('Transaction rejected by user');
+      else alert(`Failed to publish score: ${e.message}`);
     } finally {
       setIsPublishing(false);
     }
   };
 
-  // Calculate responsive sizes
+  // Responsive scale
   const getResponsiveSize = () => {
-    if (typeof window === 'undefined') return { scale: 1, containerWidth: CANVAS_WIDTH };
-    
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    
-    // Calculate scale based on screen size
-    const maxGameWidth = Math.min(screenWidth * 0.8, 600);
-    const maxGameHeight = Math.min(screenHeight * 0.6, 500);
-    
-    const scaleX = maxGameWidth / CANVAS_WIDTH;
-    const scaleY = maxGameHeight / CANVAS_HEIGHT;
-    const scale = Math.min(scaleX, scaleY, 1.5); // Max scale of 1.5x
-    
-    return {
-      scale: Math.max(scale, 0.6), // Minimum scale of 0.6x
-      containerWidth: CANVAS_WIDTH * scale
-    };
+    if (typeof window === 'undefined') return { scale: 1 };
+    const sw = window.innerWidth;
+    const sh = window.innerHeight;
+    const maxW = Math.min(sw * 0.8, 600);
+    const maxH = Math.min(sh * 0.6, 500);
+    const scaleX = maxW / CANVAS_WIDTH;
+    const scaleY = maxH / CANVAS_HEIGHT;
+    const scale = Math.min(scaleX, scaleY, 1.5);
+    return { scale: Math.max(scale, 0.6) };
   };
 
-  const { scale, containerWidth } = getResponsiveSize();
+  const { scale } = getResponsiveSize();
 
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -707,8 +607,8 @@ export default function CanvasPacman({
           imageRendering: 'pixelated'
         }}
       />
-      
-      {/* Game UI - Responsive */}
+
+      {/* Score/level/lives HUD - above canvas, scaled */}
       <div style={{
         position: 'absolute',
         top: `${-50 * scale}px`,
@@ -721,25 +621,22 @@ export default function CanvasPacman({
         fontSize: `${16 * scale}px`,
         fontWeight: 'bold',
         transform: `scale(${scale})`,
-        transformOrigin: 'top left'
+        transformOrigin: 'top left',
+        pointerEvents: 'none'
       }}>
         <div>Score: {score}</div>
         <div>Level: {level}</div>
         <div>Lives: {'❤️'.repeat(lives)}</div>
       </div>
 
-      {/* Controls help - Responsive */}
+      {/* Controls help - moved BELOW the canvas, no overlap */}
       <div style={{
-        position: 'absolute',
-        bottom: `${-80 * scale}px`,
-        left: '0',
-        right: '0',
-        textAlign: 'center',
+        marginTop: `${10}px`,
         color: '#FFD700',
-        fontSize: `${12 * scale}px`,
+        fontSize: '12px',
         fontFamily: 'monospace',
-        transform: `scale(${scale})`,
-        transformOrigin: 'bottom left'
+        textAlign: 'center',
+        pointerEvents: 'none'
       }}>
         <div>Arrow Keys or WASD to move</div>
         <div>Eat all dots to advance levels!</div>
@@ -771,12 +668,8 @@ export default function CanvasPacman({
             minWidth: '300px',
             position: 'relative'
           }}>
-            {/* Close Button */}
             <button
-              onClick={() => {
-                setIsGameOver(false);
-                // Keep gameOver state true so spacebar works
-              }}
+              onClick={() => { setIsGameOver(false); }}
               style={{
                 position: 'absolute',
                 top: '10px',
