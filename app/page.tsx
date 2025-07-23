@@ -294,15 +294,15 @@ export default function Page() {
       alt="Bruce - 375ai Mascot" 
       style={{ 
         position: 'fixed',
-        bottom: '10px', // Changed from top: 25% to bottom: 10px to align foot with footer
+        bottom: '10px',
         left: '-3%',
-        width: '31.25vw', // 25% bigger (was 25vw)
+        width: '31.25vw',
         height: 'auto',
-        minWidth: '375px', // 25% bigger (was 300px)
-        maxWidth: '625px', // 25% bigger (was 500px)
+        minWidth: '375px',
+        maxWidth: '625px',
         opacity: 0.6,
         filter: 'drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5))',
-        zIndex: -1, // Put Bruce behind everything
+        zIndex: 10,
         pointerEvents: 'none'
       }} 
     />
