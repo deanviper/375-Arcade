@@ -1,4 +1,3 @@
-// components/CanvasTetris.tsx
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
@@ -105,12 +104,14 @@ export default function CanvasTetris({
       return ny<0||ny>=ROWS||nx<0||nx>=COLS||gridRef.current[ny][nx]!=='';
     }));
 
-  const calculateScore = (lc: number): number => {
-    const base = [0, 40, 100, 300, 1200];
-    let pts = base[lc] * levelRef.current;
-    if (lc > 0) { comboRef.current++; pts += comboRef.current * 50 * levelRef.current; }
-    else comboRef.current = 0;
-    return pts;
+  const calculateScore = (linesCleared: number): number => {
+    const basePoints = [0, 40, 100, 300, 1200];
+    let points = basePoints[linesCleared] * levelRef.current;
+    if (linesCleared > 0) {
+      comboRef.current++;
+      points += comboRef.current * 50 * levelRef.current;
+    } else comboRef.current = 0;
+    return points;
   };
 
   const merge = () => {
@@ -129,14 +130,12 @@ export default function CanvasTetris({
         cleared++; r++;
       }
     }
-    if(cleared>0){
+    if(cleared > 0){
       const newLines = linesRef.current + cleared;
-      const inc = calculateScore(cleared);
-      const newScore = scoreRef.current + inc;
+      const scoreIncrease = calculateScore(cleared);
+      const newScore = scoreRef.current + scoreIncrease;
       const newLevel = Math.floor(newLines / 4) + 1;
-      linesRef.current = newLines;
-      scoreRef.current = newScore;
-      levelRef.current = newLevel;
+      linesRef.current = newLines; scoreRef.current = newScore; levelRef.current = newLevel;
       setLines(newLines); setScore(newScore); setLevel(newLevel);
     } else comboRef.current = 0;
 
@@ -144,22 +143,26 @@ export default function CanvasTetris({
     setGrid(g);
   };
 
-  const getDropSpeed = (): number => {
-    const base = 700;
-    const dec = 60;
-    const min = 100;
+  const getDropSpeed = () => {
+    const base = 700, dec = 60, min = 100;
     return Math.max(min, base - (levelRef.current - 1) * dec);
   };
 
   const draw = () => {
     const ctx = ctxRef.current, cur = currentRef.current;
     if(!ctx||!cur) return;
+
     ctx.clearRect(0, 0, COLS*BLOCK + 180, ROWS*BLOCK);
+
     ctx.fillStyle='#111'; ctx.fillRect(0,0,COLS*BLOCK,ROWS*BLOCK);
-    ctx.strokeStyle='#333'; ctx.lineWidth=1; ctx.strokeRect(0,0,COLS*BLOCK,ROWS*BLOCK);
+    ctx.strokeStyle='#333'; ctx.lineWidth=1;
+    ctx.strokeRect(0,0,COLS*BLOCK,ROWS*BLOCK);
 
     gridRef.current.forEach((row,r)=>row.forEach((c,x)=>{
-      if(c){ ctx.fillStyle=c; ctx.fillRect(x*BLOCK,r*BLOCK,BLOCK-1,BLOCK-1); }
+      if(c){
+        ctx.fillStyle=c;
+        ctx.fillRect(x*BLOCK,r*BLOCK,BLOCK-1,BLOCK-1);
+      }
     }));
 
     let dropY=cur.y;
@@ -167,8 +170,9 @@ export default function CanvasTetris({
     if (dropY !== cur.y) {
       ctx.fillStyle='rgba(255,255,255,0.2)';
       cur.shape.forEach((row,dy)=>row.forEach((v,dx)=>{
-        if(v && dropY+dy >=0 && dropY+dy<ROWS && cur.x+dx>=0 && cur.x+dx<COLS)
+        if(v && dropY+dy >= 0 && dropY+dy < ROWS && cur.x+dx >= 0 && cur.x+dx < COLS) {
           ctx.fillRect((cur.x+dx)*BLOCK,(dropY+dy)*BLOCK,BLOCK-1,BLOCK-1);
+        }
       }));
     }
 
@@ -181,10 +185,14 @@ export default function CanvasTetris({
     const panelX = COLS*BLOCK;
     const centerX = panelX + panelWidth/2;
 
-    ctx.fillStyle='#222'; ctx.fillRect(panelX, 0, panelWidth, ROWS*BLOCK);
-    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.strokeRect(panelX, 0, panelWidth, ROWS*BLOCK);
+    ctx.fillStyle='#222';
+    ctx.fillRect(panelX, 0, panelWidth, ROWS*BLOCK);
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+    ctx.strokeRect(panelX, 0, panelWidth, ROWS*BLOCK);
 
-    ctx.fillStyle='#fff'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle='#fff';
+    ctx.font='14px sans-serif';
+    ctx.textAlign='center';
     ctx.fillText(`Score: ${scoreRef.current}`, centerX, 25);
     ctx.fillText(`Lines: ${linesRef.current}`, centerX, 45);
     ctx.fillText(`Level: ${levelRef.current}`, centerX, 65);
@@ -195,50 +203,57 @@ export default function CanvasTetris({
       ctx.fillStyle='#fff';
     }
 
-    ctx.fillStyle='#888'; ctx.font='10px sans-serif';
+    ctx.fillStyle='#888';
+    ctx.font='10px sans-serif';
     ctx.fillText(`Speed: ${getDropSpeed()}ms`, centerX, 105);
 
     const boxSize = BLOCK * 3.2;
     const holdX = centerX - boxSize/2;
     const holdY = 125;
 
-    ctx.strokeStyle='#666'; ctx.strokeRect(holdX, holdY, boxSize, boxSize);
-    ctx.fillStyle='#fff'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.strokeStyle='#666';
+    ctx.strokeRect(holdX, holdY, boxSize, boxSize);
+    ctx.fillStyle='#fff';
+    ctx.font='12px sans-serif';
     ctx.fillText('Hold (C)', centerX, holdY - 5);
 
     if(holdRef.current){
       const h = holdRef.current;
       const scale = 0.8;
-      const pw = h.shape[0].length * (BLOCK*scale);
-      const ph = h.shape.length * (BLOCK*scale);
-      const ox = holdX + (boxSize - pw) / 2;
-      const oy = holdY + (boxSize - ph) / 2;
+      const pieceWidth = h.shape[0].length * (BLOCK * scale);
+      const pieceHeight = h.shape.length * (BLOCK * scale);
+      const offsetX = holdX + (boxSize - pieceWidth) / 2;
+      const offsetY = holdY + (boxSize - pieceHeight) / 2;
       ctx.fillStyle = h.color;
       h.shape.forEach((row,dy)=>row.forEach((v,dx)=>{
-        if(v) ctx.fillRect(ox + dx*(BLOCK*scale), oy + dy*(BLOCK*scale), (BLOCK*scale)-1, (BLOCK*scale)-1);
+        if(v) ctx.fillRect(offsetX + dx*(BLOCK*scale), offsetY + dy*(BLOCK*scale), (BLOCK*scale)-1, (BLOCK*scale)-1);
       }));
     }
 
     const nextY = holdY + boxSize + 20;
     const nextX = centerX - boxSize/2;
-    ctx.strokeStyle='#666'; ctx.strokeRect(nextX, nextY, boxSize, boxSize);
-    ctx.fillStyle='#fff'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.strokeStyle='#666';
+    ctx.strokeRect(nextX, nextY, boxSize, boxSize);
+    ctx.fillStyle='#fff';
+    ctx.font='12px sans-serif';
     ctx.fillText('Next', centerX, nextY - 5);
 
     if(nextPieceRef.current){
-      const n = nextPieceRef.current;
+      const next = nextPieceRef.current;
       const scale = 0.8;
-      const pw = n.shape[0].length * (BLOCK*scale);
-      const ph = n.shape.length * (BLOCK*scale);
-      const ox = nextX + (boxSize - pw) / 2;
-      const oy = nextY + (boxSize - ph) / 2;
-      ctx.fillStyle = n.color;
-      n.shape.forEach((row,dy)=>row.forEach((v,dx)=>{
-        if(v) ctx.fillRect(ox + dx*(BLOCK*scale), oy + dy*(BLOCK*scale), (BLOCK*scale)-1, (BLOCK*scale)-1);
+      const pieceWidth = next.shape[0].length * (BLOCK * scale);
+      const pieceHeight = next.shape.length * (BLOCK * scale);
+      const offsetX = nextX + (boxSize - pieceWidth) / 2;
+      const offsetY = nextY + (boxSize - pieceHeight) / 2;
+      ctx.fillStyle = next.color;
+      next.shape.forEach((row,dy)=>row.forEach((v,dx)=>{
+        if(v) ctx.fillRect(offsetX + dx*(BLOCK*scale), offsetY + dy*(BLOCK*scale), (BLOCK*scale)-1, (BLOCK*scale)-1);
       }));
     }
 
-    ctx.fillStyle='#666'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle='#666';
+    ctx.font='10px sans-serif';
+    ctx.textAlign='center';
     const helpY = nextY + boxSize + 30;
     ctx.fillText('← → Move', centerX, helpY);
     ctx.fillText('↓ Soft Drop', centerX, helpY + 15);
@@ -280,55 +295,62 @@ export default function CanvasTetris({
       clearTimeout(timerRef.current);
       gameOverRef.current = false;
       setIsGameOver(false);
+
       gridRef.current = Array.from({ length: ROWS }, () => Array(COLS).fill(''));
       setGrid(gridRef.current);
-      scoreRef.current = 0; linesRef.current = 0; levelRef.current = 1; comboRef.current = 0;
+
+      scoreRef.current = 0;
+      linesRef.current = 0;
+      levelRef.current = 1;
+      comboRef.current = 0;
       setScore(0); setLines(0); setLevel(1);
-      nextPieceRef.current = undefined; holdRef.current = null;
-      spawn(); draw();
+
+      nextPieceRef.current = undefined;
+      holdRef.current = null;
+
+      spawn(); 
+      draw();
     }
 
-    const kd = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
       if (gameOverRef.current) {
         if (e.code === 'Space' && !isGameOver) setIsGameOver(true);
         return false;
       }
-      const cur = currentRef.current; if(!cur) return;
-      let redraw = false;
+      const cur = currentRef.current; if (!cur) return;
+      let needsRedraw = false;
 
-      if(e.code==='ArrowLeft' && !keyState.left){
+      if(e.code === 'ArrowLeft' && !keyState.left) {
         keyState.left = true;
-        if (!collide(cur.x-1,cur.y,cur.shape)) { cur.x--; redraw = true; }
-        keyRepeatTimer = window.setTimeout(()=>{
-          const rep=()=>{ if(keyState.left && !collide(cur.x-1,cur.y,cur.shape)){ cur.x--; draw(); }
-            if(keyState.left) keyRepeatTimer = window.setTimeout(rep,50); };
-          rep();
+        if (!collide(cur.x-1,cur.y,cur.shape)) { cur.x--; needsRedraw = true; }
+        keyRepeatTimer = window.setTimeout(function repeat() {
+          if (keyState.left && !collide(cur.x-1,cur.y,cur.shape)) { cur.x--; draw(); }
+          if (keyState.left) keyRepeatTimer = window.setTimeout(repeat, 50);
         },150);
       }
-      if(e.code==='ArrowRight' && !keyState.right){
+      if(e.code === 'ArrowRight' && !keyState.right) {
         keyState.right = true;
-        if (!collide(cur.x+1,cur.y,cur.shape)) { cur.x++; redraw = true; }
-        keyRepeatTimer = window.setTimeout(()=>{
-          const rep=()=>{ if(keyState.right && !collide(cur.x+1,cur.y,cur.shape)){ cur.x++; draw(); }
-            if(keyState.right) keyRepeatTimer = window.setTimeout(rep,50); };
-          rep();
+        if (!collide(cur.x+1,cur.y,cur.shape)) { cur.x++; needsRedraw = true; }
+        keyRepeatTimer = window.setTimeout(function repeat() {
+          if (keyState.right && !collide(cur.x+1,cur.y,cur.shape)) { cur.x++; draw(); }
+          if (keyState.right) keyRepeatTimer = window.setTimeout(repeat, 50);
         },150);
       }
-      if(e.code==='ArrowDown' && !keyState.down){
+      if(e.code === 'ArrowDown' && !keyState.down) {
         keyState.down = true;
-        if (!collide(cur.x,cur.y+1,cur.shape)) { cur.y++; redraw = true; }
-        keyRepeatTimer = window.setTimeout(()=>{
-          const rep=()=>{ if(keyState.down && !collide(cur.x,cur.y+1,cur.shape)){ cur.y++; draw(); }
-            if(keyState.down) keyRepeatTimer = window.setTimeout(rep,30); };
-          rep();
+        if (!collide(cur.x,cur.y+1,cur.shape)) { cur.y++; needsRedraw = true; }
+        keyRepeatTimer = window.setTimeout(function repeat() {
+          if (keyState.down && !collide(cur.x,cur.y+1,cur.shape)) { cur.y++; draw(); }
+          if (keyState.down) keyRepeatTimer = window.setTimeout(repeat, 30);
         },100);
       }
 
       if(e.code==='Space'){
         clearTimeout(timerRef.current);
         while(!collide(cur.x,cur.y+1,cur.shape)) cur.y++;
-        merge(); spawn();
+        merge();
+        spawn();
         if(collide(currentRef.current!.x,currentRef.current!.y,currentRef.current!.shape)){
           gameOverRef.current = true;
           setIsGameOver(true);
@@ -342,50 +364,52 @@ export default function CanvasTetris({
 
       if(e.code==='ArrowUp'){
         const rot = rotateCW(cur.shape);
-        if(!collide(cur.x,cur.y,rot)){
-          cur.shape=rot; redraw = true;
+        if(!collide(cur.x,cur.y,rot)) {
+          cur.shape=rot; needsRedraw = true;
         } else {
-          for(let off of [-1,1,-2,2]){
-            if(!collide(cur.x+off,cur.y,rot)){
-              cur.x+=off; cur.shape=rot; redraw = true; break;
+          for(let offset of [-1,1,-2,2]) {
+            if(!collide(cur.x+offset,cur.y,rot)) {
+              cur.x+=offset; cur.shape=rot; needsRedraw = true; break;
             }
           }
         }
       }
 
       if(e.code==='KeyC' && !usedHoldRef.current){
-        if(!holdRef.current){ holdRef.current={...cur}; spawn(); }
-        else{
+        if(!holdRef.current){
+          holdRef.current={...cur};
+          spawn();
+        } else {
           const tmp=holdRef.current!;
           holdRef.current={...cur};
-          currentRef.current={
-            x:Math.floor(COLS/2 - tmp.shape[0].length/2),
-            y:0,
-            shape:tmp.shape.map(r=>[...r]),
-            color:tmp.color,
-            cw:tmp.cw
+          currentRef.current={ 
+            x:Math.floor(COLS/2 - tmp.shape[0].length/2), 
+            y:0, 
+            shape:tmp.shape.map(r=>[...r]), 
+            color:tmp.color, 
+            cw:tmp.cw 
           };
         }
-        usedHoldRef.current=true; redraw = true;
+        usedHoldRef.current=true;
+        needsRedraw = true;
       }
 
-      if (redraw) draw();
+      if (needsRedraw) draw();
     };
 
-    const ku = (e: KeyboardEvent) => {
-      if(e.code==='ArrowLeft'){ keyState.left=false; if(keyRepeatTimer) clearTimeout(keyRepeatTimer); }
-      if(e.code==='ArrowRight'){ keyState.right=false; if(keyRepeatTimer) clearTimeout(keyRepeatTimer); }
-      if(e.code==='ArrowDown'){ keyState.down=false; if(keyRepeatTimer) clearTimeout(keyRepeatTimer); }
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'ArrowLeft') { keyState.left=false; if (keyRepeatTimer) clearTimeout(keyRepeatTimer); }
+      if (e.code === 'ArrowRight'){ keyState.right=false; if (keyRepeatTimer) clearTimeout(keyRepeatTimer); }
+      if (e.code === 'ArrowDown') { keyState.down=false; if (keyRepeatTimer) clearTimeout(keyRepeatTimer); }
     };
 
-    window.addEventListener('keydown', kd);
-    window.addEventListener('keyup', ku);
-
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     if(start) timerRef.current = window.setTimeout(step, getDropSpeed());
 
     return ()=>{
-      window.removeEventListener('keydown', kd);
-      window.removeEventListener('keyup', ku);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
       clearTimeout(timerRef.current);
       if (keyRepeatTimer) clearTimeout(keyRepeatTimer);
     };
@@ -402,18 +426,18 @@ export default function CanvasTetris({
 
   const handleTweetScore = () => {
     const gameType = 'TETRIS';
-    const pts = scoreRef.current;
-    const tweetText = `I scored ${pts.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain. https://375-arcade.vercel.app/`;
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-    window.open(tweetUrl, '_blank');
+    const s = scoreRef.current;
+    const tweetText = `I scored ${s.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain. https://375-arcade.vercel.app/`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+    window.open(url, '_blank');
   };
 
   const handlePublishScore = async () => {
     if (!playerAddress) { alert('No wallet connected'); return; }
     setIsPublishing(true);
     try {
-      if (!(window as any).ethereum) throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
-      const scoreData = {
+      if (!(window as any).ethereum) throw new Error('No wallet found.');
+      const data = {
         walletAddress: playerAddress,
         score: scoreRef.current,
         lines: linesRef.current,
@@ -433,31 +457,26 @@ export default function CanvasTetris({
         { name: 'Timestamp', value: Date.now().toString() },
         { name: 'Content-Type', value: 'application/json' }
       ];
-
       const { ethers } = await import('ethers');
       const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
       const message = `Publish Tetris Score: ${scoreRef.current} points, ${linesRef.current} lines at ${Date.now()}`;
       const signature = await signer.signMessage(message);
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: scoreData, tags, signature, message })
+      const res = await fetch('/api/upload', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, tags, signature, message })
       });
-
-      const result = await response.json();
+      const result = await res.json();
       if (result.success) {
-        onPublishScore && onPublishScore(scoreRef.current, linesRef.current);
-        alert(`🎉 Score published to blockchain!\n\nTransaction ID: ${result.txHash}\n\nYour score is now permanently stored on the Irys blockchain and will appear on the leaderboard.`);
+        if (onPublishScore) onPublishScore(scoreRef.current, linesRef.current);
+        alert(`🎉 Score published to blockchain!\n\nTransaction ID: ${result.txHash}`);
       } else throw new Error(result.error || 'Upload failed');
-    } catch (e: any) {
+    } catch (e:any) {
       if (e.code === 4001) alert('Transaction cancelled by user');
       else if (e.message?.includes('User rejected')) alert('Transaction rejected by user');
       else alert(`Failed to publish score: ${e.message}`);
-    } finally {
-      setIsPublishing(false);
-    }
+    } finally { setIsPublishing(false); }
   };
 
   const getResponsiveSize = () => {
@@ -470,7 +489,6 @@ export default function CanvasTetris({
     const scale = Math.min(sx, sy, 1.2);
     return { scale: Math.max(scale, 0.5) };
   };
-
   const { scale } = getResponsiveSize();
 
   return (
@@ -490,10 +508,8 @@ export default function CanvasTetris({
 
       {isGameOver && (
         <div style={{
-          position: 'fixed',
-          top: 0, left: 0, width: '100vw', height: '100vh',
-          background: 'rgba(0,0,0,0.9)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'white', fontSize: '24px', fontFamily: 'sans-serif', zIndex: 9999
         }}>
           <div style={{
@@ -501,19 +517,17 @@ export default function CanvasTetris({
             textAlign: 'center', border: '2px solid #666', minWidth: '300px', position: 'relative'
           }}>
             <button
-              onClick={() => { setIsGameOver(false); }}
+              onClick={() => setIsGameOver(false)}
               style={{
                 position: 'absolute', top: '10px', right: '10px',
                 background: 'transparent', border: 'none', color: '#999', fontSize: '24px',
-                cursor: 'pointer', width: '30px', height: '30px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                borderRadius: '50%', transition: 'all 0.2s'
+                cursor: 'pointer', width: '30px', height: '30px', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', borderRadius: '50%',
+                transition: 'all 0.2s'
               }}
-              onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#999'; }}
-            >
-              ×
-            </button>
+              onMouseOver={e => { e.currentTarget.style.background='rgba(255,255,255,0.1)'; e.currentTarget.style.color='#fff'; }}
+              onMouseOut={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#999'; }}
+            >×</button>
 
             <h2 style={{ margin: '0 0 20px 0', color: '#fff' }}>Game Over!</h2>
             <div style={{ fontSize: '18px', marginBottom: '20px' }}>
@@ -523,31 +537,24 @@ export default function CanvasTetris({
             </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button
-                onClick={handleRestart}
-                style={{ padding: '12px 24px', fontSize: '16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-              >
-                Play Again
-              </button>
+              <button onClick={handleRestart} style={{
+                padding: '12px 24px', fontSize: '16px', background: '#10b981',
+                color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer'
+              }}>Play Again</button>
 
-              <button
-                onClick={handleTweetScore}
-                style={{ padding: '12px 24px', fontSize: '16px', background: '#1DA1F2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-              >
-                🐦 Tweet Score
-              </button>
+              <button onClick={handleTweetScore} style={{
+                padding: '12px 24px', fontSize: '16px', background: '#1DA1F2',
+                color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer'
+              }}>🐦 Tweet Score</button>
 
               {playerAddress && (
-                <button
-                  onClick={handlePublishScore}
-                  disabled={isPublishing}
-                  style={{
-                    padding: '12px 24px', fontSize: '16px',
-                    background: isPublishing ? '#7f8c8d' : '#6366f1',
-                    color: 'white', border: 'none', borderRadius: '5px',
-                    cursor: isPublishing ? 'not-allowed' : 'pointer', opacity: isPublishing ? 0.7 : 1
-                  }}
-                >
+                <button onClick={handlePublishScore} disabled={isPublishing} style={{
+                  padding: '12px 24px', fontSize: '16px',
+                  background: isPublishing ? '#7f8c8d' : '#6366f1',
+                  color: 'white', border: 'none', borderRadius: '5px',
+                  cursor: isPublishing ? 'not-allowed' : 'pointer',
+                  opacity: isPublishing ? 0.7 : 1
+                }}>
                   {isPublishing ? '⏳ Publishing...' : '🏆 Publish to Leaderboards'}
                 </button>
               )}
