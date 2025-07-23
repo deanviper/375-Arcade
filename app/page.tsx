@@ -604,7 +604,6 @@ export default function Page() {
                     textAlign: 'center',
                     color: '#E5E7EB'
                   }}>
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                   </div>
                   <div style={{ flex: 1 }}>
