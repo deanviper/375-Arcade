@@ -273,7 +273,8 @@ export default function CanvasPacman({
     }
     
     draw();
-    gameLoopRef.current = requestAnimationFrame(gameLoop);
+    // Much slower game loop - 150ms instead of requestAnimationFrame for playable speed
+    gameLoopRef.current = window.setTimeout(gameLoop, 150);
   };
 
   const draw = () => {
@@ -433,13 +434,13 @@ export default function CanvasPacman({
         { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847' }
       ];
       
-      // Start game loop
-      gameLoopRef.current = requestAnimationFrame(gameLoop);
+      // Start game loop with proper timing
+      gameLoopRef.current = window.setTimeout(gameLoop, 150);
     }
     
     return () => {
       if (gameLoopRef.current) {
-        cancelAnimationFrame(gameLoopRef.current);
+        clearTimeout(gameLoopRef.current);
       }
     };
   }, [start]);
