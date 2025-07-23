@@ -237,11 +237,11 @@ export default function Page() {
     }
   };
 
-  // Handle offline restart (no payment)
+  // Handle offline restart (no payment) - Fixed for both games
   const handleOfflineRestart = () => {
     setGameStarted(false);
     setGameOver(false);
-    setIsPaid(true); // Allow game to start
+    // Don't reset isPaid for offline mode - keep it true so spacebar works
   };
 
   // Handle score publishing - now triggers leaderboard refresh
@@ -333,12 +333,17 @@ export default function Page() {
     />
   );
 
-  // Leaderboard Component - Show when paid (including offline mode)
+  // Leaderboard Component - Show when paid (including offline mode) with game filtering
   const LeaderboardPanel = () => {
     // Show leaderboard when in game states (including offline mode)
     if (!isPaid && !isOfflineMode) return null;
     
-    const uniqueLeaderboard = leaderboard.reduce((acc: LeaderboardEntry[], current) => {
+    // Filter leaderboard by selected game type
+    const gameFilteredLeaderboard = selectedGame 
+      ? leaderboard.filter(entry => entry.gameType === selectedGame)
+      : leaderboard;
+    
+    const uniqueLeaderboard = gameFilteredLeaderboard.reduce((acc: LeaderboardEntry[], current) => {
       const existingIndex = acc.findIndex(entry => 
         entry.displayAddress === current.displayAddress || 
         (entry as any).walletAddress === (current as any).walletAddress
@@ -387,7 +392,9 @@ export default function Page() {
             fontSize: '16px',
             fontWeight: '600',
             letterSpacing: '0.5px'
-          }}>🏆 ARCADE LEADERBOARD</h2>
+          }}>
+            🏆 {selectedGame === 'tetris' ? 'TETRIS' : selectedGame === 'pacman' ? 'PACMAN' : 'ARCADE'} LEADERBOARD
+          </h2>
         </div>
         
         <div style={{ padding: '16px', maxHeight: '300px', overflowY: 'auto' }}>
@@ -443,12 +450,12 @@ export default function Page() {
                       <span style={{
                         fontSize: '10px',
                         padding: '2px 6px',
-                        background: entry.gameType === 'pacman' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(80, 255, 214, 0.1)',
-                        border: `1px solid ${entry.gameType === 'pacman' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(80, 255, 214, 0.2)'}`,
+                        background: selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(80, 255, 214, 0.1)',
+                        border: `1px solid ${selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(80, 255, 214, 0.2)'}`,
                         borderRadius: '4px',
-                        color: entry.gameType === 'pacman' ? '#FFD700' : '#50FFD6'
+                        color: selectedGame === 'pacman' ? '#FFD700' : '#50FFD6'
                       }}>
-                        {entry.gameType === 'pacman' ? '🍒 PAC' : '🧱 TET'}
+                        {selectedGame === 'pacman' ? '🍒 PAC' : '🧱 TET'}
                       </span>
                       <span style={{
                         fontSize: '10px',
@@ -503,7 +510,7 @@ export default function Page() {
                   fontSize: '11px',
                   color: '#9CA3AF'
                 }}>
-                  Level {userScore.level} • {userScore.gameType === 'pacman' ? 'Pacman' : `${userScore.lines || 0} lines`}
+                  Level {userScore.level} • {selectedGame === 'pacman' ? 'Pacman' : `${userScore.lines || 0} lines`}
                 </div>
               </div>
             ) : (
@@ -1352,9 +1359,16 @@ export default function Page() {
         <BruceMascot />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>
-              {selectedGame === 'tetris' ? '🧱' : '🍒'}
-            </div>
+            <div style={{ 
+              width: '64px', 
+              height: '64px', 
+              backgroundImage: selectedGame === 'tetris' ? 'url(/blocks.png)' : 'url(/pacman.png)', 
+              backgroundSize: 'contain', 
+              backgroundRepeat: 'no-repeat', 
+              backgroundPosition: 'center',
+              marginBottom: '20px',
+              margin: '0 auto 20px auto'
+            }}></div>
             <h2 style={{ marginBottom: '20px', color: '#10b981' }}>
               ✅ Ready to Play {selectedGame === 'tetris' ? 'Tetris' : 'Pacman'}!
             </h2>
