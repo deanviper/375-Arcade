@@ -303,8 +303,8 @@ export default function CanvasPacman({
     }
     
     draw();
-    // Smooth game loop - 120ms for better responsiveness
-    gameLoopRef.current = window.setTimeout(gameLoop, 120);
+    // Much smoother game loop - 80ms for very smooth gameplay
+    gameLoopRef.current = window.setTimeout(gameLoop, 80);
   };
 
   const draw = () => {
@@ -350,12 +350,13 @@ export default function CanvasPacman({
     const pacX = pacman.x * BLOCK + BLOCK/2;
     const pacY = pacman.y * BLOCK + BLOCK/2;
     
+    // Draw Pacman body (yellow)
     ctx.fillStyle = '#FFFF00';
     ctx.beginPath();
     ctx.arc(pacX, pacY, BLOCK/2 - 2, 0, Math.PI * 2);
     ctx.fill();
     
-    // Draw Pacman mouth
+    // Draw Pacman mouth (black)
     ctx.fillStyle = '#000';
     ctx.beginPath();
     const mouthAngle = Math.PI / 3;
@@ -470,8 +471,8 @@ export default function CanvasPacman({
         { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847', vulnerable: false, originalColor: '#FFB847' }
       ];
       
-      // Start game loop with proper timing
-      gameLoopRef.current = window.setTimeout(gameLoop, 120);
+      // Start game loop with smoother timing
+      gameLoopRef.current = window.setTimeout(gameLoop, 80);
     }
     
     return () => {
