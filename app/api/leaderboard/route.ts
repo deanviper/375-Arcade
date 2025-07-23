@@ -13,7 +13,7 @@ export async function GET() {
             { name: "Type", values: ["Score"] }
           ]
           order: DESC
-          first: 200
+          first: 500
         ) {
           edges {
             node {
@@ -84,6 +84,8 @@ export async function GET() {
                   const player = tagMap.Player || '';
                   const timestamp = parseInt(tagMap.Timestamp || node.timestamp);
                   const gameType = tagMap.Application === 'Tetris-Leaderboard' ? 'tetris' : 'pacman';
+                  
+                  console.log(`Processing score: ${score}, game: ${gameType}, player: ${player.slice(0, 6)}...`);
                   
                   if (score > 0 && player) {
                     allScores.push({
