@@ -16,6 +16,28 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "375 Arcade",
   description: "Built for the community of 375ai and IRYS",
+  openGraph: {
+    title: "375 Arcade - Retro Games on Blockchain",
+    description: "Play classic Tetris and Pacman games with blockchain leaderboards. Built for the 375ai and IRYS community.",
+    url: "https://375-arcade.vercel.app",
+    siteName: "375 Arcade",
+    images: [
+      {
+        url: "/arcade-title.png",
+        width: 800,
+        height: 400,
+        alt: "375 Arcade - Built on Irys",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "375 Arcade - Retro Games on Blockchain",
+    description: "Play classic Tetris and Pacman games with blockchain leaderboards. Built for the 375ai and IRYS community.",
+    images: ["/arcade-title.png"],
+  },
 };
 
 export default function RootLayout({
