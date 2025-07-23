@@ -34,11 +34,11 @@ export async function GET() {
     try {
       console.log('Querying Irys GraphQL...');
       
-      // Try different Irys GraphQL endpoints
+      // Try different Irys GraphQL endpoints with better queries
       const graphqlEndpoints = [
         'https://devnet.irys.xyz/graphql',
-        'https://arweave.net/graphql',
-        'https://gateway.irys.xyz/graphql'
+        'https://gateway.irys.xyz/graphql',
+        'https://arweave.net/graphql'
       ];
       
       for (const endpoint of graphqlEndpoints) {
@@ -51,14 +51,14 @@ export async function GET() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ query }),
-            signal: AbortSignal.timeout(8000) // 8 second timeout
+            signal: AbortSignal.timeout(10000) // 10 second timeout
           });
 
           console.log(`${endpoint} response status:`, response.status);
           
           if (response.ok) {
             const result = await response.json();
-            console.log(`${endpoint} result:`, JSON.stringify(result, null, 2));
+            console.log(`${endpoint} result keys:`, Object.keys(result));
             
             if (!result.errors && result.data?.transactions?.edges) {
               const transactions = result.data.transactions.edges;
@@ -77,6 +77,8 @@ export async function GET() {
                     return acc;
                   }, {});
                   
+                  console.log(`Transaction ${txId} tags:`, tagMap);
+                  
                   // Get score data from tags
                   const score = parseInt(tagMap.Score || '0');
                   const lines = parseInt(tagMap.Lines || '0');
@@ -85,7 +87,7 @@ export async function GET() {
                   const timestamp = parseInt(tagMap.Timestamp || node.timestamp);
                   const gameType = tagMap.Application === 'Tetris-Leaderboard' ? 'tetris' : 'pacman';
                   
-                  console.log(`Processing score: ${score}, game: ${gameType}, player: ${player.slice(0, 6)}...`);
+                  console.log(`Processing: Game=${gameType}, Score=${score}, Player=${player.slice(0, 6)}...`);
                   
                   if (score > 0 && player) {
                     allScores.push({
@@ -98,6 +100,9 @@ export async function GET() {
                       gameType,
                       source: 'Irys'
                     });
+                    console.log(`Added ${gameType} score: ${score} for ${player.slice(0, 6)}...`);
+                  } else {
+                    console.log(`Skipped transaction ${txId}: score=${score}, player=${player}`);
                   }
                   
                 } catch (parseError) {
@@ -105,11 +110,15 @@ export async function GET() {
                 }
               }
               
-              console.log(`Successfully parsed ${allScores.length} scores from ${endpoint}`);
+              console.log(`Successfully parsed ${allScores.length} total scores from ${endpoint}`);
+              console.log(`Pacman scores found: ${allScores.filter(s => s.gameType === 'pacman').length}`);
+              console.log(`Tetris scores found: ${allScores.filter(s => s.gameType === 'tetris').length}`);
               break; // Success! Stop trying other endpoints
               
             } else if (result.errors) {
               console.error(`GraphQL errors from ${endpoint}:`, result.errors);
+            } else {
+              console.log(`No transaction data from ${endpoint}:`, result);
             }
           } else {
             const errorText = await response.text();
