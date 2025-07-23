@@ -111,7 +111,13 @@ export default function Page() {
         const response = await fetch('/api/leaderboard');
         const data = await response.json();
         if (data.success) {
-          setLeaderboard(data.combined || data.leaderboard || []);
+          // Combine tetris and pacman arrays to ensure all scores are included
+          const allScores = [
+            ...(data.tetris || []),
+            ...(data.pacman || []),
+            ...(data.combined || [])
+          ];
+          setLeaderboard(allScores);
           
           // Load personal bests if wallet connected
           if (address && isConnected && !isOfflineMode) {
@@ -232,7 +238,13 @@ export default function Page() {
       const response = await fetch('/api/leaderboard');
       const data = await response.json();
       if (data.success) {
-        setLeaderboard(data.combined || data.leaderboard || []);
+        // Combine all score arrays
+        const allScores = [
+          ...(data.tetris || []),
+          ...(data.pacman || []),
+          ...(data.combined || [])
+        ];
+        setLeaderboard(allScores);
         
         // Update personal bests
         if (address && isConnected && !isOfflineMode) {
@@ -366,15 +378,15 @@ export default function Page() {
     }
     @media (min-width: 481px) and (max-width: 768px) {
       .tablet-adjustments {
-        transform: scale(0.8) !important;
+        transform: scale(0.5) !important;
       }
       .carousel-game-center, .carousel-game-side {
         min-width: 200px !important;
         max-width: 220px !important;
-        height: 320px !important;
+        height: 180px !important;
       }
       .arcade-title-fixed {
-        max-width: 250px !important;
+        max-width: 200px !important;
       }
     }
     @media (max-width: 1440px) {
@@ -434,9 +446,14 @@ export default function Page() {
   const LeaderboardPanel = () => {
     if (!isPaid && !isOfflineMode) return null;
 
-    const gameFilteredLeaderboard = selectedGame ? leaderboard.filter(e => e.gameType === selectedGame) : leaderboard;
+    // Fix: Use specific game leaderboards instead of combined for filtering
+    const gameSpecificLeaderboard = selectedGame === 'tetris' ? 
+      leaderboard.filter(e => e.gameType === 'tetris') :
+      selectedGame === 'pacman' ?
+      leaderboard.filter(e => e.gameType === 'pacman') :
+      leaderboard;
 
-    const uniqueLeaderboard = gameFilteredLeaderboard.reduce((acc: LeaderboardEntry[], cur) => {
+    const uniqueLeaderboard = gameSpecificLeaderboard.reduce((acc: LeaderboardEntry[], cur) => {
       const existingIndex = acc.findIndex(entry =>
         entry.displayAddress === cur.displayAddress ||
         (entry as any).walletAddress === (cur as any).walletAddress
