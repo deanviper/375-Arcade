@@ -55,6 +55,7 @@ export default function Page() {
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [personalBests, setPersonalBests] = useState<{tetris?: LeaderboardEntry, pacman?: LeaderboardEntry}>({});
+  const [zoomLevel, setZoomLevel] = useState(70); // Default to 70% zoom
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -189,14 +190,25 @@ export default function Page() {
   }, [mounted, isPaid, isOfflineMode, selectedGame, gameStarted, gameOver]);
 
   useEffect(() => {
-    if (!mounted) return;
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;700;800&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-  }, [mounted]);
+  if (!mounted) return;
+  const link = document.createElement('link');
+  link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;700;800&display=swap';
+  link.rel = 'stylesheet';
+  document.head.appendChild(link);
+}, [mounted]);
 
-  if (!mounted) return null;
+useEffect(() => {
+  const handleZoom = (e: WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      setZoomLevel(prev => Math.max(50, Math.min(150, prev + (e.deltaY > 0 ? -5 : 5))));
+    }
+  };
+  window.addEventListener('wheel', handleZoom, { passive: false });
+  return () => window.removeEventListener('wheel', handleZoom);
+}, []);
+
+if (!mounted) return null;
 
   const handlePayment = async (gameType: GameType) => {
     if (!gameType) return;
@@ -846,7 +858,8 @@ export default function Page() {
   }
 
   if (!address && !isConnected && !isOfflineMode) {
-    return (
+  return (
+    <div style={{ transform: `scale(${zoomLevel/100})`, transformOrigin: 'top left' }}>
       <div style={containerStyle}>
         <style>{mobileStyles}</style>
         <NavigationHeader />
@@ -1465,8 +1478,9 @@ export default function Page() {
           <h2 style={{ marginBottom: '20px' }}>Loading...</h2>
           <p style={{ color: '#B9C1C1' }}>Initializing 375 Arcade...</p>
         </div>
+       </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
+    </div> {/* <- Add this closing div for zoom wrapper */
   );
 }
