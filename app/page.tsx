@@ -731,8 +731,7 @@ export default function Page() {
             border: '1px solid rgba(80, 255, 214, 0.3)',
             borderRadius: '10px',
             padding: '8px 16px',
-            fontSize: '
-            fontSize: '12px',
+                        fontSize: '12px',
             color: '#50FFD6',
             fontFamily: 'Monaco, monospace',
             fontWeight: '600',
