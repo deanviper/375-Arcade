@@ -6,7 +6,6 @@ import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
 import BlurredPreview from '../components/BlurredPreview';
 import CanvasTetris from '../components/CanvasTetris';
-import CanvasPacman from '../components/CanvasPacman';
 
 // Add Google Fonts
 if (typeof window !== 'undefined') {
@@ -39,11 +38,8 @@ interface LeaderboardEntry {
 const STORAGE_KEYS = {
   WALLET_ADDRESS: 'tetris_wallet_address',
   IS_AUTHENTICATED: 'tetris_is_authenticated',
-  IS_PAID: 'tetris_is_paid',
-  SELECTED_GAME: 'selected_game'
+  IS_PAID: 'tetris_is_paid'
 };
-
-type GameType = 'tetris' | 'pacman' | null;
 
 export default function Page() {
   const { open } = useWeb3Modal();
@@ -53,7 +49,6 @@ export default function Page() {
   
   const [authed, setAuthed] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<GameType>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -69,15 +64,11 @@ export default function Page() {
     if (address && isConnected) {
       const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
       const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
-      const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
       
       if (savedAuth) {
         console.log('Restoring wallet session:', address);
         setAuthed(true);
         setIsPaid(savedPaid);
-        if (savedGame) {
-          setSelectedGame(savedGame);
-        }
       }
     }
   }, [address, isConnected]);
@@ -101,20 +92,12 @@ export default function Page() {
     localStorage.setItem(STORAGE_KEYS.IS_PAID, isPaid.toString());
   }, [isPaid]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (selectedGame) {
-      localStorage.setItem(STORAGE_KEYS.SELECTED_GAME, selectedGame);
-    }
-  }, [selectedGame]);
-
   // Clear persisted state when wallet disconnects
   const clearPersistedState = () => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(STORAGE_KEYS.WALLET_ADDRESS);
     localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED);
     localStorage.removeItem(STORAGE_KEYS.IS_PAID);
-    localStorage.removeItem(STORAGE_KEYS.SELECTED_GAME);
   };
 
   // Load leaderboard ONCE on page load, then only refresh when needed
@@ -156,7 +139,6 @@ export default function Page() {
       console.log('Wallet disconnected - clearing all state');
       setAuthed(false);
       setIsPaid(false);
-      setSelectedGame(null);
       setGameStarted(false);
       setGameOver(false);
       setIsOfflineMode(false);
@@ -165,14 +147,10 @@ export default function Page() {
       // Wallet just connected - check if we have persisted auth
       const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
       const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
-      const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
       
       if (savedAuth) {
         setAuthed(true);
         setIsPaid(savedPaid);
-        if (savedGame) {
-          setSelectedGame(savedGame);
-        }
       }
       // If no saved auth, user needs to authenticate (this prevents bypass)
     }
@@ -180,23 +158,23 @@ export default function Page() {
 
   // Spacebar → start game (works for both paid and offline mode)
   useEffect(() => {
-    // Allow spacebar if: (paid OR offline) AND game not started AND game not over AND game selected
-    const canStartGame = (isPaid || isOfflineMode) && !gameStarted && !gameOver && selectedGame;
+    // Allow spacebar if: (paid OR offline) AND game not started AND game not over
+    const canStartGame = (isPaid || isOfflineMode) && !gameStarted && !gameOver;
     
     if (!canStartGame) return;
     
-    console.log('Spacebar listener active:', { isPaid, isOfflineMode, gameStarted, gameOver, selectedGame, canStartGame });
+    console.log('Spacebar listener active:', { isPaid, isOfflineMode, gameStarted, gameOver, canStartGame });
     
     const handler = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
-        console.log('Spacebar detected! Starting game...');
+        console.log('Spacebar detected in offline mode! Starting game...');
         setGameStarted(true);
         setGameOver(false);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isPaid, isOfflineMode, gameStarted, gameOver, selectedGame]);
+  }, [isPaid, isOfflineMode, gameStarted, gameOver]);
 
   // Handle payment for new game
   const handlePayment = async () => {
@@ -246,7 +224,7 @@ export default function Page() {
   };
 
   // Handle score publishing - now triggers leaderboard refresh
-  const handlePublishScore = async (score: number, linesOrLevel: number) => {
+  const handlePublishScore = async (score: number, lines: number) => {
     console.log('Frontend: Score published, refreshing leaderboard...');
     
     // Refresh leaderboard after score publication
@@ -274,7 +252,6 @@ export default function Page() {
     setGameStarted(false);
     setGameOver(false);
     setIsPaid(false); // Reset payment state so user needs to pay again
-    setSelectedGame(null); // Reset game selection
     
     // For offline mode, also reset the address to return to landing
     if (isOfflineMode) {
@@ -282,10 +259,9 @@ export default function Page() {
       setIsOfflineMode(false);
     }
     
-    // Only clear payment and game from localStorage, keep wallet and auth
+    // Only clear payment from localStorage, keep wallet and auth
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEYS.IS_PAID, 'false');
-      localStorage.removeItem(STORAGE_KEYS.SELECTED_GAME);
     }
   };
 
@@ -295,7 +271,6 @@ export default function Page() {
     disconnect();
     setAuthed(false);
     setIsPaid(false);
-    setSelectedGame(null);
     setGameStarted(false);
     setGameOver(false);
     setIsOfflineMode(false);
@@ -388,7 +363,7 @@ export default function Page() {
             fontSize: '16px',
             fontWeight: '600',
             letterSpacing: '0.5px'
-          }}>🏆 {selectedGame?.toUpperCase() || 'ARCADE'} LEADERBOARD</h2>
+          }}>🏆 TETRIS LEADERBOARD</h2>
         </div>
         
         <div style={{ padding: '16px', maxHeight: '300px', overflowY: 'auto' }}>
@@ -449,7 +424,7 @@ export default function Page() {
                         borderRadius: '4px',
                         color: '#50FFD6'
                       }}>
-                        {entry.lines ? `${entry.lines}L` : `Lv.${entry.level || 1}`}
+                        Lv.{entry.level || 1}
                       </span>
                     </div>
                   </div>
@@ -494,7 +469,7 @@ export default function Page() {
                   fontSize: '11px',
                   color: '#9CA3AF'
                 }}>
-                  {userScore.lines ? `Level ${userScore.level} • ${userScore.lines} lines` : `Level ${userScore.level}`}
+                  Level {userScore.level} • {userScore.lines} lines
                 </div>
               </div>
             ) : (
@@ -694,7 +669,6 @@ export default function Page() {
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
             }}
-            onMouseOver={(
             onMouseOver={(e) => {
               e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%)';
               e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)';
@@ -978,7 +952,19 @@ export default function Page() {
               justifyContent: 'center',
               flexWrap: 'wrap'
             }}>
-              {/* Tetris Card */}
+              <div className="arcade-card" style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+
               <div className="arcade-card" style={{
                 ...cardStyle,
                 minWidth: '320px',
@@ -1036,90 +1022,30 @@ export default function Page() {
                       minWidth: '200px'
                     }}
                     onClick={() => {
+                      console.log('Just Play clicked!'); // Debug log
+                      console.log('Before setting states:', { isOfflineMode, authed, isPaid, gameStarted, gameOver });
+                      
+                      // Set offline mode first, then other states
                       setIsOfflineMode(true);
                       setAuthed(true);
-                      setSelectedGame('tetris');
                       setIsPaid(true);
                       setGameStarted(false);
                       setGameOver(false);
+                      
+                      console.log('After setting states - should be:', { 
+                        isOfflineMode: true, 
+                        authed: true, 
+                        isPaid: true, 
+                        gameStarted: false, 
+                        gameOver: false 
+                      });
                     }}
                   >
-                    Just Play Tetris
+                    Just Play
                   </button>
                 </div>
               </div>
 
-              {/* Pacman Card */}
-              <div className="arcade-card" style={{
-                ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #FFFF00',
-                boxShadow: '0 25px 50px -12px rgba(255, 255, 0, 0.4)'
-              }}>
-                <div style={{ 
-                  fontSize: '64px',
-                  marginBottom: '20px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}>
-                  🔴
-                </div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #FFFF00, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  PACMAN
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
-                  Navigate the maze and eat dots for 0.01 Irys!
-                </p>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <button
-                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
-                    onClick={handleWalletConnection}
-                  >
-                    🔗 Connect Wallet & Play
-                  </button>
-                  
-                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
-                    Don't want to connect your wallet and publish your scores? No worries!
-                  </p>
-                  
-                  <button
-                    style={{
-                      background: 'rgba(25, 25, 35, 0.5)',
-                      border: '2px solid rgba(107, 114, 128, 0.3)',
-                      borderRadius: '12px',
-                      padding: '12px 24px',
-                      color: '#9CA3AF',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      minWidth: '200px'
-                    }}
-                    onClick={() => {
-                      setIsOfflineMode(true);
-                      setAuthed(true);
-                      setSelectedGame('pacman');
-                      setIsPaid(true);
-                      setGameStarted(false);
-                      setGameOver(false);
-                    }}
-                  >
-                    Just Play Pacman
-                  </button>
-                </div>
-              </div>
-
-              {/* Coming Soon Card */}
               <div className="arcade-card" style={{
                 ...cardStyle,
                 minWidth: '280px',
@@ -1169,13 +1095,12 @@ export default function Page() {
               style={buttonStyle}
               onClick={async () => {
                 try {
-                  const message = `Authenticate @375 Arcade at ${Date.now()}`;
+                  const message = `Authenticate @375 Tetris at ${Date.now()}`;
                   await signMessageAsync({ message });
                   
                   // Set authenticated and reset payment state
                   setAuthed(true);
                   setIsPaid(false); // Force to game selection page
-                  setSelectedGame(null);
                   setGameStarted(false);
                   setGameOver(false);
                   
@@ -1199,7 +1124,7 @@ export default function Page() {
   }
 
   // Show connected and authenticated state - the game selection page
-  if (address && isConnected && authed && !isPaid && !selectedGame && !gameStarted && !gameOver) {
+  if (address && isConnected && authed && !isPaid && !gameStarted && !gameOver) {
     return (
       <div style={containerStyle}>
         <NavigationHeader />
@@ -1227,7 +1152,19 @@ export default function Page() {
               justifyContent: 'center',
               flexWrap: 'wrap'
             }}>
-              {/* Tetris Game */}
+              <div style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+
               <div style={{
                 ...cardStyle,
                 minWidth: '320px',
@@ -1265,64 +1202,13 @@ export default function Page() {
                     animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
                   }}
-                  onClick={() => {
-                    setSelectedGame('tetris');
-                    handlePayment();
-                  }}
+                  onClick={handlePayment}
                   disabled={isProcessingPayment}
                 >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play Tetris'}
+                  {isProcessingPayment ? '⏳ Processing...' : 'Play'}
                 </button>
               </div>
 
-              {/* Pacman Game */}
-              <div style={{
-                ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #FFFF00',
-                boxShadow: '0 25px 50px -12px rgba(255, 255, 0, 0.3)'
-              }}>
-                <div style={{ 
-                  fontSize: '64px',
-                  marginBottom: '20px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}>
-                  🔴
-                </div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #FFFF00, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  PACMAN
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
-                  Navigate the maze and eat dots for 0.01 Irys!
-                </p>
-                
-                <button
-                  style={{ 
-                    ...buttonStyle, 
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
-                  }}
-                  onClick={() => {
-                    setSelectedGame('pacman');
-                    handlePayment();
-                  }}
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play Pacman'}
-                </button>
-              </div>
-
-              {/* Coming Soon */}
               <div style={{
                 ...cardStyle,
                 minWidth: '280px',
@@ -1351,8 +1237,8 @@ export default function Page() {
   }
 
   // Ready to start - Show for offline mode OR after payment (but NOT when game started)
-  if ((isOfflineMode || isPaid) && selectedGame && !gameStarted && !gameOver) {
-    console.log('Ready to Play condition met:', { isOfflineMode, isPaid, selectedGame, gameStarted, gameOver });
+  if ((isOfflineMode || isPaid) && !gameStarted && !gameOver) {
+    console.log('Ready to Play condition met:', { isOfflineMode, isPaid, gameStarted, gameOver });
     return (
       <div style={containerStyle}>
         <NavigationHeader />
@@ -1361,7 +1247,7 @@ export default function Page() {
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
-            <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play {selectedGame?.toUpperCase()}!</h2>
+            <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play!</h2>
             <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
               Press <kbd style={{ 
                 background: 'rgba(255, 61, 20, 0.2)', 
@@ -1373,17 +1259,8 @@ export default function Page() {
               }}>SPACEBAR</kbd> to start
             </p>
             <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
-              {selectedGame === 'tetris' ? (
-                <>
-                  <p>🎯 Clear lines to score points</p>
-                  <p>⚡ Speed increases every 4 lines</p>
-                </>
-              ) : (
-                <>
-                  <p>🎯 Eat all dots to advance levels</p>
-                  <p>⚡ Avoid ghosts, eat power pellets</p>
-                </>
-              )}
+              <p>🎯 Clear lines to score points</p>
+              <p>⚡ Speed increases every 4 lines</p>
               {address && !isOfflineMode && (
                 <p>🏆 Publish scores to blockchain leaderboard!</p>
               )}
@@ -1404,7 +1281,7 @@ export default function Page() {
 
   // Game active - Show when game has started (both paid and offline mode)
   if (gameStarted || gameOver) {
-    console.log('Game active condition met:', { gameStarted, gameOver, isOfflineMode, isPaid, selectedGame });
+    console.log('Game active condition met:', { gameStarted, gameOver, isOfflineMode, isPaid });
     return (
       <div style={containerStyle}>
         <NavigationHeader />
@@ -1417,33 +1294,25 @@ export default function Page() {
           alignItems: 'center',
           minHeight: '100vh'
         }}>
-          {selectedGame === 'tetris' ? (
-            <CanvasTetris
-              start={gameStarted}
-              onGameOver={(score, lines) => {
-                console.log('Tetris game over callback triggered:', { score, lines });
-                setGameOver(true);
-                setGameStarted(false);
-              }}
-              onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
-              onPublishScore={handlePublishScore}
-              playerAddress={isOfflineMode ? undefined : address}
-            />
-          ) : selectedGame === 'pacman' ? (
-            <CanvasPacman
-              start={gameStarted}
-              onGameOver={(score, level) => {
-                console.log('Pacman game over callback triggered:', { score, level });
-                setGameOver(true);
-                setGameStarted(false);
-              }}
-              onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
-              onPublishScore={handlePublishScore}
-              playerAddress={isOfflineMode ? undefined : address}
-            />
-          ) : null}
+          <CanvasTetris
+            start={gameStarted}
+            onGameOver={(score, lines) => {
+              console.log('Game over callback triggered:', { score, lines });
+              console.log('CanvasTetris props:', { 
+                isOfflineMode, 
+                playerAddress: isOfflineMode ? undefined : address,
+                address 
+              });
+              setGameOver(true);
+              setGameStarted(false);
+            }}
+            onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
+            onPublishScore={handlePublishScore}
+            playerAddress={isOfflineMode ? undefined : address}
+          />
         </div>
         <Footer />
       </div>
     );
   }
+}
