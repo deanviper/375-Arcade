@@ -287,11 +287,12 @@ export default function Page() {
     }
   };
 
-  // Bruce Mascot Component - Fixed positioning for all pages
+  // Bruce Mascot Component - Fixed positioning for all pages with mobile responsiveness
   const BruceMascot = () => (
     <img 
       src="/bruce.png" 
       alt="Bruce - 375ai Mascot" 
+      className="bruce-mobile"
       style={{ 
         position: 'fixed',
         bottom: '10px',
@@ -727,7 +728,7 @@ export default function Page() {
   const mobileStyles = `
     @media (max-width: 768px) {
       .arcade-container {
-        padding: 80px 10px 40px !important;
+        padding: 120px 10px 200px !important;
       }
       .arcade-cards {
         flex-direction: column !important;
@@ -753,6 +754,36 @@ export default function Page() {
       .nav-button {
         padding: 6px 12px !important;
         font-size: 12px !important;
+      }
+      /* Bruce mobile positioning */
+      .bruce-mobile {
+        width: 50vw !important;
+        min-width: 200px !important;
+        max-width: 300px !important;
+        left: -10% !important;
+        bottom: 5px !important;
+      }
+      /* Arcade title mobile */
+      .arcade-title-mobile {
+        max-width: 300px !important;
+        margin-bottom: 40px !important;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .arcade-container {
+        padding: 100px 5px 180px !important;
+      }
+      /* Even smaller Bruce on very small screens */
+      .bruce-mobile {
+        width: 40vw !important;
+        min-width: 150px !important;
+        max-width: 200px !important;
+        left: -15% !important;
+      }
+      /* Smaller arcade title on phones */
+      .arcade-title-mobile {
+        max-width: 250px !important;
       }
     }
   `;
@@ -886,6 +917,7 @@ export default function Page() {
               <img 
                 src="/arcade-title.png" 
                 alt="375 Arcade - Built on Irys"
+                className="arcade-title-mobile"
                 style={{ 
                   maxWidth: '400px',
                   width: '100%',
