@@ -54,6 +54,7 @@ export default function Page() {
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [personalBests, setPersonalBests] = useState<{tetris?: LeaderboardEntry, pacman?: LeaderboardEntry}>({});
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -111,18 +112,37 @@ export default function Page() {
         const data = await response.json();
         if (data.success) {
           setLeaderboard(data.combined || data.leaderboard || []);
+          
+          // Load personal bests if wallet connected
+          if (address && isConnected && !isOfflineMode) {
+            const tetrisScores = (data.tetris || []).filter((entry: LeaderboardEntry) => 
+              entry.walletAddress?.toLowerCase() === address.toLowerCase()
+            );
+            const pacmanScores = (data.pacman || []).filter((entry: LeaderboardEntry) => 
+              entry.walletAddress?.toLowerCase() === address.toLowerCase()
+            );
+            
+            setPersonalBests({
+              tetris: tetrisScores.length > 0 ? tetrisScores[0] : undefined,
+              pacman: pacmanScores.length > 0 ? pacmanScores[0] : undefined
+            });
+          } else {
+            setPersonalBests({});
+          }
         } else {
           setLeaderboard([]);
+          setPersonalBests({});
         }
       } catch (e) {
         console.error(e);
         setLeaderboard([]);
+        setPersonalBests({});
       } finally {
         setIsLoadingLeaderboard(false);
       }
     };
     loadLeaderboard();
-  }, [mounted]);
+  }, [mounted, address, isConnected, isOfflineMode]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -213,6 +233,21 @@ export default function Page() {
       const data = await response.json();
       if (data.success) {
         setLeaderboard(data.combined || data.leaderboard || []);
+        
+        // Update personal bests
+        if (address && isConnected && !isOfflineMode) {
+          const tetrisScores = (data.tetris || []).filter((entry: LeaderboardEntry) => 
+            entry.walletAddress?.toLowerCase() === address.toLowerCase()
+          );
+          const pacmanScores = (data.pacman || []).filter((entry: LeaderboardEntry) => 
+            entry.walletAddress?.toLowerCase() === address.toLowerCase()
+          );
+          
+          setPersonalBests({
+            tetris: tetrisScores.length > 0 ? tetrisScores[0] : undefined,
+            pacman: pacmanScores.length > 0 ? pacmanScores[0] : undefined
+          });
+        }
       }
     } catch (e) {
       console.error(e);
@@ -321,6 +356,27 @@ export default function Page() {
   const handleCarouselPrev = () => setCarouselIndex(prev => (prev - 1 + games.length) % games.length);
 
   const mobileStyles = `
+    @media (max-width: 480px) {
+      .mobile-message {
+        display: flex !important;
+      }
+      .desktop-content {
+        display: none !important;
+      }
+    }
+    @media (min-width: 481px) and (max-width: 768px) {
+      .tablet-adjustments {
+        transform: scale(0.8) !important;
+      }
+      .carousel-game-center, .carousel-game-side {
+        min-width: 200px !important;
+        max-width: 220px !important;
+        height: 320px !important;
+      }
+      .arcade-title-fixed {
+        max-width: 250px !important;
+      }
+    }
     @media (max-width: 1440px) {
       .arcade-container {
         padding: 120px 15px 120px !important;
@@ -352,6 +408,27 @@ export default function Page() {
     .carousel-game-center, .carousel-game-side {
       display: flex; flex-direction: column; align-items: center; justify-content: center; height: 450px !important;
     }
+    .header-button-hover {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .header-button-hover:hover {
+      background: linear-gradient(135deg, rgba(255, 61, 20, 0.3) 0%, rgba(255, 61, 20, 0.1) 100%) !important;
+      border: 2px solid rgba(255, 61, 20, 0.5) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 15px rgba(255, 61, 20, 0.3) !important;
+    }
+    .faucet-button-hover:hover {
+      background: linear-gradient(135deg, rgba(80, 255, 214, 0.3) 0%, rgba(80, 255, 214, 0.1) 100%) !important;
+      border: 2px solid rgba(80, 255, 214, 0.5) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 15px rgba(80, 255, 214, 0.3) !important;
+    }
+    .global-button-hover:hover {
+      background: linear-gradient(135deg, rgba(156, 163, 175, 0.3) 0%, rgba(156, 163, 175, 0.1) 100%) !important;
+      border: 2px solid rgba(156, 163, 175, 0.5) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 15px rgba(156, 163, 175, 0.3) !important;
+    }
   `;
 
   const LeaderboardPanel = () => {
@@ -370,13 +447,17 @@ export default function Page() {
     }, []).sort((a, b) => b.score - a.score);
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth <= 1024;
+
+    const personalBest = selectedGame === 'tetris' ? personalBests.tetris : 
+                       selectedGame === 'pacman' ? personalBests.pacman : undefined;
 
     return (
       <div style={{
         position: 'fixed',
         top: isMobile ? '60px' : '70px',
         right: isMobile ? '10px' : '20px',
-        width: isMobile ? '280px' : '320px',
+        width: isMobile ? '280px' : isTablet ? '300px' : '320px',
         background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.95) 0%, rgba(15, 15, 20, 0.95) 100%)',
         border: '1px solid rgba(255, 61, 20, 0.3)',
         borderRadius: '16px',
@@ -403,7 +484,99 @@ export default function Page() {
             🏆 {selectedGame === 'tetris' ? 'TETRIS' : selectedGame === 'pacman' ? 'PACMAN' : 'ARCADE'} LEADERBOARD
           </h2>
         </div>
-        <div style={{ padding: isMobile ? '12px' : '16px', maxHeight: isMobile ? '250px' : '300px', overflowY: 'auto' }}>
+
+        {/* Personal Best Section */}
+        {selectedGame && (
+          <div style={{
+            padding: isMobile ? '12px' : '16px',
+            borderBottom: '1px solid rgba(255, 61, 20, 0.1)',
+            background: 'rgba(80, 255, 214, 0.02)'
+          }}>
+            <div style={{
+              fontSize: isMobile ? '12px' : '13px',
+              fontWeight: '600',
+              color: '#50FFD6',
+              marginBottom: '8px',
+              textAlign: 'center'
+            }}>
+              👤 PERSONAL BEST
+            </div>
+            {address && !isOfflineMode ? (
+              personalBest ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: isMobile ? '8px' : '12px',
+                  padding: isMobile ? '8px' : '12px',
+                  background: 'rgba(80, 255, 214, 0.1)',
+                  border: '1px solid rgba(80, 255, 214, 0.3)',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{
+                    fontSize: isMobile ? '12px' : '14px',
+                    fontWeight: '600',
+                    minWidth: '28px',
+                    textAlign: 'center',
+                    color: '#50FFD6'
+                  }}>
+                    🌟
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{
+                        fontSize: isMobile ? '12px' : '14px',
+                        fontWeight: '600',
+                        color: '#50FFD6'
+                      }}>
+                        {personalBest.score?.toLocaleString() || '0'}
+                      </span>
+                      <span style={{
+                        fontSize: '9px',
+                        padding: '2px 4px',
+                        background: selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(80, 255, 214, 0.1)',
+                        border: `1px solid ${selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(80, 255, 214, 0.2)'}`,
+                        borderRadius: '4px',
+                        color: selectedGame === 'pacman' ? '#FFD700' : '#50FFD6'
+                      }}>
+                        {selectedGame === 'pacman' ? `Lv.${personalBest.level}` : `L.${personalBest.lines}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  textAlign: 'center',
+                  color: '#6B7280',
+                  fontSize: '12px',
+                  padding: '12px',
+                  background: 'rgba(107, 114, 128, 0.1)',
+                  borderRadius: '8px'
+                }}>
+                  No score recorded yet
+                </div>
+              )
+            ) : (
+              <div style={{
+                padding: isMobile ? '8px' : '12px',
+                background: 'rgba(107, 114, 128, 0.1)',
+                border: '1px solid rgba(107, 114, 128, 0.2)',
+                borderRadius: '8px',
+                filter: 'blur(4px)',
+                textAlign: 'center',
+                color: '#6B7280',
+                fontSize: '12px'
+              }}>
+                Connect wallet to view
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ padding: isMobile ? '12px' : '16px', maxHeight: isMobile ? '200px' : '250px', overflowY: 'auto' }}>
           {isLoadingLeaderboard ? (
             <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px', fontSize: '14px' }}>Loading...</div>
           ) : uniqueLeaderboard.length === 0 ? (
@@ -431,6 +604,7 @@ export default function Page() {
                     textAlign: 'center',
                     color: '#E5E7EB'
                   }}>
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                   </div>
                   <div style={{ flex: 1 }}>
@@ -492,6 +666,7 @@ export default function Page() {
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' as const }}>
           <button
             onClick={handleHomeClick}
+            className="header-button-hover"
             style={{
               background: 'linear-gradient(135deg, rgba(255, 61, 20, 0.15) 0%, rgba(255, 61, 20, 0.05) 100%)',
               border: '2px solid transparent',
@@ -510,6 +685,7 @@ export default function Page() {
           </button>
           <button
             onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
+            className="header-button-hover faucet-button-hover"
             style={{
               background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)',
               border: '2px solid transparent',
@@ -528,6 +704,7 @@ export default function Page() {
           </button>
           <button
             onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
+            className="header-button-hover global-button-hover"
             style={{
               background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)',
               border: '2px solid transparent',
@@ -658,7 +835,33 @@ export default function Page() {
         <style>{mobileStyles}</style>
         <NavigationHeader />
         <LeaderboardPanel />
-        <div className="arcade-container" style={{ padding: '130px 20px 120px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+        
+        {/* Mobile Message */}
+        <div className="mobile-message" style={{ display: 'none', padding: '100px 20px', textAlign: 'center', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>📱</div>
+            <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Mobile Device Detected</h2>
+            <p style={{ marginBottom: '20px', color: '#B9C1C1' }}>For the best gaming experience, please switch to a PC or desktop computer.</p>
+            <div style={{ fontSize: '14px', color: '#9CA3AF', lineHeight: 1.6 }}>
+              <div style={{ marginBottom: '15px' }}>🏆 <strong>Top Tetris Players:</strong></div>
+              {leaderboard.filter(e => e.gameType === 'tetris').slice(0, 3).map((entry, i) => (
+                <div key={i} style={{ marginBottom: '8px' }}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {entry.displayAddress}: {entry.score?.toLocaleString()}
+                </div>
+              ))}
+              <div style={{ marginTop: '20px', marginBottom: '15px' }}>🍒 <strong>Top Pacman Players:</strong></div>
+              {leaderboard.filter(e => e.gameType === 'pacman').slice(0, 3).map((entry, i) => (
+                <div key={i} style={{ marginBottom: '8px' }}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {entry.displayAddress}: {entry.score?.toLocaleString()}
+                </div>
+              ))}
+            </div>
+          </div>
+          <Footer />
+        </div>
+
+        {/* Desktop Content */}
+        <div className="desktop-content arcade-container" style={{ padding: '130px 20px 120px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
             <div style={{ marginBottom: '40px', position: 'relative', zIndex: 10 }}>
               <img
@@ -674,7 +877,7 @@ export default function Page() {
               />
             </div>
 
-            <div className="carousel-container" style={{
+            <div className="carousel-container tablet-adjustments" style={{
               display: 'flex',
               gap: '24px',
               alignItems: 'center',
@@ -723,7 +926,8 @@ export default function Page() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: '20px'
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
                 }}>
                   {leftGame.icon.startsWith('/') ? (
                     <img src={leftGame.icon} alt={leftGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
@@ -749,7 +953,8 @@ export default function Page() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: '16px'
+                  marginBottom: '16px',
+                  margin: '0 auto 16px auto'
                 }}>
                   {currentGame.icon.startsWith('/') ? (
                     <img src={currentGame.icon} alt={currentGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
@@ -828,7 +1033,8 @@ export default function Page() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: '20px'
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
                 }}>
                   {rightGame.icon.startsWith('/') ? (
                     <img src={rightGame.icon} alt={rightGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
@@ -837,237 +1043,6 @@ export default function Page() {
                   )}
                 </div>
                 <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px', textAlign: 'center' }}>{rightGame.name}</h3>
-              </div>
-
-              <button
-                onClick={handleCarouselNext}
-                style={{
-                  position: 'absolute',
-                  right: '50px',
-                  zIndex: 10,
-                  background: 'rgba(255, 61, 20, 0.2)',
-                  border: '2px solid rgba(255, 61, 20, 0.5)',
-                  borderRadius: '50%',
-                  width: '60px',
-                  height: '60px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '24px',
-                  color: '#FF3D14',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                →
-              </button>
-            </div>
-          </div>
-
-          <Footer />
-        </div>
-
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1.05); }
-            50% { transform: scale(1.1); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  if (!authed && address && isConnected) {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
-            <h2 style={{ marginBottom: '20px' }}>Authentication Required</h2>
-            <p style={{ marginBottom: '10px', color: '#B9C1C1' }}><strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}</p>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>Sign a message to verify your identity</p>
-            <button
-              style={buttonStyle}
-              onClick={async () => {
-                try {
-                  const message = `Authenticate @375 Arcade at ${Date.now()}`;
-                  await signMessageAsync({ message });
-                  setAuthed(true);
-                  setIsPaid(false);
-                  setSelectedGame(null);
-                  setGameStarted(false);
-                  setGameOver(false);
-                } catch (e: any) {
-                  if (e.message.includes('User rejected')) alert('Authentication cancelled by user');
-                  else alert('Authentication failed: ' + e.message);
-                }
-              }}
-            >
-              🔐 Sign Message
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (address && isConnected && authed && !isPaid && !gameStarted && !gameOver) {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
-            <div style={{ marginBottom: '30px', position: 'relative', zIndex: 10 }}>
-              <img
-                src="/arcade-title.png"
-                alt="375 Arcade - Built on Irys"
-                style={{
-                  maxWidth: responsiveStyles.titleMaxWidth,
-                  width: '100%',
-                  height: 'auto',
-                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
-                }}
-              />
-            </div>
-
-            <div style={{
-              display: 'flex',
-              gap: '24px',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              minHeight: '400px'
-            }}>
-              <button
-                onClick={handleCarouselPrev}
-                style={{
-                  position: 'absolute',
-                  left: '50px',
-                  zIndex: 10,
-                  background: 'rgba(255, 61, 20, 0.2)',
-                  border: '2px solid rgba(255, 61, 20, 0.5)',
-                  borderRadius: '50%',
-                  width: '60px',
-                  height: '60px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '24px',
-                  color: '#FF3D14'
-                }}
-              >
-                ←
-              </button>
-
-              <div className="carousel-game-side carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '300px',
-                height: '450px',
-                opacity: 0.4,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                transform: 'scale(0.8)',
-                pointerEvents: 'none'
-              }}>
-                <div style={{
-                  width: '80px',
-                  height: '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '20px'
-                }}>
-                  {leftGame.icon.startsWith('/') ? (
-                    <img src={leftGame.icon} alt={leftGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <span style={{ fontSize: '76px', lineHeight: 1 }}>{leftGame.icon}</span>
-                  )}
-                </div>
-                <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px' }}>{leftGame.name}</h3>
-              </div>
-
-              <div className="carousel-game-center carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '400px',
-                maxWidth: '440px',
-                height: '450px',
-                border: `3px solid ${currentGame.borderColor}`,
-                boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
-                transform: 'scale(1.05)'
-              }}>
-                <div style={{
-                  width: '100px',
-                  height: '100px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '25px'
-                }}>
-                  {currentGame.icon.startsWith('/') ? (
-                    <img src={currentGame.icon} alt={currentGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <span style={{ fontSize: '96px', lineHeight: 1 }}>{currentGame.icon}</span>
-                  )}
-                </div>
-                <h2 style={{
-                  fontSize: '32px',
-                  marginBottom: '15px',
-                  color: currentGame.borderColor,
-                  fontWeight: 700
-                }}>
-                  {currentGame.name}
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: responsiveStyles.fontSize }}>
-                  {currentGame.description}
-                </p>
-
-                {currentGame.id && (
-                  <button
-                    style={{
-                      ...buttonStyle,
-                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                      ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
-                    }}
-                    onClick={() => handlePayment(currentGame.id)}
-                    disabled={isProcessingPayment}
-                  >
-                    {isProcessingPayment ? '⏳ Processing...' : `Play ${currentGame.name}`}
-                  </button>
-                )}
-              </div>
-
-              <div className="carousel-game-side carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '300px',
-                height: '450px',
-                opacity: 0.4,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                transform: 'scale(0.8)',
-                pointerEvents: 'none'
-              }}>
-                <div style={{
-                  width: '80px',
-                  height: '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '20px'
-                }}>
-                  {rightGame.icon.startsWith('/') ? (
-                    <img src={rightGame.icon} alt={rightGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <span style={{ fontSize: '76px', lineHeight: 1 }}>{rightGame.icon}</span>
-                  )}
-                </div>
-                <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px' }}>{rightGame.name}</h3>
               </div>
 
               <button
@@ -1245,3 +1220,237 @@ export default function Page() {
     </div>
   );
 }
+                style={{
+                  position: 'absolute',
+                  right: '50px',
+                  zIndex: 10,
+                  background: 'rgba(255, 61, 20, 0.2)',
+                  border: '2px solid rgba(255, 61, 20, 0.5)',
+                  borderRadius: '50%',
+                  width: '60px',
+                  height: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  color: '#FF3D14',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                →
+              </button>
+            </div>
+          </div>
+
+          <Footer />
+        </div>
+
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1.05); }
+            50% { transform: scale(1.1); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (!authed && address && isConnected) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
+            <h2 style={{ marginBottom: '20px' }}>Authentication Required</h2>
+            <p style={{ marginBottom: '10px', color: '#B9C1C1' }}><strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}</p>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>Sign a message to verify your identity</p>
+            <button
+              style={buttonStyle}
+              onClick={async () => {
+                try {
+                  const message = `Authenticate @375 Arcade at ${Date.now()}`;
+                  await signMessageAsync({ message });
+                  setAuthed(true);
+                  setIsPaid(false);
+                  setSelectedGame(null);
+                  setGameStarted(false);
+                  setGameOver(false);
+                } catch (e: any) {
+                  if (e.message.includes('User rejected')) alert('Authentication cancelled by user');
+                  else alert('Authentication failed: ' + e.message);
+                }
+              }}
+            >
+              🔐 Sign Message
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (address && isConnected && authed && !isPaid && !gameStarted && !gameOver) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '30px', position: 'relative', zIndex: 10 }}>
+              <img
+                src="/arcade-title.png"
+                alt="375 Arcade - Built on Irys"
+                style={{
+                  maxWidth: responsiveStyles.titleMaxWidth,
+                  width: '100%',
+                  height: 'auto',
+                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                }}
+              />
+            </div>
+
+            <div className="tablet-adjustments" style={{
+              display: 'flex',
+              gap: '24px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              minHeight: '400px'
+            }}>
+              <button
+                onClick={handleCarouselPrev}
+                style={{
+                  position: 'absolute',
+                  left: '50px',
+                  zIndex: 10,
+                  background: 'rgba(255, 61, 20, 0.2)',
+                  border: '2px solid rgba(255, 61, 20, 0.5)',
+                  borderRadius: '50%',
+                  width: '60px',
+                  height: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  color: '#FF3D14'
+                }}
+              >
+                ←
+              </button>
+
+              <div className="carousel-game-side carousel-transition" style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '300px',
+                height: '450px',
+                opacity: 0.4,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                transform: 'scale(0.8)',
+                pointerEvents: 'none'
+              }}>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}>
+                  {leftGame.icon.startsWith('/') ? (
+                    <img src={leftGame.icon} alt={leftGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  ) : (
+                    <span style={{ fontSize: '76px', lineHeight: 1 }}>{leftGame.icon}</span>
+                  )}
+                </div>
+                <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px' }}>{leftGame.name}</h3>
+              </div>
+
+              <div className="carousel-game-center carousel-transition" style={{
+                ...cardStyle,
+                minWidth: '400px',
+                maxWidth: '440px',
+                height: '450px',
+                border: `3px solid ${currentGame.borderColor}`,
+                boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
+                transform: 'scale(1.05)'
+              }}>
+                <div style={{
+                  width: '100px',
+                  height: '100px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '25px',
+                  margin: '0 auto 25px auto'
+                }}>
+                  {currentGame.icon.startsWith('/') ? (
+                    <img src={currentGame.icon} alt={currentGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  ) : (
+                    <span style={{ fontSize: '96px', lineHeight: 1 }}>{currentGame.icon}</span>
+                  )}
+                </div>
+                <h2 style={{
+                  fontSize: '32px',
+                  marginBottom: '15px',
+                  color: currentGame.borderColor,
+                  fontWeight: 700
+                }}>
+                  {currentGame.name}
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: responsiveStyles.fontSize }}>
+                  {currentGame.description}
+                </p>
+
+                {currentGame.id && (
+                  <button
+                    style={{
+                      ...buttonStyle,
+                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                      ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
+                    }}
+                    onClick={() => handlePayment(currentGame.id)}
+                    disabled={isProcessingPayment}
+                  >
+                    {isProcessingPayment ? '⏳ Processing...' : `Play ${currentGame.name}`}
+                  </button>
+                )}
+              </div>
+
+              <div className="carousel-game-side carousel-transition" style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '300px',
+                height: '450px',
+                opacity: 0.4,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                transform: 'scale(0.8)',
+                pointerEvents: 'none'
+              }}>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}>
+                  {rightGame.icon.startsWith('/') ? (
+                    <img src={rightGame.icon} alt={rightGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  ) : (
+                    <span style={{ fontSize: '76px', lineHeight: 1 }}>{rightGame.icon}</span>
+                  )}
+                </div>
+                <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px' }}>{rightGame.name}</h3>
+              </div>
+
+              <button
+                onClick={handleCarouselNext}
