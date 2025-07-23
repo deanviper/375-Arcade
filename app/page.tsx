@@ -190,25 +190,25 @@ export default function Page() {
   }, [mounted, isPaid, isOfflineMode, selectedGame, gameStarted, gameOver]);
 
   useEffect(() => {
-  if (!mounted) return;
-  const link = document.createElement('link');
-  link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;700;800&display=swap';
-  link.rel = 'stylesheet';
-  document.head.appendChild(link);
-}, [mounted]);
+    if (!mounted) return;
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;700;800&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, [mounted]);
 
-useEffect(() => {
-  const handleZoom = (e: WheelEvent) => {
-    if (e.ctrlKey) {
-      e.preventDefault();
-      setZoomLevel(prev => Math.max(50, Math.min(150, prev + (e.deltaY > 0 ? -5 : 5))));
-    }
-  };
-  window.addEventListener('wheel', handleZoom, { passive: false });
-  return () => window.removeEventListener('wheel', handleZoom);
-}, []);
+  useEffect(() => {
+    const handleZoom = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        setZoomLevel(prev => Math.max(50, Math.min(150, prev + (e.deltaY > 0 ? -5 : 5))));
+      }
+    };
+    window.addEventListener('wheel', handleZoom, { passive: false });
+    return () => window.removeEventListener('wheel', handleZoom);
+  }, []);
 
-if (!mounted) return null;
+  if (!mounted) return null;
 
   const handlePayment = async (gameType: GameType) => {
     if (!gameType) return;
@@ -858,255 +858,256 @@ if (!mounted) return null;
   }
 
   if (!address && !isConnected && !isOfflineMode) {
-  return (
-    <div style={{ transform: `scale(${zoomLevel/100})`, transformOrigin: 'top left' }}>
-      <div style={containerStyle}>
-        <style>{mobileStyles}</style>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        
-        {/* Mobile Message */}
-        <div className="mobile-message" style={{ display: 'none', padding: '100px 20px', textAlign: 'center', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>📱</div>
-            <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Mobile Device Detected</h2>
-            <p style={{ marginBottom: '20px', color: '#B9C1C1' }}>For the best gaming experience, please switch to a PC or desktop computer.</p>
-            <div style={{ fontSize: '14px', color: '#9CA3AF', lineHeight: 1.6 }}>
-              <div style={{ marginBottom: '15px' }}>🏆 <strong>Top Tetris Players:</strong></div>
-              {leaderboard.filter(e => e.gameType === 'tetris').slice(0, 3).map((entry, i) => (
-                <div key={i} style={{ marginBottom: '8px' }}>
-                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {entry.displayAddress}: {entry.score?.toLocaleString()}
-                </div>
-              ))}
-              <div style={{ marginTop: '20px', marginBottom: '15px' }}>🍒 <strong>Top Pacman Players:</strong></div>
-              {leaderboard.filter(e => e.gameType === 'pacman').slice(0, 3).map((entry, i) => (
-                <div key={i} style={{ marginBottom: '8px' }}>
-                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {entry.displayAddress}: {entry.score?.toLocaleString()}
-                </div>
-              ))}
-            </div>
-          </div>
-          <Footer />
-        </div>
-
-        {/* Desktop Content */}
-        <div className="desktop-content arcade-container" style={{ padding: '130px 20px 120px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
-            <div style={{ marginBottom: '40px', position: 'relative', zIndex: 10 }}>
-              <img
-                src="/arcade-title.png"
-                alt="375 Arcade - Built on Irys"
-                className="arcade-title-fixed"
-                style={{
-                  maxWidth: responsiveStyles.titleMaxWidth,
-                  width: '100%',
-                  height: 'auto',
-                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
-                }}
-              />
-            </div>
-
-            <div className="carousel-container tablet-adjustments" style={{
-              display: 'flex',
-              gap: '24px',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              minHeight: '400px'
-            }}>
-              <button
-                onClick={handleCarouselPrev}
-                style={{
-                  position: 'absolute',
-                  left: '50px',
-                  zIndex: 10,
-                  background: 'rgba(255, 61, 20, 0.2)',
-                  border: '2px solid rgba(255, 61, 20, 0.5)',
-                  borderRadius: '50%',
-                  width: '60px',
-                  height: '60px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '24px',
-                  color: '#FF3D14',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ←
-              </button>
-
-              <div className="carousel-game-side carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '300px',
-                height: '360px',
-                opacity: 0.4,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
-                transform: 'scale(0.8)',
-                pointerEvents: 'none'
-              }}>
-                <div style={{
-                  width: '80px',
-                  height: '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '20px',
-                  margin: '0 auto 20px auto'
-                }}>
-                  {leftGame.icon.startsWith('/') ? (
-                    <img src={leftGame.icon} alt={leftGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <span style={{ fontSize: '76px', lineHeight: 1 }}>{leftGame.icon}</span>
-                  )}
-                </div>
-                <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px', textAlign: 'center' }}>{leftGame.name}</h3>
-              </div>
-
-              <div className="carousel-game-center carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '400px',
-                maxWidth: '440px',
-                height: '360px',
-                border: `3px solid ${currentGame.borderColor}`,
-                boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
-                transform: 'scale(1.05)'
-              }}>
-                <div style={{
-                  width: '120px',
-                  height: '120px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '16px',
-                  margin: '0 auto 16px auto'
-                }}>
-                  {currentGame.icon.startsWith('/') ? (
-                    <img src={currentGame.icon} alt={currentGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <span style={{ fontSize: '110px', lineHeight: 1 }}>{currentGame.icon}</span>
-                  )}
-                </div>
-                <h2 style={{
-                  fontSize: '36px',
-                  marginBottom: '15px',
-                  color: currentGame.borderColor,
-                  fontWeight: 700,
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                  textAlign: 'center'
-                }}>
-                  {currentGame.name}
-                </h2>
-                <p style={{ marginBottom: '30px', color: '#9CA3AF', fontSize: responsiveStyles.fontSize, textAlign: 'center' }}>
-                  {currentGame.description}
-                </p>
-
-                {currentGame.id && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
-                    <button
-                      style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
-                      onClick={handleWalletConnection}
-                    >
-                      🔗 Connect Wallet & Play
-                    </button>
-                    <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px', textAlign: 'center' }}>
-                      Don't want to connect your wallet and publish your scores? No worries!
-                    </p>
-                    <button
-                      style={{
-                        background: 'rgba(25, 25, 35, 0.5)',
-                        border: '2px solid rgba(107, 114, 128, 0.3)',
-                        borderRadius: '12px',
-                        padding: '12px 24px',
-                        color: '#9CA3AF',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        minWidth: '200px'
-                      }}
-                      onClick={() => {
-                        setIsOfflineMode(true);
-                        setAuthed(true);
-                        setSelectedGame(currentGame.id);
-                        setIsPaid(true);
-                        setGameStarted(false);
-                        setGameOver(false);
-                      }}
-                    >
-                      Just Play
-                    </button>
+    return (
+      <div style={{ transform: `scale(${zoomLevel/100})`, transformOrigin: 'top left' }}>
+        <div style={containerStyle}>
+          <style>{mobileStyles}</style>
+          <NavigationHeader />
+          <LeaderboardPanel />
+          
+          {/* Mobile Message */}
+          <div className="mobile-message" style={{ display: 'none', padding: '100px 20px', textAlign: 'center', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <div style={cardStyle}>
+              <div style={{ fontSize: '48px', marginBottom: '20px' }}>📱</div>
+              <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Mobile Device Detected</h2>
+              <p style={{ marginBottom: '20px', color: '#B9C1C1' }}>For the best gaming experience, please switch to a PC or desktop computer.</p>
+              <div style={{ fontSize: '14px', color: '#9CA3AF', lineHeight: 1.6 }}>
+                <div style={{ marginBottom: '15px' }}>🏆 <strong>Top Tetris Players:</strong></div>
+                {leaderboard.filter(e => e.gameType === 'tetris').slice(0, 3).map((entry, i) => (
+                  <div key={i} style={{ marginBottom: '8px' }}>
+                    {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {entry.displayAddress}: {entry.score?.toLocaleString()}
                   </div>
-                )}
+                ))}
+                <div style={{ marginTop: '20px', marginBottom: '15px' }}>🍒 <strong>Top Pacman Players:</strong></div>
+                {leaderboard.filter(e => e.gameType === 'pacman').slice(0, 3).map((entry, i) => (
+                  <div key={i} style={{ marginBottom: '8px' }}>
+                    {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {entry.displayAddress}: {entry.score?.toLocaleString()}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Footer />
+          </div>
+
+          {/* Desktop Content */}
+          <div className="desktop-content arcade-container" style={{ padding: '130px 20px 120px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+            <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
+              <div style={{ marginBottom: '40px', position: 'relative', zIndex: 10 }}>
+                <img
+                  src="/arcade-title.png"
+                  alt="375 Arcade - Built on Irys"
+                  className="arcade-title-fixed"
+                  style={{
+                    maxWidth: responsiveStyles.titleMaxWidth,
+                    width: '100%',
+                    height: 'auto',
+                    filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                  }}
+                />
               </div>
 
-              <div className="carousel-game-side carousel-transition" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '300px',
-                height: '360px',
-                opacity: 0.4,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
-                transform: 'scale(0.8)',
-                pointerEvents: 'none'
+              <div className="carousel-container tablet-adjustments" style={{
+                display: 'flex',
+                gap: '24px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                minHeight: '400px'
               }}>
-                <div style={{
-                  width: '80px',
-                  height: '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '20px',
-                  margin: '0 auto 20px auto'
+                <button
+                  onClick={handleCarouselPrev}
+                  style={{
+                    position: 'absolute',
+                    left: '50px',
+                    zIndex: 10,
+                    background: 'rgba(255, 61, 20, 0.2)',
+                    border: '2px solid rgba(255, 61, 20, 0.5)',
+                    borderRadius: '50%',
+                    width: '60px',
+                    height: '60px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '24px',
+                    color: '#FF3D14',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  ←
+                </button>
+
+                <div className="carousel-game-side carousel-transition" style={{
+                  ...cardStyle,
+                  minWidth: '280px',
+                  maxWidth: '300px',
+                  height: '360px',
+                  opacity: 0.4,
+                  filter: 'blur(2px)',
+                  border: '2px solid rgba(255, 61, 20, 0.4)',
+                  boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+                  transform: 'scale(0.8)',
+                  pointerEvents: 'none'
                 }}>
-                  {rightGame.icon.startsWith('/') ? (
-                    <img src={rightGame.icon} alt={rightGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <span style={{ fontSize: '76px', lineHeight: 1 }}>{rightGame.icon}</span>
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '20px',
+                    margin: '0 auto 20px auto'
+                  }}>
+                    {leftGame.icon.startsWith('/') ? (
+                      <img src={leftGame.icon} alt={leftGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <span style={{ fontSize: '76px', lineHeight: 1 }}>{leftGame.icon}</span>
+                    )}
+                  </div>
+                  <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px', textAlign: 'center' }}>{leftGame.name}</h3>
+                </div>
+
+                <div className="carousel-game-center carousel-transition" style={{
+                  ...cardStyle,
+                  minWidth: '400px',
+                  maxWidth: '440px',
+                  height: '360px',
+                  border: `3px solid ${currentGame.borderColor}`,
+                  boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
+                  transform: 'scale(1.05)'
+                }}>
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px',
+                    margin: '0 auto 16px auto'
+                  }}>
+                    {currentGame.icon.startsWith('/') ? (
+                      <img src={currentGame.icon} alt={currentGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <span style={{ fontSize: '110px', lineHeight: 1 }}>{currentGame.icon}</span>
+                    )}
+                  </div>
+                  <h2 style={{
+                    fontSize: '36px',
+                    marginBottom: '15px',
+                    color: currentGame.borderColor,
+                    fontWeight: 700,
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                    textAlign: 'center'
+                  }}>
+                    {currentGame.name}
+                  </h2>
+                  <p style={{ marginBottom: '30px', color: '#9CA3AF', fontSize: responsiveStyles.fontSize, textAlign: 'center' }}>
+                    {currentGame.description}
+                  </p>
+
+                  {currentGame.id && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
+                      <button
+                        style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+                        onClick={handleWalletConnection}
+                      >
+                        🔗 Connect Wallet & Play
+                      </button>
+                      <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px', textAlign: 'center' }}>
+                        Don't want to connect your wallet and publish your scores? No worries!
+                      </p>
+                      <button
+                        style={{
+                          background: 'rgba(25, 25, 35, 0.5)',
+                          border: '2px solid rgba(107, 114, 128, 0.3)',
+                          borderRadius: '12px',
+                          padding: '12px 24px',
+                          color: '#9CA3AF',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          minWidth: '200px'
+                        }}
+                        onClick={() => {
+                          setIsOfflineMode(true);
+                          setAuthed(true);
+                          setSelectedGame(currentGame.id);
+                          setIsPaid(true);
+                          setGameStarted(false);
+                          setGameOver(false);
+                        }}
+                      >
+                        Just Play
+                      </button>
+                    </div>
                   )}
                 </div>
-                <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px', textAlign: 'center' }}>{rightGame.name}</h3>
+
+                <div className="carousel-game-side carousel-transition" style={{
+                  ...cardStyle,
+                  minWidth: '280px',
+                  maxWidth: '300px',
+                  height: '360px',
+                  opacity: 0.4,
+                  filter: 'blur(2px)',
+                  border: '2px solid rgba(255, 61, 20, 0.4)',
+                  boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+                  transform: 'scale(0.8)',
+                  pointerEvents: 'none'
+                }}>
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '20px',
+                    margin: '0 auto 20px auto'
+                  }}>
+                    {rightGame.icon.startsWith('/') ? (
+                      <img src={rightGame.icon} alt={rightGame.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <span style={{ fontSize: '76px', lineHeight: 1 }}>{rightGame.icon}</span>
+                    )}
+                  </div>
+                  <h3 style={{ color: '#9CA3AF', margin: 0, fontSize: '28px', textAlign: 'center' }}>{rightGame.name}</h3>
+                </div>
+
+                <button
+                  onClick={handleCarouselNext}
+                  className="header-button-hover"
+                  style={{
+                    position: 'absolute',
+                    right: '50px',
+                    zIndex: 10,
+                    background: 'rgba(255, 61, 20, 0.2)',
+                    border: '2px solid rgba(255, 61, 20, 0.5)',
+                    borderRadius: '50%',
+                    width: '60px',
+                    height: '60px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '24px',
+                    color: '#FF3D14'
+                  }}
+                >
+                  →
+                </button>
               </div>
-
-              <button
-                onClick={handleCarouselNext}
-                className="header-button-hover"
-                style={{
-                  position: 'absolute',
-                  right: '50px',
-                  zIndex: 10,
-                  background: 'rgba(255, 61, 20, 0.2)',
-                  border: '2px solid rgba(255, 61, 20, 0.5)',
-                  borderRadius: '50%',
-                  width: '60px',
-                  height: '60px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '24px',
-                  color: '#FF3D14'
-                }}
-              >
-                →
-              </button>
             </div>
+            <Footer />
           </div>
-          <Footer />
-        </div>
 
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1.05); }
-            50% { transform: scale(1.1); }
-          }
-        `}</style>
+          <style jsx>{`
+            @keyframes pulse {
+              0%, 100% { transform: scale(1.05); }
+              50% { transform: scale(1.1); }
+            }
+          `}</style>
+        </div>
       </div>
     );
   }
@@ -1469,18 +1470,19 @@ if (!mounted) return null;
   }
 
   return (
-    <div style={containerStyle}>
-      <NavigationHeader />
-      <LeaderboardPanel />
-      <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔄</div>
-          <h2 style={{ marginBottom: '20px' }}>Loading...</h2>
-          <p style={{ color: '#B9C1C1' }}>Initializing 375 Arcade...</p>
+    <div style={{ transform: `scale(${zoomLevel/100})`, transformOrigin: 'top left' }}>
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔄</div>
+            <h2 style={{ marginBottom: '20px' }}>Loading...</h2>
+            <p style={{ color: '#B9C1C1' }}>Initializing 375 Arcade...</p>
+          </div>
         </div>
-       </div>
         <Footer />
       </div>
-    </div> {/* <- Add this closing div for zoom wrapper */
+    </div>
   );
 }
