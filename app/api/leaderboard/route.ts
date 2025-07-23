@@ -4,16 +4,16 @@ export async function GET() {
   try {
     console.log('=== LEADERBOARD REQUEST START ===');
     
-    // Query Irys GraphQL for all Tetris scores
+    // Query Irys GraphQL for all arcade game scores (Tetris and Pacman)
     const query = `
-      query GetTetrisScores {
+      query GetArcadeScores {
         transactions(
           tags: [
-            { name: "Application", values: ["Tetris-Leaderboard"] },
+            { name: "Application", values: ["Tetris-Leaderboard", "Pacman-Leaderboard"] },
             { name: "Type", values: ["Score"] }
           ]
           order: DESC
-          first: 100
+          first: 200
         ) {
           edges {
             node {
@@ -83,6 +83,7 @@ export async function GET() {
                   const level = parseInt(tagMap.Level || '1');
                   const player = tagMap.Player || '';
                   const timestamp = parseInt(tagMap.Timestamp || node.timestamp);
+                  const gameType = tagMap.Application === 'Tetris-Leaderboard' ? 'tetris' : 'pacman';
                   
                   if (score > 0 && player) {
                     allScores.push({
@@ -92,6 +93,7 @@ export async function GET() {
                       lines,
                       level,
                       timestamp,
+                      gameType,
                       source: 'Irys'
                     });
                   }
@@ -116,33 +118,44 @@ export async function GET() {
         }
       }
       
-      // If no GraphQL worked, try direct transaction lookup for our known transaction
+      // If no GraphQL worked, try direct transaction lookup for known transactions
       if (allScores.length === 0) {
         console.log('GraphQL failed, trying direct transaction lookup...');
         try {
-          // Try to fetch the specific transaction we know exists
-          const knownTxId = '3WDEAWxDBsBi2HFXQw9UZNmczAzQSkzP1zdUxXy9UHAg';
-          const directResponse = await fetch(`https://gateway.irys.xyz/${knownTxId}`);
+          // Try to fetch specific transactions we know exist
+          const knownTxIds = [
+            '3WDEAWxDBsBi2HFXQw9UZNmczAzQSkzP1zdUxXy9UHAg', // Known Tetris score
+            // Add known Pacman transaction IDs here as they become available
+          ];
           
-          if (directResponse.ok) {
-            const txData = await directResponse.json();
-            console.log('Direct transaction data:', txData);
-            
-            if (txData.score && txData.walletAddress) {
-              allScores.push({
-                txId: knownTxId,
-                walletAddress: txData.walletAddress,
-                score: txData.score,
-                lines: txData.lines,
-                level: txData.level,
-                timestamp: txData.timestamp,
-                source: 'Direct'
-              });
-              console.log('Added score from direct transaction lookup');
+          for (const txId of knownTxIds) {
+            try {
+              const directResponse = await fetch(`https://gateway.irys.xyz/${txId}`);
+              
+              if (directResponse.ok) {
+                const txData = await directResponse.json();
+                console.log(`Direct transaction data for ${txId}:`, txData);
+                
+                if (txData.score && txData.walletAddress) {
+                  allScores.push({
+                    txId,
+                    walletAddress: txData.walletAddress,
+                    score: txData.score,
+                    lines: txData.lines || 0,
+                    level: txData.level || 1,
+                    timestamp: txData.timestamp,
+                    gameType: txData.gameType || 'tetris', // Default to tetris for legacy
+                    source: 'Direct'
+                  });
+                  console.log(`Added score from direct transaction lookup: ${txId}`);
+                }
+              }
+            } catch (directError) {
+              console.log(`Direct transaction lookup failed for ${txId}:`, directError);
             }
           }
         } catch (directError) {
-          console.log('Direct transaction lookup failed:', directError);
+          console.log('All direct transaction lookups failed:', directError);
         }
       }
       
@@ -150,10 +163,21 @@ export async function GET() {
       console.log('All GraphQL requests failed:', graphqlError.message);
     }
 
-    // Sort scores and create leaderboard
-    const leaderboard = allScores
-      .sort((a, b) => b.score - a.score) // Sort by score descending
-      .slice(0, 50) // Top 50 scores
+    // Sort scores by game type and create separate leaderboards
+    const tetrisScores = allScores
+      .filter(score => score.gameType === 'tetris')
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 50);
+      
+    const pacmanScores = allScores
+      .filter(score => score.gameType === 'pacman')
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 50);
+
+    // Create combined leaderboard (for mixed display)
+    const combinedLeaderboard = allScores
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 50)
       .map((entry, index) => ({
         rank: index + 1,
         txId: entry.txId,
@@ -163,27 +187,65 @@ export async function GET() {
         lines: entry.lines,
         level: entry.level,
         timestamp: entry.timestamp,
+        gameType: entry.gameType,
         source: entry.source
       }));
 
-    console.log(`=== RETURNING LEADERBOARD ===`);
-    console.log(`Total entries: ${leaderboard.length}`);
-    console.log('Top 5 scores:', leaderboard.slice(0, 5));
+    // Create game-specific leaderboards
+    const tetrisLeaderboard = tetrisScores.map((entry, index) => ({
+      rank: index + 1,
+      txId: entry.txId,
+      displayAddress: `${entry.walletAddress.slice(0, 6)}...${entry.walletAddress.slice(-4)}`,
+      walletAddress: entry.walletAddress,
+      score: entry.score,
+      lines: entry.lines,
+      level: entry.level,
+      timestamp: entry.timestamp,
+      gameType: 'tetris',
+      source: entry.source
+    }));
+
+    const pacmanLeaderboard = pacmanScores.map((entry, index) => ({
+      rank: index + 1,
+      txId: entry.txId,
+      displayAddress: `${entry.walletAddress.slice(0, 6)}...${entry.walletAddress.slice(-4)}`,
+      walletAddress: entry.walletAddress,
+      score: entry.score,
+      lines: entry.lines,
+      level: entry.level,
+      timestamp: entry.timestamp,
+      gameType: 'pacman',
+      source: entry.source
+    }));
+
+    console.log(`=== RETURNING LEADERBOARDS ===`);
+    console.log(`Total entries: ${combinedLeaderboard.length}`);
+    console.log(`Tetris entries: ${tetrisLeaderboard.length}`);
+    console.log(`Pacman entries: ${pacmanLeaderboard.length}`);
+    console.log('Top 3 combined scores:', combinedLeaderboard.slice(0, 3));
 
     const response = {
       success: true,
-      leaderboard,
-      total: leaderboard.length,
+      leaderboard: combinedLeaderboard, // For backward compatibility
+      tetris: tetrisLeaderboard,
+      pacman: pacmanLeaderboard,
+      combined: combinedLeaderboard,
+      totals: {
+        all: combinedLeaderboard.length,
+        tetris: tetrisLeaderboard.length,
+        pacman: pacmanLeaderboard.length
+      },
       sources: {
-        irys: allScores.filter(s => s.source === 'Irys').length
+        irys: allScores.filter(s => s.source === 'Irys').length,
+        direct: allScores.filter(s => s.source === 'Direct').length
       },
       note: allScores.length > 0 ? 'Scores loaded from Irys blockchain' : 'No scores found - leaderboard refreshes every 60 days on devnet'
     };
 
     console.log('Final API response summary:', {
       success: response.success,
-      total: response.total,
-      irysCount: response.sources.irys
+      totals: response.totals,
+      sources: response.sources
     });
     
     return NextResponse.json(response);
@@ -195,7 +257,11 @@ export async function GET() {
     return NextResponse.json({ 
       success: false,
       leaderboard: [],
-      total: 0,
+      tetris: [],
+      pacman: [],
+      combined: [],
+      totals: { all: 0, tetris: 0, pacman: 0 },
+      sources: { irys: 0, direct: 0 },
       error: err.message,
       note: 'Server error occurred'
     }, { status: 500 });
