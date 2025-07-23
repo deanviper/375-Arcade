@@ -30,12 +30,19 @@ interface LeaderboardEntry {
 
 type GameType = 'tetris' | 'pacman' | null;
 
+// ==== ADDED: Personal Best type ====
+type PersonalBest = {
+  tetris?: number;
+  pacman?: number;
+};
+
 // Local storage keys for persistence
 const STORAGE_KEYS = {
   WALLET_ADDRESS: 'arcade_wallet_address',
   IS_AUTHENTICATED: 'arcade_is_authenticated',
   IS_PAID: 'arcade_is_paid',
-  SELECTED_GAME: 'arcade_selected_game'
+  SELECTED_GAME: 'arcade_selected_game',
+  PERSONAL_BEST: 'arcade_pb' // ADDED
 };
 
 export default function Page() {
@@ -57,6 +64,9 @@ export default function Page() {
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
+  // ==== ADDED: Personal Best state ====
+  const [pb, setPb] = useState<PersonalBest>({});
+
   // Prevent hydration mismatch - wait for client to mount
   useEffect(() => {
     setMounted(true);
@@ -70,6 +80,8 @@ export default function Page() {
       const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
       const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
       const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
+      const savedPB = localStorage.getItem(STORAGE_KEYS.PERSONAL_BEST); // ADDED
+      if (savedPB) setPb(JSON.parse(savedPB)); // ADDED
       
       if (savedAuth) {
         console.log('Restoring wallet session:', address);
@@ -121,6 +133,16 @@ export default function Page() {
       console.error('Error saving to localStorage:', error);
     }
   }, [mounted, selectedGame]);
+
+  // ==== ADDED: persist PB ====
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.PERSONAL_BEST, JSON.stringify(pb));
+    } catch (err) {
+      console.error('Error saving PB:', err);
+    }
+  }, [mounted, pb]);
 
   // Clear persisted state when wallet disconnects
   const clearPersistedState = () => {
@@ -185,6 +207,8 @@ export default function Page() {
         const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
         const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
         const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
+        const savedPB = localStorage.getItem(STORAGE_KEYS.PERSONAL_BEST); // ADDED
+        if (savedPB) setPb(JSON.parse(savedPB)); // ADDED
         
         if (savedAuth) {
           setAuthed(true);
@@ -227,6 +251,20 @@ export default function Page() {
     link.rel = 'stylesheet';
     document.head.appendChild(link);
   }, [mounted]);
+
+  // ==== ADDED: helper to update PB ====
+  const savePB = (game: GameType, score: number) => {
+    if (!game) return;
+    setPb(prev => {
+      const prevVal = prev[game] ?? 0;
+      if (score > prevVal) {
+        const updated = { ...prev, [game]: score };
+        try { localStorage.setItem(STORAGE_KEYS.PERSONAL_BEST, JSON.stringify(updated)); } catch {}
+        return updated;
+      }
+      return prev;
+    });
+  };
 
   // Don't render anything until mounted to prevent hydration issues
   if (!mounted) {
@@ -510,7 +548,7 @@ export default function Page() {
     }
   `;
 
-  // Leaderboard Component with responsive design
+  // ==== MODIFIED: Leaderboard Panel to include PB under title ====
   const LeaderboardPanel = () => {
     if (!isPaid && !isOfflineMode) return null;
     
@@ -539,9 +577,55 @@ export default function Page() {
         )
       : null;
 
-    // Responsive positioning for leaderboard
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     
+    // ADDED: helper to render PB Box
+    const renderPBBox = () => {
+      if (!selectedGame) return null;
+      const value = (pb[selectedGame] ?? 0).toLocaleString();
+      const blur = isOfflineMode || !address || !authed;
+      
+      return (
+        <div style={{
+          marginTop: '8px',
+          padding: '10px 14px',
+          border: '1px solid rgba(255, 61, 20, 0.25)',
+          borderRadius: '8px',
+          background: 'rgba(15,15,20,0.45)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{ 
+            fontSize: '11px', 
+            color: '#9CA3AF', 
+            marginBottom: '4px', 
+            textAlign: 'center',
+            letterSpacing: '0.4px'
+          }}>
+            Personal Best
+          </div>
+          <div style={{
+            fontSize: '18px',
+            fontWeight: 700,
+            textAlign: 'center',
+            color: blur ? '#9CA3AF' : (selectedGame === 'pacman' ? '#FFD700' : '#50FFD6'),
+            filter: blur ? 'blur(5px)' : 'none',
+            userSelect: 'none'
+          }}>
+            {value}
+          </div>
+          {blur && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.25)',
+              pointerEvents: 'none'
+            }} />
+          )}
+        </div>
+      );
+    };
+
     return (
       <div style={{
         position: 'fixed',
@@ -573,6 +657,9 @@ export default function Page() {
           }}>
             🏆 {selectedGame === 'tetris' ? 'TETRIS' : selectedGame === 'pacman' ? 'PACMAN' : 'ARCADE'} LEADERBOARD
           </h2>
+
+          {/* ADDED: PB box right under the title */}
+          { (selectedGame === 'tetris' || selectedGame === 'pacman') && renderPBBox() }
         </div>
         
         <div style={{ padding: isMobile ? '12px' : '16px', maxHeight: isMobile ? '250px' : '300px', overflowY: 'auto' }}>
@@ -1477,6 +1564,7 @@ export default function Page() {
               onGameOver={(score, lines) => {
                 setGameOver(true);
                 setGameStarted(false);
+                savePB('tetris', score); // ADDED
               }}
               onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('tetris')}
               onPublishScore={handlePublishScore}
@@ -1488,6 +1576,7 @@ export default function Page() {
               onGameOver={(score, level) => {
                 setGameOver(true);
                 setGameStarted(false);
+                savePB('pacman', score); // ADDED
               }}
               onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('pacman')}
               onPublishScore={handlePublishScore}
@@ -1514,5 +1603,5 @@ export default function Page() {
       </div>
       <Footer />
     </div>
-  ); 
-} 
+  );
+}
