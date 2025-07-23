@@ -8,33 +8,6 @@ import BlurredPreview from '../components/BlurredPreview';
 import CanvasTetris from '../components/CanvasTetris';
 import CanvasPacman from '../components/CanvasPacman';
 
-export const metadata = {
-  title: "375 Arcade - Retro Games on Blockchain",
-  description: "Play classic Tetris and Pacman games with blockchain leaderboards. Built for the 375ai and IRYS community.",
-  openGraph: {
-    title: "375 Arcade - Retro Games on Blockchain", 
-    description: "Play classic Tetris and Pacman games with blockchain leaderboards. Built for the 375ai and IRYS community.",
-    url: "https://375-arcade.vercel.app",
-    siteName: "375 Arcade",
-    images: [
-      {
-        url: "https://375-arcade.vercel.app/arcade-title.png",
-        width: 800,
-        height: 400,
-        alt: "375 Arcade - Built on Irys",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "375 Arcade - Retro Games on Blockchain",
-    description: "Play classic Tetris and Pacman games with blockchain leaderboards. Built for the 375ai and IRYS community.", 
-    images: ["https://375-arcade.vercel.app/arcade-title.png"],
-  },
-};
-
 const IRYS_PARAMS = {
   chainId: '0x4F6', // 1270 in hex
   chainName: 'Irys Testnet',
