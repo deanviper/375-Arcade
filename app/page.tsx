@@ -1,880 +1,4 @@
->
-            Home
-          </button>
-          
-          <button
-            onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
-            style={{
-              position: 'relative',
-              background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)',
-              border: '2px solid transparent',
-              borderRadius: '12px',
-              padding: '10px 20px',
-              color: '#50FFD6',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              overflow: 'hidden',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.25) 0%, rgba(80, 255, 214, 0.1) 100%)';
-              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #50FFD6, #FF3D14) 1';
-              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(80, 255, 214, 0.3), 0 0 20px rgba(80, 255, 214, 0.1)';
-              e.currentTarget.style.color = '#FFF';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)';
-              e.currentTarget.style.borderImage = 'none';
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.color = '#50FFD6';
-            }}
-          >
-            Faucet
-          </button>
-          
-          <button
-            onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
-            style={{
-              position: 'relative',
-              background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)',
-              border: '2px solid transparent',
-              borderRadius: '12px',
-              padding: '10px 20px',
-              color: '#9CA3AF',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              overflow: 'hidden',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.25) 0%, rgba(156, 163, 175, 0.1) 100%)';
-              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #9CA3AF, #E5E7EB) 1';
-              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(156, 163, 175, 0.3), 0 0 20px rgba(156, 163, 175, 0.1)';
-              e.currentTarget.style.color = '#FFF';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)';
-              e.currentTarget.style.borderImage = 'none';
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.color = '#9CA3AF';
-            }}
-          >
-            Global Leaderboards
-          </button>
-        </div>
-      </div>
-
-      {/* Right Side - Wallet Status & Disconnect - Only show when connected and authenticated */}
-      {address && isConnected && authed && !isOfflineMode && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ 
-            background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(80, 255, 214, 0.05) 100%)',
-            border: '1px solid rgba(80, 255, 214, 0.3)',
-            borderRadius: '10px',
-            padding: '8px 16px',
-            fontSize: '12px',
-            color: '#50FFD6',
-            fontFamily: 'Monaco, monospace',
-            fontWeight: '600',
-            backdropFilter: 'blur(8px)'
-          }}>
-            {address.slice(0, 6)}...{address.slice(-4)}
-          </div>
-          <button
-            onClick={handleDisconnectWallet}
-            style={{
-              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '10px',
-              padding: '8px 16px',
-              color: '#EF4444',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)';
-              e.currentTarget.style.transform = 'translateY(-1px) scale(1.05)';
-              e.currentTarget.style.color = '#FFF';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.color = '#EF4444';
-            }}
-          >
-            Disconnect
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
-  // Updated container and card styles with mobile responsiveness
-  const containerStyle = {
-    minHeight: '100vh',
-    maxHeight: '100vh',
-    background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2a2a2a 100%)',
-    color: 'white',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
-    overflow: 'hidden'
-  };
-
-  const cardStyle = {
-    background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.9) 0%, rgba(25, 25, 35, 0.9) 100%)',
-    border: '2px solid rgba(80, 255, 214, 0.3)',
-    borderRadius: '20px',
-    padding: '40px',
-    backdropFilter: 'blur(12px)',
-    boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.2)',
-    textAlign: 'center' as const,
-    transition: 'all 0.3s ease'
-  };
-
-  const buttonStyle = {
-    background: 'linear-gradient(135deg, #FF3D14 0%, #50FFD6 100%)',
-    border: 'none',
-    borderRadius: '12px',
-    padding: '16px 32px',
-    color: 'white',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-    boxShadow: '0 4px 15px rgba(80, 255, 214, 0.4)',
-    minWidth: '200px'
-  };
-
-  // Add CSS for mobile responsiveness
-  const mobileStyles = `
-    @media (max-width: 1024px) and (min-width: 769px) {
-      /* iPad specific styles */
-      .arcade-container {
-        padding: 140px 20px 250px !important;
-      }
-      .arcade-title-mobile {
-        max-width: 350px !important;
-        margin-bottom: 50px !important;
-      }
-      .bruce-mobile {
-        width: 45vw !important;
-        min-width: 250px !important;
-        max-width: 400px !important;
-        left: -8% !important;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .arcade-container {
-        padding: 120px 10px 200px !important;
-      }
-      .arcade-cards {
-        flex-direction: column !important;
-        gap: 20px !important;
-      }
-      .arcade-card {
-        min-width: 280px !important;
-        max-width: 350px !important;
-        margin: 0 auto !important;
-      }
-      .leaderboard-panel {
-        position: relative !important;
-        top: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
-        margin-bottom: 20px !important;
-        max-height: 400px !important;
-      }
-      .nav-buttons {
-        flex-wrap: wrap !important;
-        gap: 8px !important;
-      }
-      .nav-button {
-        padding: 6px 12px !important;
-        font-size: 12px !important;
-      }
-      /* Bruce mobile positioning */
-      .bruce-mobile {
-        width: 50vw !important;
-        min-width: 200px !important;
-        max-width: 300px !important;
-        left: -10% !important;
-        bottom: 5px !important;
-      }
-      /* Arcade title mobile */
-      .arcade-title-mobile {
-        max-width: 300px !important;
-        margin-bottom: 40px !important;
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .arcade-container {
-        padding: 110px 5px 180px !important;
-      }
-      /* Even smaller Bruce on very small screens */
-      .bruce-mobile {
-        width: 40vw !important;
-        min-width: 150px !important;
-        max-width: 200px !important;
-        left: -15% !important;
-      }
-      /* Smaller arcade title on phones */
-      .arcade-title-mobile {
-        max-width: 280px !important;
-        display: block !important;
-      }
-    }
-  `;
-
-  // Footer component
-  const Footer = () => (
-    <div style={{
-      position: 'absolute',
-      bottom: '10px',
-      left: '20px',
-      right: '20px',
-      textAlign: 'center',
-      zIndex: 500
-    }}>
-      <div style={{ 
-        fontSize: '12px', 
-        color: '#B9C1C1',
-        marginBottom: '8px'
-      }}>
-        Made with love by{' '}
-        <a 
-          href="https://x.com/cryptdean" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ 
-            color: '#FF3D14', 
-            textDecoration: 'none',
-            fontWeight: '600'
-          }}
-        >
-          Dean
-        </a>
-        . para mi amore, <em>vivr</em>
-      </div>
-      
-      <div style={{ 
-        fontSize: '9px', 
-        color: '#666',
-        lineHeight: '1.3',
-        maxWidth: '600px',
-        margin: '0 auto'
-      }}>
-        <strong>Disclaimer:</strong> 375 Arcade is not in any way, shape, or form affiliated with the 375ai or Irys team. This is a game made for the community. There will be no financial transactions, solicitations, donations, or anything related to user spending. For official updates visit{' '}
-        <a 
-          href="https://x.com/375ai_" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ color: '#FF3D14', textDecoration: 'none' }}
-        >
-          375ai
-        </a>
-        {' '}and{' '}
-        <a 
-          href="https://x.com/irys_xyz" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ color: '#10b981', textDecoration: 'none' }}
-        >
-          Irys
-        </a>
-      </div>
-    </div>
-  );
-
-  // Wrong chain
-  if (chainId && chainId !== 1270 && !isOfflineMode) {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <BruceMascot />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
-            <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Wrong Network</h2>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
-              Please switch to <strong>Irys Testnet</strong> to continue
-            </p>
-            <button
-              style={buttonStyle}
-              onClick={async () => {
-                const ethereum = (window as any).ethereum;
-                if (!ethereum) {
-                  alert('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
-                  return;
-                }
-                
-                try {
-                  await ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [IRYS_PARAMS],
-                  });
-                } catch (addError: any) {
-                  console.log('Add network failed:', addError);
-                }
-                
-                try {
-                  await ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: IRYS_PARAMS.chainId }],
-                  });
-                } catch (switchError: any) {
-                  if (switchError.code === 4001) {
-                    alert('Network switch cancelled by user');
-                  } else {
-                    alert('Failed to switch network: ' + switchError.message);
-                  }
-                }
-              }}
-            >
-              Switch to Irys Testnet
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Landing page
-  if (!address && !isConnected && !isOfflineMode) {
-    return (
-      <div style={containerStyle}>
-        <style>{mobileStyles}</style>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <BruceMascot />
-        <div className="arcade-container" style={{ padding: '130px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
-            <div style={{ marginBottom: '60px' }}>
-              <img 
-                src="/arcade-title.png" 
-                alt="375 Arcade - Built on Irys"
-                className="arcade-title-mobile"
-                style={{ 
-                  maxWidth: '400px',
-                  width: '100%',
-                  height: 'auto',
-                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
-                }} 
-              />
-            </div>
-
-            <div className="arcade-cards" style={{ 
-              display: 'flex', 
-              gap: '40px', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              flexWrap: 'wrap'
-            }}>
-              {/* Tetris Card */}
-              <div className="arcade-card" style={{
-                ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #50FFD6',
-                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.3)'
-              }}>
-                <div style={{ 
-                  width: '64px', 
-                  height: '64px', 
-                  backgroundImage: 'url(/blocks.png)', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '20px',
-                  margin: '0 auto 20px auto'
-                }}></div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  TETRIS
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
-                  Play a classic game of Tetris for 0.01 Irys!
-                </p>
-                
-                <button
-                  style={{ 
-                    ...buttonStyle, 
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
-                  }}
-                  onClick={() => {
-                    setSelectedGame('tetris');
-                    handlePayment();
-                  }}
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play Tetris'}
-                </button>
-              </div>
-
-              {/* Pacman Game */}
-              <div style={{
-                ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #FFFF00',
-                boxShadow: '0 25px 50px -12px rgba(255, 255, 0, 0.3)'
-              }}>
-                <div style={{ 
-                  fontSize: '64px',
-                  marginBottom: '20px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}>
-                  🔴
-                </div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #FFFF00, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  PACMAN
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
-                  Navigate the maze and eat dots for 0.01 Irys!
-                </p>
-                
-                <button
-                  style={{ 
-                    ...buttonStyle, 
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
-                  }}
-                  onClick={() => {
-                    setSelectedGame('pacman');
-                    handlePayment();
-                  }}
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play Pacman'}
-                </button>
-              </div>
-
-              {/* Coming Soon */}
-              <div style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                opacity: 0.6,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
-                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
-              </div>
-            </div>
-          </div>
-          <Footer />
-        </div>
-        
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Ready to start - Show for offline mode OR after payment (but NOT when game started)
-  if ((isOfflineMode || isPaid) && selectedGame && !gameStarted && !gameOver) {
-    console.log('Ready to Play condition met:', { isOfflineMode, isPaid, selectedGame, gameStarted, gameOver });
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <BruceMascot />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
-            <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play {selectedGame?.toUpperCase()}!</h2>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
-              Press <kbd style={{ 
-                background: 'rgba(255, 61, 20, 0.2)', 
-                padding: '8px 12px', 
-                borderRadius: '6px', 
-                border: '1px solid rgba(255, 61, 20, 0.3)',
-                color: '#FF3D14',
-                fontFamily: 'Monaco, monospace'
-              }}>SPACEBAR</kbd> to start
-            </p>
-            <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
-              {selectedGame === 'tetris' ? (
-                <>
-                  <p>🎯 Clear lines to score points</p>
-                  <p>⚡ Speed increases every 4 lines</p>
-                </>
-              ) : (
-                <>
-                  <p>🎯 Eat all dots to advance levels</p>
-                  <p>⚡ Avoid ghosts, eat power pellets</p>
-                </>
-              )}
-              {address && !isOfflineMode && (
-                <p>🏆 Publish scores to blockchain leaderboard!</p>
-              )}
-            </div>
-          </div>
-        </div>
-        <Footer />
-        
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Game active - Show when game has started (both paid and offline mode)
-  if (gameStarted || gameOver) {
-    console.log('Game active condition met:', { gameStarted, gameOver, isOfflineMode, isPaid, selectedGame });
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <BruceMascot />
-        <div style={{ 
-          padding: '80px 20px 20px', 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          minHeight: '100vh'
-        }}>
-          {selectedGame === 'tetris' ? (
-            <CanvasTetris
-              start={gameStarted}
-              onGameOver={(score, lines) => {
-                console.log('Tetris game over callback triggered:', { score, lines });
-                setGameOver(true);
-                setGameStarted(false);
-              }}
-              onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
-              onPublishScore={handlePublishScore}
-              playerAddress={isOfflineMode ? undefined : address}
-            />
-          ) : selectedGame === 'pacman' ? (
-            <CanvasPacman
-              start={gameStarted}
-              onGameOver={(score, level) => {
-                console.log('Pacman game over callback triggered:', { score, level });
-                setGameOver(true);
-                setGameStarted(false);
-              }}
-              onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
-              onPublishScore={handlePublishScore}
-              playerAddress={isOfflineMode ? undefined : address}
-            />
-          ) : null}
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Default fallback - should not happen but good to have
-  return (
-    <div style={containerStyle}>
-      <NavigationHeader />
-      <LeaderboardPanel />
-      <BruceMascot />
-      <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔄</div>
-          <h2 style={{ marginBottom: '20px' }}>Loading...</h2>
-          <p style={{ color: '#B9C1C1' }}>Please wait while we set up your arcade experience.</p>
-        </div>
-      </div>
-      <Footer />
-    </div>
-  );
-}, 255, 214, 0.4)'
-              }}>
-                <div style={{ 
-                  width: '64px', 
-                  height: '64px', 
-                  backgroundImage: 'url(/blocks.png)', 
-                  backgroundSize: 'contain', 
-                  backgroundRepeat: 'no-repeat', 
-                  backgroundPosition: 'center',
-                  marginBottom: '20px',
-                  margin: '0 auto 20px auto'
-                }}></div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  TETRIS
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
-                  Play a classic game of Tetris for 0.01 Irys!
-                </p>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <button
-                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
-                    onClick={handleWalletConnection}
-                  >
-                    🔗 Connect Wallet & Play
-                  </button>
-                  
-                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
-                    Don't want to connect your wallet and publish your scores? No worries!
-                  </p>
-                  
-                  <button
-                    style={{
-                      background: 'rgba(25, 25, 35, 0.5)',
-                      border: '2px solid rgba(107, 114, 128, 0.3)',
-                      borderRadius: '12px',
-                      padding: '12px 24px',
-                      color: '#9CA3AF',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      minWidth: '200px'
-                    }}
-                    onClick={() => {
-                      setIsOfflineMode(true);
-                      setAuthed(true);
-                      setSelectedGame('tetris');
-                      setIsPaid(true);
-                      setGameStarted(false);
-                      setGameOver(false);
-                    }}
-                  >
-                    Just Play Tetris
-                  </button>
-                </div>
-              </div>
-
-              {/* Pacman Card */}
-              <div className="arcade-card" style={{
-                ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #FFFF00',
-                boxShadow: '0 25px 50px -12px rgba(255, 255, 0, 0.4)'
-              }}>
-                <div style={{ 
-                  fontSize: '64px',
-                  marginBottom: '20px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}>
-                  🔴
-                </div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #FFFF00, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  PACMAN
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
-                  Navigate the maze and eat dots for 0.01 Irys!
-                </p>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <button
-                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
-                    onClick={handleWalletConnection}
-                  >
-                    🔗 Connect Wallet & Play
-                  </button>
-                  
-                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
-                    Don't want to connect your wallet and publish your scores? No worries!
-                  </p>
-                  
-                  <button
-                    style={{
-                      background: 'rgba(25, 25, 35, 0.5)',
-                      border: '2px solid rgba(107, 114, 128, 0.3)',
-                      borderRadius: '12px',
-                      padding: '12px 24px',
-                      color: '#9CA3AF',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      minWidth: '200px'
-                    }}
-                    onClick={() => {
-                      setIsOfflineMode(true);
-                      setAuthed(true);
-                      setSelectedGame('pacman');
-                      setIsPaid(true);
-                      setGameStarted(false);
-                      setGameOver(false);
-                    }}
-                  >
-                    Just Play Pacman
-                  </button>
-                </div>
-              </div>
-
-              {/* Coming Soon Card */}
-              <div className="arcade-card" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                opacity: 0.6,
-                filter: 'blur(2px)',
-                border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
-              }}>
-                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
-                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
-              </div>
-            </div>
-          </div>
-          
-          <Footer />
-        </div>
-        
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Sign auth - Skip for offline users
-  if (!authed && address && isConnected) {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <BruceMascot />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
-            <h2 style={{ marginBottom: '20px' }}>Authentication Required</h2>
-            <p style={{ marginBottom: '10px', color: '#B9C1C1' }}>
-              <strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}
-            </p>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
-              Sign a message to verify your identity
-            </p>
-            <button
-              style={buttonStyle}
-              onClick={async () => {
-                try {
-                  const message = `Authenticate @375 Arcade at ${Date.now()}`;
-                  await signMessageAsync({ message });
-                  
-                  // Set authenticated and reset payment state
-                  setAuthed(true);
-                  setIsPaid(false); // Force to game selection page
-                  setSelectedGame(null);
-                  setGameStarted(false);
-                  setGameOver(false);
-                  
-                  console.log('Authentication successful - redirecting to game selection');
-                } catch (e: any) {
-                  if (e.message.includes('User rejected')) {
-                    alert('Authentication cancelled by user');
-                  } else {
-                    alert('Authentication failed: ' + e.message);
-                  }
-                }
-              }}
-            >
-              🔐 Sign Message
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Show connected and authenticated state - the game selection page
-  if (address && isConnected && authed && !isPaid && !selectedGame && !gameStarted && !gameOver) {
-    return (
-      <div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <BruceMascot />
-        <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
-          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
-            <div style={{ marginBottom: '40px' }}>
-              <img 
-                src="/arcade-title.png" 
-                alt="375 Arcade - Built on Irys"
-                style={{ 
-                  maxWidth: '400px',
-                  width: '100%',
-                  height: 'auto',
-                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
-                }} 
-              />
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              gap: '40px', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              flexWrap: 'wrap'
-            }}>
-              {/* Tetris Game */}
-              <div style={{
-                ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #50FFD6',
-                boxShadow: '0 25px 50px -12px rgba(80'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
@@ -1188,11 +312,6 @@ export default function Page() {
     }
   };
 
-  // Handle game selection
-  const handleGameSelect = (game: GameType) => {
-    setSelectedGame(game);
-  };
-
   // Bruce Mascot Component - Fixed positioning for all pages with mobile responsiveness
   const BruceMascot = () => (
     <img 
@@ -1450,4 +569,881 @@ export default function Page() {
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              overflow
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.25) 0%, rgba(255, 61, 20, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #FF3D14, #50FFD6) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 61, 20, 0.3), 0 0 20px rgba(255, 61, 20, 0.1)';
+              e.currentTarget.style.color = '#FFF';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.15) 0%, rgba(255, 61, 20, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#FF3D14';
+            }}
+          >
+            Home
+          </button>
+          
+          <button
+            onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)',
+              border: '2px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 20px',
+              color: '#50FFD6',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.25) 0%, rgba(80, 255, 214, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #50FFD6, #FF3D14) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(80, 255, 214, 0.3), 0 0 20px rgba(80, 255, 214, 0.1)';
+              e.currentTarget.style.color = '#FFF';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#50FFD6';
+            }}
+          >
+            Faucet
+          </button>
+          
+          <button
+            onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)',
+              border: '2px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 20px',
+              color: '#9CA3AF',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.25) 0%, rgba(156, 163, 175, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #9CA3AF, #E5E7EB) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(156, 163, 175, 0.3), 0 0 20px rgba(156, 163, 175, 0.1)';
+              e.currentTarget.style.color = '#FFF';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#9CA3AF';
+            }}
+          >
+            Global Leaderboards
+          </button>
+        </div>
+      </div>
+
+      {/* Right Side - Wallet Status & Disconnect - Only show when connected and authenticated */}
+      {address && isConnected && authed && !isOfflineMode && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(80, 255, 214, 0.05) 100%)',
+            border: '1px solid rgba(80, 255, 214, 0.3)',
+            borderRadius: '10px',
+            padding: '8px 16px',
+            fontSize: '12px',
+            color: '#50FFD6',
+            fontFamily: 'Monaco, monospace',
+            fontWeight: '600',
+            backdropFilter: 'blur(8px)'
+          }}>
+            {address.slice(0, 6)}...{address.slice(-4)}
+          </div>
+          <button
+            onClick={handleDisconnectWallet}
+            style={{
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '10px',
+              padding: '8px 16px',
+              color: '#EF4444',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+              e.currentTarget.style.transform = 'translateY(-1px) scale(1.05)';
+              e.currentTarget.style.color = '#FFF';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.color = '#EF4444';
+            }}
+          >
+            Disconnect
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  // Updated container and card styles with mobile responsiveness
+  const containerStyle = {
+    minHeight: '100vh',
+    maxHeight: '100vh',
+    background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2a2a2a 100%)',
+    color: 'white',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+    overflow: 'hidden'
+  };
+
+  const cardStyle = {
+    background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.9) 0%, rgba(25, 25, 35, 0.9) 100%)',
+    border: '2px solid rgba(80, 255, 214, 0.3)',
+    borderRadius: '20px',
+    padding: '40px',
+    backdropFilter: 'blur(12px)',
+    boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.2)',
+    textAlign: 'center' as const,
+    transition: 'all 0.3s ease'
+  };
+
+  const buttonStyle = {
+    background: 'linear-gradient(135deg, #FF3D14 0%, #50FFD6 100%)',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '16px 32px',
+    color: 'white',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    boxShadow: '0 4px 15px rgba(80, 255, 214, 0.4)',
+    minWidth: '200px'
+  };
+
+  // Add CSS for mobile responsiveness
+  const mobileStyles = `
+    @media (max-width: 1024px) and (min-width: 769px) {
+      /* iPad specific styles */
+      .arcade-container {
+        padding: 140px 20px 250px !important;
+      }
+      .arcade-title-mobile {
+        max-width: 350px !important;
+        margin-bottom: 50px !important;
+      }
+      .bruce-mobile {
+        width: 45vw !important;
+        min-width: 250px !important;
+        max-width: 400px !important;
+        left: -8% !important;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .arcade-container {
+        padding: 120px 10px 200px !important;
+      }
+      .arcade-cards {
+        flex-direction: column !important;
+        gap: 20px !important;
+      }
+      .arcade-card {
+        min-width: 280px !important;
+        max-width: 350px !important;
+        margin: 0 auto !important;
+      }
+      .leaderboard-panel {
+        position: relative !important;
+        top: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        margin-bottom: 20px !important;
+        max-height: 400px !important;
+      }
+      .nav-buttons {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .nav-button {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+      }
+      /* Bruce mobile positioning */
+      .bruce-mobile {
+        width: 50vw !important;
+        min-width: 200px !important;
+        max-width: 300px !important;
+        left: -10% !important;
+        bottom: 5px !important;
+      }
+      /* Arcade title mobile */
+      .arcade-title-mobile {
+        max-width: 300px !important;
+        margin-bottom: 40px !important;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .arcade-container {
+        padding: 110px 5px 180px !important;
+      }
+      /* Even smaller Bruce on very small screens */
+      .bruce-mobile {
+        width: 40vw !important;
+        min-width: 150px !important;
+        max-width: 200px !important;
+        left: -15% !important;
+      }
+      /* Smaller arcade title on phones */
+      .arcade-title-mobile {
+        max-width: 280px !important;
+        display: block !important;
+      }
+    }
+  `;
+
+  // Footer component
+  const Footer = () => (
+    <div style={{
+      position: 'absolute',
+      bottom: '10px',
+      left: '20px',
+      right: '20px',
+      textAlign: 'center',
+      zIndex: 500
+    }}>
+      <div style={{ 
+        fontSize: '12px', 
+        color: '#B9C1C1',
+        marginBottom: '8px'
+      }}>
+        Made with love by{' '}
+        <a 
+          href="https://x.com/cryptdean" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ 
+            color: '#FF3D14', 
+            textDecoration: 'none',
+            fontWeight: '600'
+          }}
+        >
+          Dean
+        </a>
+        . para mi amore, <em>vivr</em>
+      </div>
+      
+      <div style={{ 
+        fontSize: '9px', 
+        color: '#666',
+        lineHeight: '1.3',
+        maxWidth: '600px',
+        margin: '0 auto'
+      }}>
+        <strong>Disclaimer:</strong> 375 Arcade is not in any way, shape, or form affiliated with the 375ai or Irys team. This is a game made for the community. There will be no financial transactions, solicitations, donations, or anything related to user spending. For official updates visit{' '}
+        <a 
+          href="https://x.com/375ai_" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#FF3D14', textDecoration: 'none' }}
+        >
+          375ai
+        </a>
+        {' '}and{' '}
+        <a 
+          href="https://x.com/irys_xyz" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#10b981', textDecoration: 'none' }}
+        >
+          Irys
+        </a>
+      </div>
+    </div>
+  );
+
+  // Wrong chain
+  if (chainId && chainId !== 1270 && !isOfflineMode) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
+            <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Wrong Network</h2>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
+              Please switch to <strong>Irys Testnet</strong> to continue
+            </p>
+            <button
+              style={buttonStyle}
+              onClick={async () => {
+                const ethereum = (window as any).ethereum;
+                if (!ethereum) {
+                  alert('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
+                  return;
+                }
+                
+                try {
+                  await ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [IRYS_PARAMS],
+                  });
+                } catch (addError: any) {
+                  console.log('Add network failed:', addError);
+                }
+                
+                try {
+                  await ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: IRYS_PARAMS.chainId }],
+                  });
+                } catch (switchError: any) {
+                  if (switchError.code === 4001) {
+                    alert('Network switch cancelled by user');
+                  } else {
+                    alert('Failed to switch network: ' + switchError.message);
+                  }
+                }
+              }}
+            >
+              Switch to Irys Testnet
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Landing page
+  if (!address && !isConnected && !isOfflineMode) {
+    return (
+      <div style={containerStyle}>
+        <style>{mobileStyles}</style>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div className="arcade-container" style={{ padding: '130px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
+            <div style={{ marginBottom: '60px' }}>
+              <img 
+                src="/arcade-title.png" 
+                alt="375 Arcade - Built on Irys"
+                className="arcade-title-mobile"
+                style={{ 
+                  maxWidth: '400px',
+                  width: '100%',
+                  height: 'auto',
+                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                }} 
+              />
+            </div>
+
+            <div className="arcade-cards" style={{ 
+              display: 'flex', 
+              gap: '40px', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              {/* Tetris Card */}
+              <div className="arcade-card" style={{
+                ...cardStyle,
+                minWidth: '320px',
+                maxWidth: '400px',
+                border: '3px solid #50FFD6',
+                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.4)'
+              }}>
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  backgroundImage: 'url(/blocks.png)', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}></div>
+                <h2 style={{ 
+                  fontSize: '32px', 
+                  marginBottom: '15px', 
+                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '700'
+                }}>
+                  TETRIS
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
+                  Play a classic game of Tetris for 0.01 Irys!
+                </p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <button
+                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+                    onClick={handleWalletConnection}
+                  >
+                    🔗 Connect Wallet & Play
+                  </button>
+                  
+                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
+                    Don't want to connect your wallet and publish your scores? No worries!
+                  </p>
+                  
+                  <button
+                    style={{
+                      background: 'rgba(25, 25, 35, 0.5)',
+                      border: '2px solid rgba(107, 114, 128, 0.3)',
+                      borderRadius: '12px',
+                      padding: '12px 24px',
+                      color: '#9CA3AF',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      minWidth: '200px'
+                    }}
+                    onClick={() => {
+                      setIsOfflineMode(true);
+                      setAuthed(true);
+                      setSelectedGame('tetris');
+                      setIsPaid(true);
+                      setGameStarted(false);
+                      setGameOver(false);
+                    }}
+                  >
+                    Just Play Tetris
+                  </button>
+                </div>
+              </div>
+
+              {/* Pacman Card */}
+              <div className="arcade-card" style={{
+                ...cardStyle,
+                minWidth: '320px',
+                maxWidth: '400px',
+                border: '3px solid #FFFF00',
+                boxShadow: '0 25px 50px -12px rgba(255, 255, 0, 0.4)'
+              }}>
+                <div style={{ 
+                  fontSize: '64px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}>
+                  🔴
+                </div>
+                <h2 style={{ 
+                  fontSize: '32px', 
+                  marginBottom: '15px', 
+                  background: 'linear-gradient(90deg, #FFFF00, #FF3D14)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '700'
+                }}>
+                  PACMAN
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
+                  Navigate the maze and eat dots for 0.01 Irys!
+                </p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <button
+                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+                    onClick={handleWalletConnection}
+                  >
+                    🔗 Connect Wallet & Play
+                  </button>
+                  
+                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
+                    Don't want to connect your wallet and publish your scores? No worries!
+                  </p>
+                  
+                  <button
+                    style={{
+                      background: 'rgba(25, 25, 35, 0.5)',
+                      border: '2px solid rgba(107, 114, 128, 0.3)',
+                      borderRadius: '12px',
+                      padding: '12px 24px',
+                      color: '#9CA3AF',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      minWidth: '200px'
+                    }}
+                    onClick={() => {
+                      setIsOfflineMode(true);
+                      setAuthed(true);
+                      setSelectedGame('pacman');
+                      setIsPaid(true);
+                      setGameStarted(false);
+                      setGameOver(false);
+                    }}
+                  >
+                    Just Play Pacman
+                  </button>
+                </div>
+              </div>
+
+              {/* Coming Soon Card */}
+              <div className="arcade-card" style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+            </div>
+          </div>
+          
+          <Footer />
+        </div>
+        
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Sign auth - Skip for offline users
+  if (!authed && address && isConnected) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
+            <h2 style={{ marginBottom: '20px' }}>Authentication Required</h2>
+            <p style={{ marginBottom: '10px', color: '#B9C1C1' }}>
+              <strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}
+            </p>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
+              Sign a message to verify your identity
+            </p>
+            <button
+              style={buttonStyle}
+              onClick={async () => {
+                try {
+                  const message = `Authenticate @375 Arcade at ${Date.now()}`;
+                  await signMessageAsync({ message });
+                  
+                  // Set authenticated and reset payment state
+                  setAuthed(true);
+                  setIsPaid(false); // Force to game selection page
+                  setSelectedGame(null);
+                  setGameStarted(false);
+                  setGameOver(false);
+                  
+                  console.log('Authentication successful - redirecting to game selection');
+                } catch (e: any) {
+                  if (e.message.includes('User rejected')) {
+                    alert('Authentication cancelled by user');
+                  } else {
+                    alert('Authentication failed: ' + e.message);
+                  }
+                }
+              }}
+            >
+              🔐 Sign Message
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show connected and authenticated state - the game selection page
+  if (address && isConnected && authed && !isPaid && !selectedGame && !gameStarted && !gameOver) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '40px' }}>
+              <img 
+                src="/arcade-title.png" 
+                alt="375 Arcade - Built on Irys"
+                style={{ 
+                  maxWidth: '400px',
+                  width: '100%',
+                  height: 'auto',
+                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                }} 
+              />
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              gap: '40px', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              {/* Tetris Game */}
+              <div style={{
+                ...cardStyle,
+                minWidth: '320px',
+                maxWidth: '400px',
+                border: '3px solid #50FFD6',
+                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.3)'
+              }}>
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  backgroundImage: 'url(/blocks.png)', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}></div>
+                <h2 style={{ 
+                  fontSize: '32px', 
+                  marginBottom: '15px', 
+                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '700'
+                }}>
+                  TETRIS
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
+                  Play a classic game of Tetris for 0.01 Irys!
+                </p>
+                
+                <button
+                  style={{ 
+                    ...buttonStyle, 
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
+                  }}
+                  onClick={() => {
+                    setSelectedGame('tetris');
+                    handlePayment();
+                  }}
+                  disabled={isProcessingPayment}
+                >
+                  {isProcessingPayment ? '⏳ Processing...' : 'Play Tetris'}
+                </button>
+              </div>
+
+              {/* Pacman Game */}
+              <div style={{
+                ...cardStyle,
+                minWidth: '320px',
+                maxWidth: '400px',
+                border: '3px solid #FFFF00',
+                boxShadow: '0 25px 50px -12px rgba(255, 255, 0, 0.3)'
+              }}>
+                <div style={{ 
+                  fontSize: '64px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}>
+                  🔴
+                </div>
+                <h2 style={{ 
+                  fontSize: '32px', 
+                  marginBottom: '15px', 
+                  background: 'linear-gradient(90deg, #FFFF00, #FF3D14)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '700'
+                }}>
+                  PACMAN
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
+                  Navigate the maze and eat dots for 0.01 Irys!
+                </p>
+                
+                <button
+                  style={{ 
+                    ...buttonStyle, 
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
+                  }}
+                  onClick={() => {
+                    setSelectedGame('pacman');
+                    handlePayment();
+                  }}
+                  disabled={isProcessingPayment}
+                >
+                  {isProcessingPayment ? '⏳ Processing...' : 'Play Pacman'}
+                </button>
+              </div>
+
+              {/* Coming Soon */}
+              <div style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+            </div>
+          </div>
+          <Footer />
+        </div>
+        
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Ready to start - Show for offline mode OR after payment (but NOT when game started)
+  if ((isOfflineMode || isPaid) && selectedGame && !gameStarted && !gameOver) {
+    console.log('Ready to Play condition met:', { isOfflineMode, isPaid, selectedGame, gameStarted, gameOver });
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
+            <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play {selectedGame?.toUpperCase()}!</h2>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
+              Press <kbd style={{ 
+                background: 'rgba(255, 61, 20, 0.2)', 
+                padding: '8px 12px', 
+                borderRadius: '6px', 
+                border: '1px solid rgba(255, 61, 20, 0.3)',
+                color: '#FF3D14',
+                fontFamily: 'Monaco, monospace'
+              }}>SPACEBAR</kbd> to start
+            </p>
+            <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
+              {selectedGame === 'tetris' ? (
+                <>
+                  <p>🎯 Clear lines to score points</p>
+                  <p>⚡ Speed increases every 4 lines</p>
+                </>
+              ) : (
+                <>
+                  <p>🎯 Eat all dots to advance levels</p>
+                  <p>⚡ Avoid ghosts, eat power pellets</p>
+                </>
+              )}
+              {address && !isOfflineMode && (
+                <p>🏆 Publish scores to blockchain leaderboard!</p>
+              )}
+            </div>
+          </div>
+        </div>
+        <Footer />
+        
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Game active - Show when game has started (both paid and offline mode)
+  if (gameStarted || gameOver) {
+    console.log('Game active condition met:', { gameStarted, gameOver, isOfflineMode, isPaid, selectedGame });
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ 
+          padding: '80px 20px 20px', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          minHeight: '100vh'
+        }}>
+          {selectedGame === 'tetris' ? (
+            <CanvasTetris
+              start={gameStarted}
+              onGameOver={(score, lines) => {
+                console.log('Tetris game over callback triggered:', { score, lines });
+                setGameOver(true);
+                setGameStarted(false);
+              }}
+              onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
+              onPublishScore={handlePublishScore}
+              playerAddress={isOfflineMode ? undefined : address}
+            />
+          ) : selectedGame === 'pacman' ? (
+            <CanvasPacman
+              start={gameStarted}
+              onGameOver={(score, level) => {
+                console.log('Pacman game over callback triggered:', { score, level });
+                setGameOver(true);
+                setGameStarted(false);
+              }}
+              onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
+              onPublishScore={handlePublishScore}
+              playerAddress={isOfflineMode ? undefined : address}
+            />
+          ) : null}
+        </div>
+        <Footer />
+      </div>
+    );
+  }
