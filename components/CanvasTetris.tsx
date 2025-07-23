@@ -770,7 +770,7 @@ export default function CanvasTetris({
                 Play Again
               </button>
               
-              {playerAddress !== '0x0000000000000000000000000000000000000000' && (
+              {playerAddress && (
                 <button
                   onClick={handlePublishScore}
                   disabled={isPublishing}
@@ -785,7 +785,7 @@ export default function CanvasTetris({
                     opacity: isPublishing ? 0.7 : 1
                   }}
                 >
-                  {isPublishing ? '⏳ Publishing...' : '🔗 Publish to Blockchain'}
+                  {isPublishing ? '⏳ Publishing...' : '🏆 Publish to Leaderboards'}
                 </button>
               )}
             </div>
