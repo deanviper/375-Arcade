@@ -8,7 +8,7 @@ const BLOCK = 20;
 const CANVAS_WIDTH = COLS * BLOCK;
 const CANVAS_HEIGHT = ROWS * BLOCK;
 
-// Game maze layout (0 = wall, 1 = dot, 2 = power pellet, 3 = empty)
+// 0 wall, 1 dot, 2 power, 3 empty
 const MAZE = [
   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   [0,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0],
@@ -48,19 +48,15 @@ export default function CanvasPacman({
   playerAddress?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number | undefined>(undefined);
-  const lastTimeRef = useRef<number>(0);
-  const accumulatorRef = useRef<number>(0);
-  const FIXED_DT = 16.67; // ≈60 updates/sec for constant movement
+  const loopRef = useRef<number>(0);
 
-  const mazeRef = useRef<number[][]>(MAZE.map(row => [...row]));
-  
-  // Game state
+  const mazeRef = useRef<number[][]>(MAZE.map(r => [...r]));
+
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  
-  // Player state (pixel-perfect movement)
-  const pacmanRef = useRef({ 
+
+  // Pacman tile-movement timing
+  const pacmanRef = useRef({
     x: 9,
     y: 15,
     dir: 'RIGHT' as Direction,
@@ -69,20 +65,17 @@ export default function CanvasPacman({
     respawning: false,
     respawnTimer: 0,
     animFrame: 0,
-    px: 9 * BLOCK,
-    py: 15 * BLOCK,
-    speed: 2.5 // px/update
+    moveCooldown: 0 // frames remaining until next tile move
   });
-  
+
   const ghostsRef = useRef<Ghost[]>([
     { x: 9, y: 9, dir: 'UP', color: '#FF0000', vulnerable: false, originalColor: '#FF0000' },
     { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF', vulnerable: false, originalColor: '#FFB8FF' },
     { x: 9, y: 10, dir: 'UP', color: '#00FFFF', vulnerable: false, originalColor: '#00FFFF' },
     { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847', vulnerable: false, originalColor: '#FFB847' }
   ]);
-  
-  // Game stats
-  const gameStateRef = useRef({
+
+  const gameRef = useRef({
     score: 0,
     level: 1,
     lives: 3,
@@ -90,27 +83,25 @@ export default function CanvasPacman({
     powerTimer: 0,
     gameOver: false,
     dotsRemaining: 0,
-    paused: false,
-    frameCount: 0
+    frame: 0
   });
 
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [lives, setLives] = useState(3);
 
-  // Count initial dots
   useEffect(() => {
-    const dotCount = MAZE.flat().filter(cell => cell === 1 || cell === 2).length;
-    gameStateRef.current.dotsRemaining = dotCount;
+    const dots = MAZE.flat().filter(c => c === 1 || c === 2).length;
+    gameRef.current.dotsRemaining = dots;
   }, []);
 
-  const canMove = (x: number, y: number): boolean => {
+  const canMove = (x: number, y: number) => {
     if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
     return mazeRef.current[y][x] !== 0;
   };
 
-  const getDirectionOffset = (dir: Direction) => {
-    switch (dir) {
+  const dirOffset = (d: Direction) => {
+    switch (d) {
       case 'UP': return { dx: 0, dy: -1 };
       case 'DOWN': return { dx: 0, dy: 1 };
       case 'LEFT': return { dx: -1, dy: 0 };
@@ -118,240 +109,188 @@ export default function CanvasPacman({
     }
   };
 
+  const PACMAN_TILE_DELAY = 6;  // higher = slower. tweak to taste
+  const GHOST_TILE_DELAY = 8;
+
   const movePacman = () => {
-    const pacman = pacmanRef.current;
-    
-    if (pacman.respawning) {
-      pacman.respawnTimer--;
-      if (pacman.respawnTimer <= 0) {
-        pacman.respawning = false;
-        pacman.moving = true;
+    const p = pacmanRef.current;
+
+    if (p.respawning) {
+      p.respawnTimer--;
+      if (p.respawnTimer <= 0) {
+        p.respawning = false;
+        p.moving = true;
       }
       return;
     }
-    
-    const gridX = Math.round(pacman.px / BLOCK);
-    const gridY = Math.round(pacman.py / BLOCK);
 
-    // Attempt direction change only when centered in a tile
-    if (pacman.px % BLOCK === 0 && pacman.py % BLOCK === 0) {
-      const nextOffset = getDirectionOffset(pacman.nextDir);
-      if (canMove(gridX + nextOffset.dx, gridY + nextOffset.dy)) {
-        pacman.dir = pacman.nextDir;
+    if (!p.moving) {
+      // try to resume if nextDir is free
+      const off = dirOffset(p.nextDir);
+      if (canMove(p.x + off.dx, p.y + off.dy)) {
+        p.dir = p.nextDir;
+        p.moving = true;
       }
+      return;
     }
 
-    if (pacman.moving) {
-      const { dx, dy } = getDirectionOffset(pacman.dir);
-      let targetPX = pacman.px + dx * pacman.speed;
-      let targetPY = pacman.py + dy * pacman.speed;
+    if (p.moveCooldown > 0) { p.moveCooldown--; return; }
 
-      // horizontal wrap
-      if (targetPX < 0) targetPX = (COLS - 1) * BLOCK;
-      if (targetPX >= COLS * BLOCK) targetPX = 0;
+    // turn if possible
+    const nextOff = dirOffset(p.nextDir);
+    if (canMove(p.x + nextOff.dx, p.y + nextOff.dy)) {
+      p.dir = p.nextDir;
+    }
 
-      const nextGX = Math.round(targetPX / BLOCK);
-      const nextGY = Math.round(targetPY / BLOCK);
+    const off = dirOffset(p.dir);
+    const nx = p.x + off.dx;
+    const ny = p.y + off.dy;
 
-      if (canMove(nextGX, nextGY)) {
-        pacman.px = targetPX;
-        pacman.py = targetPY;
-        pacman.x = Math.round(pacman.px / BLOCK);
-        pacman.y = Math.round(pacman.py / BLOCK);
+    if (canMove(nx, ny)) {
+      p.x = nx;
+      p.y = ny;
 
-        const cell = mazeRef.current[pacman.y][pacman.x];
-        if (cell === 1) {
-          mazeRef.current[pacman.y][pacman.x] = 3;
-          gameStateRef.current.score += 10;
-          gameStateRef.current.dotsRemaining--;
-          setScore(gameStateRef.current.score);
-        } else if (cell === 2) {
-          mazeRef.current[pacman.y][pacman.x] = 3;
-          gameStateRef.current.score += 50;
-          gameStateRef.current.dotsRemaining--;
-          gameStateRef.current.powerMode = true;
-          gameStateRef.current.powerTimer = 120;
-          ghostsRef.current.forEach(g => { g.vulnerable = true; });
-          setScore(gameStateRef.current.score);
-        }
+      if (p.x < 0) p.x = COLS - 1;
+      if (p.x >= COLS) p.x = 0;
 
-        pacman.animFrame = (pacman.animFrame + 1) % 8;
-      } else {
-        pacman.moving = false;
+      const cell = mazeRef.current[p.y][p.x];
+      if (cell === 1) {
+        mazeRef.current[p.y][p.x] = 3;
+        gameRef.current.score += 10;
+        gameRef.current.dotsRemaining--;
+        setScore(gameRef.current.score);
+      } else if (cell === 2) {
+        mazeRef.current[p.y][p.x] = 3;
+        gameRef.current.score += 50;
+        gameRef.current.dotsRemaining--;
+        gameRef.current.powerMode = true;
+        gameRef.current.powerTimer = 240; // ~12s at 20fps
+        ghostsRef.current.forEach(g => g.vulnerable = true);
+        setScore(gameRef.current.score);
       }
+
+      p.animFrame = (p.animFrame + 1) % 8;
+      p.moveCooldown = PACMAN_TILE_DELAY;
+    } else {
+      p.moving = false;
     }
   };
 
+  const ghostCooldowns = useRef<number[]>([0,0,0,0]);
+
   const moveGhosts = () => {
-    // move ghosts slower
-    if (gameStateRef.current.frameCount % 2 !== 0) return;
-    
-    ghostsRef.current.forEach(ghost => {
-      const directions: Direction[] = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
-      const possibleDirs = directions.filter(dir => {
-        const offset = getDirectionOffset(dir);
-        return canMove(ghost.x + offset.dx, ghost.y + offset.dy);
-      });
-      
-      if (possibleDirs.length > 0) {
-        const pacman = pacmanRef.current;
-        const dx = pacman.x - ghost.x;
-        const dy = pacman.y - ghost.y;
-        
-        let preferredDir: Direction;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          preferredDir = dx > 0 ? 'RIGHT' : 'LEFT';
-        } else {
-          preferredDir = dy > 0 ? 'DOWN' : 'UP';
-        }
-        
-        if (ghost.vulnerable) {
-          switch (preferredDir) {
-            case 'UP': preferredDir = 'DOWN'; break;
-            case 'DOWN': preferredDir = 'UP'; break;
-            case 'LEFT': preferredDir = 'RIGHT'; break;
-            case 'RIGHT': preferredDir = 'LEFT'; break;
-          }
-        }
-        
-        if (possibleDirs.includes(preferredDir) && Math.random() < 0.5) {
-          ghost.dir = preferredDir;
-        } else {
-          ghost.dir = possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
-        }
+    ghostsRef.current.forEach((ghost, i) => {
+      if (ghostCooldowns.current[i] > 0) {
+        ghostCooldowns.current[i]--;
+        return;
       }
-      
-      const offset = getDirectionOffset(ghost.dir);
-      const newX = ghost.x + offset.dx;
-      const newY = ghost.y + offset.dy;
-      
-      if (canMove(newX, newY)) {
-        ghost.x = newX;
-        ghost.y = newY;
+      const dirs: Direction[] = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+      const possible = dirs.filter(d => {
+        const off = dirOffset(d);
+        return canMove(ghost.x + off.dx, ghost.y + off.dy);
+      });
+
+      if (possible.length) {
+        const pac = pacmanRef.current;
+        const dx = pac.x - ghost.x;
+        const dy = pac.y - ghost.y;
+        let pref: Direction;
+        if (Math.abs(dx) > Math.abs(dy)) pref = dx > 0 ? 'RIGHT' : 'LEFT';
+        else pref = dy > 0 ? 'DOWN' : 'UP';
+        if (ghost.vulnerable) {
+          if (pref === 'UP') pref = 'DOWN';
+          else if (pref === 'DOWN') pref = 'UP';
+          else if (pref === 'LEFT') pref = 'RIGHT';
+          else pref = 'LEFT';
+        }
+        if (possible.includes(pref) && Math.random() < 0.5) ghost.dir = pref;
+        else ghost.dir = possible[Math.floor(Math.random() * possible.length)];
+      }
+
+      const off = dirOffset(ghost.dir);
+      const nx = ghost.x + off.dx;
+      const ny = ghost.y + off.dy;
+      if (canMove(nx, ny)) {
+        ghost.x = nx;
+        ghost.y = ny;
         if (ghost.x < 0) ghost.x = COLS - 1;
         if (ghost.x >= COLS) ghost.x = 0;
       }
+      ghostCooldowns.current[i] = GHOST_TILE_DELAY;
     });
   };
 
   const checkCollisions = () => {
-    const pacman = pacmanRef.current;
-    if (pacman.respawning) return;
-    
-    ghostsRef.current.forEach(ghost => {
-      if (ghost.x === pacman.x && ghost.y === pacman.y) {
-        if (ghost.vulnerable) {
-          gameStateRef.current.score += 200;
-          setScore(gameStateRef.current.score);
-          ghost.x = 9;
-          ghost.y = 9;
-          ghost.vulnerable = false;
-          ghost.color = ghost.originalColor;
+    const p = pacmanRef.current;
+    if (p.respawning) return;
+    ghostsRef.current.forEach((g, i) => {
+      if (g.x === p.x && g.y === p.y) {
+        if (g.vulnerable) {
+          gameRef.current.score += 200;
+          setScore(gameRef.current.score);
+          g.x = 9;
+          g.y = 9 + (i % 2);
+          g.vulnerable = false;
+          g.color = g.originalColor;
         } else {
-          gameStateRef.current.lives--;
-          setLives(gameStateRef.current.lives);
-          
-          if (gameStateRef.current.lives <= 0) {
-            gameStateRef.current.gameOver = true;
+          gameRef.current.lives--;
+          setLives(gameRef.current.lives);
+          if (gameRef.current.lives <= 0) {
+            gameRef.current.gameOver = true;
             setIsGameOver(true);
-            onGameOver(gameStateRef.current.score, gameStateRef.current.level);
+            onGameOver(gameRef.current.score, gameRef.current.level);
           } else {
-            // shorter freeze / respawn
-            pacman.x = 9; pacman.y = 15;
-            pacman.px = 9 * BLOCK; pacman.py = 15 * BLOCK;
-            pacman.dir = 'RIGHT'; pacman.nextDir = 'RIGHT';
-            pacman.moving = false;
-            pacman.respawning = true;
-            pacman.respawnTimer = 45;
-            pacman.animFrame = 0;
-            
-            ghostsRef.current.forEach((g, i) => {
-              g.x = 9;
-              g.y = 9 + (i % 2);
-              g.vulnerable = false;
-              g.color = g.originalColor;
+            // respawn
+            p.x = 9; p.y = 15; p.dir = 'RIGHT'; p.nextDir = 'RIGHT'; p.moving = false;
+            p.respawning = true; p.respawnTimer = 60; // 3s @20fps
+            ghostsRef.current.forEach((gg, ii) => {
+              gg.x = 9; gg.y = 9 + (ii % 2); gg.vulnerable = false; gg.color = gg.originalColor;
             });
-            
-            gameStateRef.current.powerMode = false;
-            gameStateRef.current.powerTimer = 0;
-            
-            gameStateRef.current.paused = true;
-            setTimeout(() => {
-              gameStateRef.current.paused = false;
-            }, 400);
+            gameRef.current.powerMode = false;
+            gameRef.current.powerTimer = 0;
           }
         }
       }
     });
   };
 
-  const checkLevelComplete = () => {
-    if (gameStateRef.current.dotsRemaining <= 0) {
-      gameStateRef.current.level++;
-      gameStateRef.current.score += 1000;
-      setLevel(gameStateRef.current.level);
-      setScore(gameStateRef.current.score);
-      
-      mazeRef.current = MAZE.map(row => [...row]);
-      gameStateRef.current.dotsRemaining = MAZE.flat().filter(cell => cell === 1 || cell === 2).length;
-      
-      const pac = pacmanRef.current;
-      pac.x = 9; pac.y = 15;
-      pac.px = 9 * BLOCK; pac.py = 15 * BLOCK;
-      pac.dir = 'RIGHT';
-      pac.nextDir = 'RIGHT';
-      pac.moving = true;
-      pac.respawning = false;
-      pac.animFrame = 0;
-      
-      ghostsRef.current.forEach((ghost, i) => {
-        ghost.x = 9;
-        ghost.y = 9 + (i % 2);
-        ghost.vulnerable = false;
-        ghost.color = ghost.originalColor;
+  const checkLevel = () => {
+    if (gameRef.current.dotsRemaining <= 0) {
+      gameRef.current.level++;
+      gameRef.current.score += 1000;
+      setLevel(gameRef.current.level);
+      setScore(gameRef.current.score);
+      mazeRef.current = MAZE.map(r => [...r]);
+      gameRef.current.dotsRemaining = MAZE.flat().filter(c => c === 1 || c === 2).length;
+      const p = pacmanRef.current;
+      p.x = 9; p.y = 15; p.dir = 'RIGHT'; p.nextDir = 'RIGHT'; p.moving = true; p.respawning = false; p.animFrame = 0; p.moveCooldown = 0;
+      ghostsRef.current.forEach((g, i) => {
+        g.x = 9; g.y = 9 + (i % 2); g.vulnerable = false; g.color = g.originalColor;
       });
-      
-      gameStateRef.current.powerMode = false;
-      gameStateRef.current.powerTimer = 0;
+      gameRef.current.powerMode = false;
+      gameRef.current.powerTimer = 0;
     }
   };
 
-  const update = () => {
-    if (gameStateRef.current.gameOver || gameStateRef.current.paused) return;
-    gameStateRef.current.frameCount++;
+  const loop = () => {
+    if (gameRef.current.gameOver) return;
+    gameRef.current.frame++;
 
     movePacman();
     moveGhosts();
     checkCollisions();
-    checkLevelComplete();
+    checkLevel();
 
-    if (gameStateRef.current.powerMode) {
-      gameStateRef.current.powerTimer--;
-      if (gameStateRef.current.powerTimer <= 0) {
-        gameStateRef.current.powerMode = false;
-        ghostsRef.current.forEach(ghost => {
-          ghost.vulnerable = false;
-          ghost.color = ghost.originalColor;
-        });
+    if (gameRef.current.powerMode) {
+      gameRef.current.powerTimer--;
+      if (gameRef.current.powerTimer <= 0) {
+        gameRef.current.powerMode = false;
+        ghostsRef.current.forEach(g => { g.vulnerable = false; g.color = g.originalColor; });
       }
-    }
-  };
-
-  const loop = (time: number) => {
-    if (gameStateRef.current.gameOver) return;
-
-    const prev = lastTimeRef.current || time;
-    const delta = time - prev;
-    lastTimeRef.current = time;
-    accumulatorRef.current += delta;
-
-    while (accumulatorRef.current >= FIXED_DT) {
-      update();
-      accumulatorRef.current -= FIXED_DT;
     }
 
     draw();
-    rafRef.current = requestAnimationFrame(loop);
+    loopRef.current = window.setTimeout(loop, 50); // ~20fps
   };
 
   const draw = () => {
@@ -360,189 +299,139 @@ export default function CanvasPacman({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Draw maze
     mazeRef.current.forEach((row, y) => {
       row.forEach((cell, x) => {
-        const pixelX = x * BLOCK;
-        const pixelY = y * BLOCK;
-        
-        switch (cell) {
-          case 0: // Wall
-            ctx.fillStyle = '#0000FF';
-            ctx.fillRect(pixelX, pixelY, BLOCK, BLOCK);
-            break;
-          case 1: // Dot
-            ctx.fillStyle = '#FFFF00';
-            ctx.beginPath();
-            ctx.arc(pixelX + BLOCK/2, pixelY + BLOCK/2, 2, 0, Math.PI * 2);
-            ctx.fill();
-            break;
-          case 2: // Power pellet
-            ctx.fillStyle = '#FFFF00';
-            ctx.beginPath();
-            ctx.arc(pixelX + BLOCK/2, pixelY + BLOCK/2, 6, 0, Math.PI * 2);
-            ctx.fill();
-            break;
+        const px = x * BLOCK, py = y * BLOCK;
+        if (cell === 0) {
+          ctx.fillStyle = '#0000FF';
+          ctx.fillRect(px, py, BLOCK, BLOCK);
+        } else if (cell === 1) {
+          ctx.fillStyle = '#FFFF00';
+          ctx.beginPath();
+          ctx.arc(px + BLOCK / 2, py + BLOCK / 2, 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (cell === 2) {
+          ctx.fillStyle = '#FFFF00';
+          ctx.beginPath();
+          ctx.arc(px + BLOCK / 2, py + BLOCK / 2, 6, 0, Math.PI * 2);
+          ctx.fill();
         }
       });
     });
 
-    // Draw Pacman
-    const pac = pacmanRef.current;
-    const pacX = pac.px + BLOCK/2;
-    const pacY = pac.py + BLOCK/2;
-    
-    if (!pac.respawning || pac.respawnTimer % 10 < 5) {
+    const p = pacmanRef.current;
+    const pacX = p.x * BLOCK + BLOCK / 2;
+    const pacY = p.y * BLOCK + BLOCK / 2;
+
+    if (!p.respawning || p.respawnTimer % 10 < 5) {
       ctx.fillStyle = '#FFFF00';
       ctx.beginPath();
-      ctx.arc(pacX, pacY, BLOCK/2 - 2, 0, Math.PI * 2);
+      ctx.arc(pacX, pacY, BLOCK / 2 - 2, 0, Math.PI * 2);
       ctx.fill();
-      
+
       ctx.fillStyle = '#000';
-      const mouthAngleBase = Math.PI / 3;
-      const mouthOpen = pac.animFrame < 4;
-      const mouthAngle = mouthOpen ? mouthAngleBase : Math.PI / 6;
-      let startAngle = 0;
-      
-      switch (pac.dir) {
-        case 'RIGHT': startAngle = mouthAngle/2; break;
-        case 'LEFT': startAngle = Math.PI + mouthAngle/2; break;
-        case 'UP': startAngle = 1.5*Math.PI + mouthAngle/2; break;
-        case 'DOWN': startAngle = 0.5*Math.PI + mouthAngle/2; break;
+      ctx.beginPath();
+      const baseAngle = Math.PI / 3;
+      const open = p.animFrame < 4;
+      const ang = open ? baseAngle : Math.PI / 6;
+      let start = 0;
+      switch (p.dir) {
+        case 'RIGHT': start = ang / 2; break;
+        case 'LEFT': start = Math.PI + ang / 2; break;
+        case 'UP': start = Math.PI * 1.5 + ang / 2; break;
+        case 'DOWN': start = Math.PI * 0.5 + ang / 2; break;
       }
-      
-      if (mouthOpen) {
-        ctx.beginPath();
-        ctx.arc(pacX, pacY, BLOCK/2 - 2, startAngle, startAngle + (Math.PI * 2 - mouthAngle));
+      if (open) {
+        ctx.arc(pacX, pacY, BLOCK / 2 - 2, start, start + (Math.PI * 2 - ang));
         ctx.lineTo(pacX, pacY);
         ctx.fill();
       }
     }
 
-    // Draw ghosts
-    ghostsRef.current.forEach(ghost => {
-      const ghostX = ghost.x * BLOCK + BLOCK/2;
-      const ghostY = ghost.y * BLOCK + BLOCK/2;
-      
-      if (ghost.vulnerable) {
-        if (gameStateRef.current.powerTimer < 30 && gameStateRef.current.powerTimer % 8 < 4) {
-          ctx.fillStyle = '#FFF';
-        } else {
-          ctx.fillStyle = '#0000FF';
-        }
-      } else {
-        ctx.fillStyle = ghost.originalColor;
-      }
-      
+    ghostsRef.current.forEach(g => {
+      const gx = g.x * BLOCK + BLOCK / 2;
+      const gy = g.y * BLOCK + BLOCK / 2;
+      if (g.vulnerable) {
+        if (gameRef.current.powerTimer < 60 && gameRef.current.powerTimer % 8 < 4) ctx.fillStyle = '#FFF';
+        else ctx.fillStyle = '#0000FF';
+      } else ctx.fillStyle = g.originalColor;
+
       ctx.beginPath();
-      ctx.arc(ghostX, ghostY - 2, BLOCK/2 - 2, Math.PI, 0);
-      ctx.fillRect(ghostX - BLOCK/2 + 2, ghostY - 2, BLOCK - 4, BLOCK/2);
+      ctx.arc(gx, gy - 2, BLOCK / 2 - 2, Math.PI, 0);
+      ctx.fillRect(gx - BLOCK / 2 + 2, gy - 2, BLOCK - 4, BLOCK / 2);
       ctx.fill();
-      
+
       ctx.fillStyle = '#FFF';
-      ctx.fillRect(ghostX - 6, ghostY - 8, 4, 4);
-      ctx.fillRect(ghostX + 2, ghostY - 8, 4, 4);
+      ctx.fillRect(gx - 6, gy - 8, 4, 4);
+      ctx.fillRect(gx + 2, gy - 8, 4, 4);
       ctx.fillStyle = '#000';
-      ctx.fillRect(ghostX - 5, ghostY - 7, 2, 2);
-      ctx.fillRect(ghostX + 3, ghostY - 7, 2, 2);
+      ctx.fillRect(gx - 5, gy - 7, 2, 2);
+      ctx.fillRect(gx + 3, gy - 7, 2, 2);
     });
   };
 
-  // Controls
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameStateRef.current.gameOver) {
-        if (e.code === 'Space' && !isGameOver) {
-          setIsGameOver(true);
-        }
+    const handleKey = (e: KeyboardEvent) => {
+      if (gameRef.current.gameOver) {
+        if (e.code === 'Space' && !isGameOver) setIsGameOver(true);
         return;
       }
-      
-      const pac = pacmanRef.current;
+      const p = pacmanRef.current;
       switch (e.code) {
         case 'ArrowUp':
         case 'KeyW':
-          e.preventDefault();
-          pac.nextDir = 'UP';
-          if (!pac.moving && !pac.respawning) pac.moving = true;
-          break;
+          e.preventDefault(); p.nextDir = 'UP'; if (!p.moving && !p.respawning) p.moving = true; break;
         case 'ArrowDown':
         case 'KeyS':
-          e.preventDefault();
-          pac.nextDir = 'DOWN';
-          if (!pac.moving && !pac.respawning) pac.moving = true;
-          break;
+          e.preventDefault(); p.nextDir = 'DOWN'; if (!p.moving && !p.respawning) p.moving = true; break;
         case 'ArrowLeft':
         case 'KeyA':
-          e.preventDefault();
-          pac.nextDir = 'LEFT';
-          if (!pac.moving && !pac.respawning) pac.moving = true;
-          break;
+          e.preventDefault(); p.nextDir = 'LEFT'; if (!p.moving && !p.respawning) p.moving = true; break;
         case 'ArrowRight':
         case 'KeyD':
-          e.preventDefault();
-          pac.nextDir = 'RIGHT';
-          if (!pac.moving && !pac.respawning) pac.moving = true;
-          break;
+          e.preventDefault(); p.nextDir = 'RIGHT'; if (!p.moving && !p.respawning) p.moving = true; break;
       }
     };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
   }, [isGameOver]);
 
-  // Start / reset
   useEffect(() => {
-    if (start && !gameStateRef.current.gameOver) {
-      gameStateRef.current = {
-        score: 0,
-        level: 1,
-        lives: 3,
-        powerMode: false,
-        powerTimer: 0,
-        gameOver: false,
+    if (start && !gameRef.current.gameOver) {
+      gameRef.current = {
+        score: 0, level: 1, lives: 3,
+        powerMode: false, powerTimer: 0, gameOver: false,
         dotsRemaining: MAZE.flat().filter(c => c === 1 || c === 2).length,
-        paused: false,
-        frameCount: 0
+        frame: 0
       };
-      
-      setScore(0);
-      setLevel(1);
-      setLives(3);
-      setIsGameOver(false);
-      
-      mazeRef.current = MAZE.map(row => [...row]);
-      
-      pacmanRef.current = { 
+      setScore(0); setLevel(1); setLives(3); setIsGameOver(false);
+      mazeRef.current = MAZE.map(r => [...r]);
+
+      pacmanRef.current = {
         x: 9, y: 15, dir: 'RIGHT', nextDir: 'RIGHT',
-        moving: true, respawning: false, respawnTimer: 0, animFrame: 0,
-        px: 9 * BLOCK, py: 15 * BLOCK, speed: 2.5
+        moving: true, respawning: false, respawnTimer: 0,
+        animFrame: 0, moveCooldown: 0
       };
-      
+
       ghostsRef.current = [
         { x: 9, y: 9, dir: 'UP', color: '#FF0000', vulnerable: false, originalColor: '#FF0000' },
         { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF', vulnerable: false, originalColor: '#FFB8FF' },
         { x: 9, y: 10, dir: 'UP', color: '#00FFFF', vulnerable: false, originalColor: '#00FFFF' },
         { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847', vulnerable: false, originalColor: '#FFB847' }
       ];
-      
-      lastTimeRef.current = performance.now();
-      accumulatorRef.current = 0;
-      rafRef.current = requestAnimationFrame(loop);
+      ghostCooldowns.current = [0,0,0,0];
+
+      loopRef.current = window.setTimeout(loop, 50);
     }
-    
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+    return () => { if (loopRef.current) clearTimeout(loopRef.current); };
   }, [start]);
 
   const handleRestart = () => {
     if (onPlayAgain) {
-      gameStateRef.current.gameOver = false;
+      gameRef.current.gameOver = false;
       setIsGameOver(false);
       onPlayAgain();
     }
@@ -550,41 +439,32 @@ export default function CanvasPacman({
 
   const handleTweetScore = () => {
     const gameType = 'PACMAN';
-    const s = gameStateRef.current.score;
-    const tweetText = `I scored ${s.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain. https://375-arcade.vercel.app/`;
+    const pts = gameRef.current.score;
+    const tweetText = `I scored ${pts.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain. https://375-arcade.vercel.app/`;
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
     window.open(tweetUrl, '_blank');
   };
 
   const handlePublishScore = async () => {
-    if (!playerAddress) {
-      alert('No wallet connected');
-      return;
-    }
-
+    if (!playerAddress) { alert('No wallet connected'); return; }
     setIsPublishing(true);
-    
     try {
-      if (!(window as any).ethereum) {
-        throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
-      }
-
-      const scoreData = {
+      if (!(window as any).ethereum) throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
+      const data = {
         walletAddress: playerAddress,
-        score: gameStateRef.current.score,
-        level: gameStateRef.current.level,
+        score: gameRef.current.score,
+        level: gameRef.current.level,
         timestamp: Date.now(),
         chainId: process.env.NEXT_PUBLIC_IRYS_CHAIN_ID,
         gameType: 'pacman',
         version: '1.0'
       };
-
       const tags = [
         { name: 'Application', value: 'Pacman-Leaderboard' },
         { name: 'Type', value: 'Score' },
         { name: 'Player', value: playerAddress },
-        { name: 'Score', value: gameStateRef.current.score.toString() },
-        { name: 'Level', value: gameStateRef.current.level.toString() },
+        { name: 'Score', value: gameRef.current.score.toString() },
+        { name: 'Level', value: gameRef.current.level.toString() },
         { name: 'Timestamp', value: Date.now().toString() },
         { name: 'Content-Type', value: 'application/json' }
       ];
@@ -592,54 +472,38 @@ export default function CanvasPacman({
       const { ethers } = await import('ethers');
       const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
-      
-      const message = `Publish Pacman Score: ${gameStateRef.current.score} points, level ${gameStateRef.current.level} at ${Date.now()}`;
+      const message = `Publish Pacman Score: ${gameRef.current.score} points, level ${gameRef.current.level} at ${Date.now()}`;
       const signature = await signer.signMessage(message);
 
       const response = await fetch('/api/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: scoreData, tags, signature, message })
+        body: JSON.stringify({ data, tags, signature, message })
       });
 
       const result = await response.json();
-      
       if (result.success) {
-        if (onPublishScore) {
-          onPublishScore(gameStateRef.current.score, gameStateRef.current.level);
-        }
-
+        onPublishScore && onPublishScore(gameRef.current.score, gameRef.current.level);
         alert(`🎉 Score published to blockchain!\n\nTransaction ID: ${result.txHash}\n\nYour Pacman score is now permanently stored on the Irys blockchain!`);
-      } else {
-        throw new Error(result.error || 'Upload failed');
-      }
-
-    } catch (error: any) {
-      console.error('Failed to publish score:', error);
-      
-      if (error.code === 4001) {
-        alert('Transaction cancelled by user');
-      } else if (error.message.includes('User rejected')) {
-        alert('Transaction rejected by user');
-      } else {
-        alert(`Failed to publish score: ${error.message}`);
-      }
+      } else throw new Error(result.error || 'Upload failed');
+    } catch (e: any) {
+      if (e.code === 4001) alert('Transaction cancelled by user');
+      else if (e.message?.includes('User rejected')) alert('Transaction rejected by user');
+      else alert(`Failed to publish score: ${e.message}`);
     } finally {
       setIsPublishing(false);
     }
   };
 
-  // Responsive scale
   const getResponsiveSize = () => {
-    if (typeof window === 'undefined') return { scale: 1 };
-    const sw = window.innerWidth;
-    const sh = window.innerHeight;
-    const maxGameWidth = Math.min(sw * 0.8, 600);
-    const maxGameHeight = Math.min(sh * 0.6, 500);
-    const scaleX = maxGameWidth / CANVAS_WIDTH;
-    const scaleY = maxGameHeight / CANVAS_HEIGHT;
-    const scale = Math.min(scaleX, scaleY, 1.5);
-    return { scale: Math.max(scale, 0.6) };
+    if (typeof window === 'undefined') return { scale: 1, containerWidth: CANVAS_WIDTH };
+    const sw = window.innerWidth, sh = window.innerHeight;
+    const maxW = Math.min(sw * 0.8, 600);
+    const maxH = Math.min(sh * 0.6, 500);
+    const sx = maxW / CANVAS_WIDTH;
+    const sy = maxH / CANVAS_HEIGHT;
+    const scale = Math.min(sx, sy, 1.5);
+    return { scale: Math.max(scale, 0.6), containerWidth: CANVAS_WIDTH * scale };
   };
 
   const { scale } = getResponsiveSize();
@@ -650,8 +514,8 @@ export default function CanvasPacman({
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        style={{ 
-          background: '#000', 
+        style={{
+          background: '#000',
           border: '2px solid #FFD700',
           borderRadius: '8px',
           transform: `scale(${scale})`,
@@ -659,8 +523,7 @@ export default function CanvasPacman({
           imageRendering: 'pixelated'
         }}
       />
-      
-      {/* HUD */}
+
       <div style={{
         position: 'absolute',
         top: `${-50 * scale}px`,
@@ -673,121 +536,78 @@ export default function CanvasPacman({
         fontSize: `${16 * scale}px`,
         fontWeight: 'bold',
         transform: `scale(${scale})`,
-        transformOrigin: 'top left',
-        pointerEvents: 'none'
+        transformOrigin: 'top left'
       }}>
         <div>Score: {score}</div>
         <div>Level: {level}</div>
         <div>Lives: {'❤️'.repeat(lives)}</div>
       </div>
 
-      {/* Controls help BELOW canvas */}
       <div style={{
-        marginTop: `10px`,
-        color: '#FFD700',
-        fontSize: '12px',
-        fontFamily: 'monospace',
+        position: 'absolute',
+        bottom: `${-80 * scale}px`,
+        left: '0',
+        right: '0',
         textAlign: 'center',
-        pointerEvents: 'none'
+        color: '#FFD700',
+        fontSize: `${12 * scale}px`,
+        fontFamily: 'monospace',
+        transform: `scale(${scale})`,
+        transformOrigin: 'bottom left'
       }}>
         <div>Arrow Keys or WASD to move</div>
         <div>Eat all dots to advance levels!</div>
         <div>Power pellets make ghosts vulnerable</div>
       </div>
-      
+
       {isGameOver && (
         <div style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
+          top: 0, left: 0, width: '100vw', height: '100vh',
           background: 'rgba(0,0,0,0.9)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '24px',
-          fontFamily: 'sans-serif',
-          zIndex: 9999
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'white', fontSize: '24px', fontFamily: 'sans-serif', zIndex: 9999
         }}>
-          <div style={{ 
-            background: '#333', 
-            padding: '40px', 
-            borderRadius: '10px',
-            textAlign: 'center',
-            border: '2px solid #FFD700',
-            minWidth: '300px',
-            position: 'relative'
+          <div style={{
+            background: '#333', padding: '40px', borderRadius: '10px',
+            textAlign: 'center', border: '2px solid #FFD700', minWidth: '300px', position: 'relative'
           }}>
             <button
               onClick={() => { setIsGameOver(false); }}
               style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'transparent',
-                border: 'none',
-                color: '#999',
-                fontSize: '24px',
-                cursor: 'pointer',
-                width: '30px',
-                height: '30px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '50%',
-                transition: 'all 0.2s'
+                position: 'absolute', top: '10px', right: '10px',
+                background: 'transparent', border: 'none', color: '#999', fontSize: '24px',
+                cursor: 'pointer', width: '30px', height: '30px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: '50%', transition: 'all 0.2s'
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.color = '#fff';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#999';
-              }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#999'; }}
             >
               ×
             </button>
-            
+
             <h2 style={{ margin: '0 0 20px 0', color: '#FFD700' }}>Game Over!</h2>
             <div style={{ fontSize: '18px', marginBottom: '20px' }}>
-              <div>Final Score: <span style={{ color: '#FFFF00' }}>{gameStateRef.current.score}</span></div>
-              <div>Level Reached: <span style={{ color: '#FF69B4' }}>{gameStateRef.current.level}</span></div>
+              <div>Final Score: <span style={{ color: '#FFFF00' }}>{gameRef.current.score}</span></div>
+              <div>Level Reached: <span style={{ color: '#FF69B4' }}>{gameRef.current.level}</span></div>
             </div>
-            
+
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 onClick={handleRestart}
-                style={{
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  background: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer'
-                }}
+                style={{ padding: '12px 24px', fontSize: '16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
               >
                 Play Again
               </button>
-              
+
               <button
                 onClick={handleTweetScore}
-                style={{
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  background: '#1DA1F2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer'
-                }}
+                style={{ padding: '12px 24px', fontSize: '16px', background: '#1DA1F2', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
               >
                 🐦 Tweet Score
               </button>
-              
+
               {playerAddress && (
                 <button
                   onClick={handlePublishScore}
@@ -807,13 +627,9 @@ export default function CanvasPacman({
                 </button>
               )}
             </div>
-            
+
             {isPublishing && (
-              <div style={{ 
-                marginTop: '15px', 
-                fontSize: '14px', 
-                color: '#95a5a6' 
-              }}>
+              <div style={{ marginTop: '15px', fontSize: '14px', color: '#95a5a6' }}>
                 Sign the transaction in your wallet to publish your score to the blockchain
               </div>
             )}
