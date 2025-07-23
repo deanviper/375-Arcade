@@ -1248,6 +1248,11 @@ export default function Page() {
             start={gameStarted}
             onGameOver={(score, lines) => {
               console.log('Game over callback triggered:', { score, lines });
+              console.log('CanvasTetris props:', { 
+                isOfflineMode, 
+                playerAddress: isOfflineMode ? undefined : address,
+                address 
+              });
               setGameOver(true);
               setGameStarted(false);
             }}
@@ -1255,12 +1260,6 @@ export default function Page() {
             onPublishScore={handlePublishScore}
             playerAddress={isOfflineMode ? undefined : address}
           />
-          {/* Debug log for offline mode */}
-          {console.log('CanvasTetris props:', { 
-            isOfflineMode, 
-            playerAddress: isOfflineMode ? undefined : address,
-            address 
-          })}
         </div>
         <Footer />
       </div>
