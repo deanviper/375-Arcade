@@ -8,14 +8,6 @@ import BlurredPreview from '../components/BlurredPreview';
 import CanvasTetris from '../components/CanvasTetris';
 import CanvasPacman from '../components/CanvasPacman';
 
-// Add Google Fonts
-if (typeof window !== 'undefined') {
-  const link = document.createElement('link');
-  link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;700;800&display=swap';
-  link.rel = 'stylesheet';
-  document.head.appendChild(link);
-}
-
 const IRYS_PARAMS = {
   chainId: '0x4F6', // 1270 in hex
   chainName: 'Irys Testnet',
@@ -52,6 +44,8 @@ export default function Page() {
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
   
+  // Initialize all state properly
+  const [mounted, setMounted] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [selectedGame, setSelectedGame] = useState<GameType>(null);
@@ -61,13 +55,18 @@ export default function Page() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
-  // Load persisted state on mount - only for existing sessions
+  // Prevent hydration mismatch - wait for client to mount
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    setMounted(true);
+  }, []);
+
+  // Load persisted state only after mounting and when wallet is connected
+  useEffect(() => {
+    if (!mounted || !address || !isConnected) return;
     
-    // Only restore state if wallet is already connected
-    if (address && isConnected) {
+    try {
       const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
       const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
       const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
@@ -78,45 +77,67 @@ export default function Page() {
         setIsPaid(savedPaid);
         if (savedGame) setSelectedGame(savedGame);
       }
+    } catch (error) {
+      console.error('Error loading from localStorage:', error);
     }
-  }, [address, isConnected]);
+  }, [mounted, address, isConnected]);
 
-  // Save state to localStorage whenever it changes
+  // Save state to localStorage whenever it changes (only after mounting)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!mounted) return;
     
-    if (address) {
-      localStorage.setItem(STORAGE_KEYS.WALLET_ADDRESS, address);
+    try {
+      if (address) {
+        localStorage.setItem(STORAGE_KEYS.WALLET_ADDRESS, address);
+      }
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
     }
-  }, [address]);
+  }, [mounted, address]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, authed.toString());
-  }, [authed]);
+    if (!mounted) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, authed.toString());
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  }, [mounted, authed]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(STORAGE_KEYS.IS_PAID, isPaid.toString());
-  }, [isPaid]);
+    if (!mounted) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.IS_PAID, isPaid.toString());
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  }, [mounted, isPaid]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (selectedGame) {
+    if (!mounted || !selectedGame) return;
+    try {
       localStorage.setItem(STORAGE_KEYS.SELECTED_GAME, selectedGame);
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
     }
-  }, [selectedGame]);
+  }, [mounted, selectedGame]);
 
   // Clear persisted state when wallet disconnects
   const clearPersistedState = () => {
-    if (typeof window === 'undefined') return;
-    Object.values(STORAGE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
-    });
+    if (!mounted) return;
+    try {
+      Object.values(STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key);
+      });
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+    }
   };
 
-  // Load leaderboard ONCE on page load, then only refresh when needed
+  // Load leaderboard ONCE on page load
   useEffect(() => {
+    if (!mounted) return;
+    
     const loadLeaderboard = async () => {
       try {
         console.log('Frontend: Loading leaderboard...');
@@ -143,14 +164,14 @@ export default function Page() {
       }
     };
     
-    // Load once on mount
     loadLeaderboard();
-  }, []);
+  }, [mounted]);
 
   // Handle wallet connection changes
   useEffect(() => {
+    if (!mounted) return;
+    
     if (!isConnected) {
-      // User disconnected wallet - clear ALL state including persisted
       console.log('Wallet disconnected - clearing all state');
       setAuthed(false);
       setIsPaid(false);
@@ -160,23 +181,26 @@ export default function Page() {
       setIsOfflineMode(false);
       clearPersistedState();
     } else if (isConnected && address) {
-      // Wallet just connected - check if we have persisted auth
-      const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
-      const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
-      const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
-      
-      if (savedAuth) {
-        setAuthed(true);
-        setIsPaid(savedPaid);
-        if (savedGame) setSelectedGame(savedGame);
+      try {
+        const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
+        const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
+        const savedGame = localStorage.getItem(STORAGE_KEYS.SELECTED_GAME) as GameType;
+        
+        if (savedAuth) {
+          setAuthed(true);
+          setIsPaid(savedPaid);
+          if (savedGame) setSelectedGame(savedGame);
+        }
+      } catch (error) {
+        console.error('Error restoring state:', error);
       }
-      // If no saved auth, user needs to authenticate (this prevents bypass)
     }
-  }, [isConnected, address]);
+  }, [mounted, isConnected, address]);
 
-  // Spacebar → start game (works for both paid and offline mode)
+  // Spacebar → start game
   useEffect(() => {
-    // Allow spacebar if: (paid OR offline) AND game selected AND game not started AND game not over
+    if (!mounted) return;
+    
     const canStartGame = (isPaid || isOfflineMode) && selectedGame && !gameStarted && !gameOver;
     
     if (!canStartGame) return;
@@ -192,7 +216,22 @@ export default function Page() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isPaid, isOfflineMode, selectedGame, gameStarted, gameOver]);
+  }, [mounted, isPaid, isOfflineMode, selectedGame, gameStarted, gameOver]);
+
+  // Add Google Fonts only after mounting
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;700;800&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, [mounted]);
+
+  // Don't render anything until mounted to prevent hydration issues
+  if (!mounted) {
+    return null;
+  }
 
   // Handle payment for new game
   const handlePayment = async (gameType: GameType) => {
@@ -237,18 +276,16 @@ export default function Page() {
     }
   };
 
-  // Handle offline restart (no payment) - Fixed for both games
+  // Handle offline restart (no payment)
   const handleOfflineRestart = () => {
     setGameStarted(false);
     setGameOver(false);
-    // Don't reset isPaid for offline mode - keep it true so spacebar works
   };
 
-  // Handle score publishing - now triggers leaderboard refresh
+  // Handle score publishing
   const handlePublishScore = async (score: number, linesOrLevel: number) => {
     console.log('Frontend: Score published, refreshing leaderboard...');
     
-    // Refresh leaderboard after score publication
     try {
       setIsLoadingLeaderboard(true);
       const response = await fetch('/api/leaderboard');
@@ -267,24 +304,23 @@ export default function Page() {
     }
   };
 
-  // Home button handler that preserves auth state
+  // Home button handler
   const handleHomeClick = () => {
-    // Reset game state but preserve wallet connection and auth
     setGameStarted(false);
     setGameOver(false);
-    setIsPaid(false); // Reset payment state so user needs to pay again
-    setSelectedGame(null); // Reset game selection
+    setIsPaid(false);
+    setSelectedGame(null);
     
-    // For offline mode, also reset the address to return to landing
     if (isOfflineMode) {
       setAuthed(false);
       setIsOfflineMode(false);
     }
     
-    // Only clear payment and game from localStorage, keep wallet and auth
-    if (typeof window !== 'undefined') {
+    try {
       localStorage.setItem(STORAGE_KEYS.IS_PAID, 'false');
       localStorage.removeItem(STORAGE_KEYS.SELECTED_GAME);
+    } catch (error) {
+      console.error('Error updating localStorage:', error);
     }
   };
 
@@ -301,7 +337,7 @@ export default function Page() {
     clearPersistedState();
   };
 
-  // Enhanced wallet connection using WalletConnect
+  // Enhanced wallet connection
   const handleWalletConnection = async () => {
     try {
       await open();
@@ -311,7 +347,7 @@ export default function Page() {
     }
   };
 
-  // Updated container and card styles with mobile responsiveness
+  // Styles
   const containerStyle = {
     minHeight: '100vh',
     maxHeight: '100vh',
@@ -346,13 +382,42 @@ export default function Page() {
     minWidth: '200px'
   };
 
-  // Add CSS for mobile responsiveness - Updated for better fit
+  // Game carousel configuration - Fixed to stay consistent
+  const games = [
+    { 
+      id: 'tetris' as GameType, 
+      name: 'TETRIS', 
+      icon: '/blocks.png', 
+      description: 'Play a classic game of Tetris for 0.01 Irys!',
+      borderColor: '#50FFD6'
+    },
+    { 
+      id: 'pacman' as GameType, 
+      name: 'PACMAN', 
+      icon: '/pacman.png', 
+      description: 'Play the classic arcade game for 0.01 Irys!',
+      borderColor: '#FFD700'
+    },
+    { 
+      id: null, 
+      name: 'COMING SOON', 
+      icon: '🎲', 
+      description: 'More games coming soon!',
+      borderColor: '#FF3D14'
+    }
+  ];
+
+  const currentGame = games[carouselIndex];
+  const leftGame = games[(carouselIndex - 1 + games.length) % games.length];
+  const rightGame = games[(carouselIndex + 1) % games.length];
+
+  // Mobile styles
   const mobileStyles = `
     @media (max-width: 1440px) {
       .arcade-container {
         padding: 100px 15px 120px !important;
       }
-      .arcade-title-mobile {
+      .arcade-title-fixed {
         max-width: 350px !important;
         margin-bottom: 40px !important;
       }
@@ -366,7 +431,7 @@ export default function Page() {
       .arcade-container {
         padding: 80px 10px 100px !important;
       }
-      .arcade-title-mobile {
+      .arcade-title-fixed {
         max-width: 300px !important;
         margin-bottom: 30px !important;
       }
@@ -388,7 +453,7 @@ export default function Page() {
       .arcade-container {
         padding: 60px 5px 80px !important;
       }
-      .arcade-title-mobile {
+      .arcade-title-fixed {
         max-width: 280px !important;
         margin-bottom: 20px !important;
       }
@@ -420,7 +485,7 @@ export default function Page() {
       .arcade-container {
         padding: 40px 5px 60px !important;
       }
-      .arcade-title-mobile {
+      .arcade-title-fixed {
         max-width: 250px !important;
       }
       .carousel-game-center {
@@ -429,14 +494,16 @@ export default function Page() {
         padding: 30px !important;
       }
     }
+    
+    .carousel-transition {
+      transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    }
   `;
 
-  // Leaderboard Component - Show when paid (including offline mode) with game filtering
+  // Leaderboard Component
   const LeaderboardPanel = () => {
-    // Show leaderboard when in game states (including offline mode)
     if (!isPaid && !isOfflineMode) return null;
     
-    // Filter leaderboard by selected game type
     const gameFilteredLeaderboard = selectedGame 
       ? leaderboard.filter(entry => entry.gameType === selectedGame)
       : leaderboard;
@@ -631,7 +698,6 @@ export default function Page() {
           </div>
         </div>
         
-        {/* Blockchain Features Info */}
         <div style={{
           padding: '12px 16px',
           borderTop: '1px solid rgba(55, 65, 81, 0.2)',
@@ -666,14 +732,11 @@ export default function Page() {
       justifyContent: 'space-between',
       alignItems: 'center'
     }}>
-      {/* Left Side - Navigation Links Only */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>        
-        {/* Navigation Links */}
         <div style={{ display: 'flex', gap: '16px' }}>
           <button
             onClick={handleHomeClick}
             style={{
-              position: 'relative',
               background: 'linear-gradient(135deg, rgba(255, 61, 20, 0.15) 0%, rgba(255, 61, 20, 0.05) 100%)',
               border: '2px solid transparent',
               borderRadius: '12px',
@@ -683,23 +746,8 @@ export default function Page() {
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              overflow: 'hidden',
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.25) 0%, rgba(255, 61, 20, 0.1) 100%)';
-              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #FF3D14, #50FFD6) 1';
-              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 61, 20, 0.3), 0 0 20px rgba(255, 61, 20, 0.1)';
-              e.currentTarget.style.color = '#FFF';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.15) 0%, rgba(255, 61, 20, 0.05) 100%)';
-              e.currentTarget.style.borderImage = 'none';
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.color = '#FF3D14';
             }}
           >
             Home
@@ -708,7 +756,6 @@ export default function Page() {
           <button
             onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
             style={{
-              position: 'relative',
               background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)',
               border: '2px solid transparent',
               borderRadius: '12px',
@@ -718,24 +765,8 @@ export default function Page() {
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              overflow: 'hidden',
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.25) 0%, rgba(80, 255, 214, 0.1) 100%)';
-              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #50FFD6, #FF3D14) 1';
-              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(80, 255, 214, 0.3), 0 0 20px rgba(80, 255, 214, 0.1)';
-              e
-              e.currentTarget.style.color = '#FFF';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)';
-              e.currentTarget.style.borderImage = 'none';
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.color = '#50FFD6';
             }}
           >
             Faucet
@@ -744,7 +775,6 @@ export default function Page() {
           <button
             onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
             style={{
-              position: 'relative',
               background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)',
               border: '2px solid transparent',
               borderRadius: '12px',
@@ -754,23 +784,8 @@ export default function Page() {
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              overflow: 'hidden',
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.25) 0%, rgba(156, 163, 175, 0.1) 100%)';
-              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #9CA3AF, #E5E7EB) 1';
-              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(156, 163, 175, 0.3), 0 0 20px rgba(156, 163, 175, 0.1)';
-              e.currentTarget.style.color = '#FFF';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)';
-              e.currentTarget.style.borderImage = 'none';
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.color = '#9CA3AF';
             }}
           >
             Global Leaderboards
@@ -778,7 +793,6 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Right Side - Wallet Status & Disconnect - Only show when connected and authenticated */}
       {address && isConnected && authed && !isOfflineMode && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ 
@@ -809,18 +823,6 @@ export default function Page() {
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
             }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)';
-              e.currentTarget.style.transform = 'translateY(-1px) scale(1.05)';
-              e.currentTarget.style.color = '#FFF';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)';
-              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.color = '#EF4444';
-            }}
           >
             Disconnect
           </button>
@@ -829,7 +831,7 @@ export default function Page() {
     </div>
   );
 
-  // Footer component with better positioning
+  // Footer component
   const Footer = () => (
     <div style={{
       position: 'fixed',
@@ -889,6 +891,15 @@ export default function Page() {
     </div>
   );
 
+  // Smooth carousel navigation
+  const handleCarouselNext = () => {
+    setCarouselIndex((prev) => (prev + 1) % games.length);
+  };
+
+  const handleCarouselPrev = () => {
+    setCarouselIndex((prev) => (prev - 1 + games.length) % games.length);
+  };
+
   // Wrong chain
   if (chainId && chainId !== 1270 && !isOfflineMode) {
     return (
@@ -943,37 +954,8 @@ export default function Page() {
     );
   }
 
-  // Landing page with carousel
+  // Landing page with fixed title and smooth carousel
   if (!address && !isConnected && !isOfflineMode) {
-    const [carouselIndex, setCarouselIndex] = useState(0);
-    const games = [
-      { 
-        id: 'tetris' as GameType, 
-        name: 'TETRIS', 
-        icon: '/blocks.png', 
-        description: 'Play a classic game of Tetris for 0.01 Irys!',
-        borderColor: '#50FFD6'
-      },
-      { 
-        id: 'pacman' as GameType, 
-        name: 'PACMAN', 
-        icon: '/pacman.png', 
-        description: 'Play the classic arcade game for 0.01 Irys!',
-        borderColor: '#FFD700'
-      },
-      { 
-        id: null, 
-        name: 'COMING SOON', 
-        icon: '🎲', 
-        description: 'More games coming soon!',
-        borderColor: '#FF3D14'
-      }
-    ];
-
-    const currentGame = games[carouselIndex];
-    const leftGame = games[(carouselIndex - 1 + games.length) % games.length];
-    const rightGame = games[(carouselIndex + 1) % games.length];
-
     return (
       <div style={containerStyle}>
         <style>{mobileStyles}</style>
@@ -981,11 +963,16 @@ export default function Page() {
         <LeaderboardPanel />
         <div className="arcade-container" style={{ padding: '130px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
-            <div style={{ marginBottom: '60px' }}>
+            {/* Fixed title that doesn't move */}
+            <div style={{ 
+              marginBottom: '60px',
+              position: 'relative',
+              zIndex: 10
+            }}>
               <img 
                 src="/arcade-title.png" 
                 alt="375 Arcade - Built on Irys"
-                className="arcade-title-mobile"
+                className="arcade-title-fixed"
                 style={{ 
                   maxWidth: '400px',
                   width: '100%',
@@ -995,7 +982,7 @@ export default function Page() {
               />
             </div>
 
-            {/* Game Carousel */}
+            {/* Smooth Game Carousel */}
             <div className="carousel-container" style={{ 
               display: 'flex', 
               gap: '40px', 
@@ -1007,7 +994,7 @@ export default function Page() {
               {/* Left Arrow */}
               <button
                 className="carousel-arrows"
-                onClick={() => setCarouselIndex((prev) => (prev - 1 + games.length) % games.length)}
+                onClick={handleCarouselPrev}
                 style={{
                   position: 'absolute',
                   left: '50px',
@@ -1025,20 +1012,12 @@ export default function Page() {
                   color: '#FF3D14',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.4)';
-                  e.currentTarget.style.borderColor = '#FF3D14';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.2)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
-                }}
               >
                 ←
               </button>
 
               {/* Left Game (Blurred) */}
-              <div className="carousel-game-side" style={{
+              <div className="carousel-game-side carousel-transition" style={{
                 ...cardStyle,
                 minWidth: '250px',
                 maxWidth: '280px',
@@ -1066,7 +1045,7 @@ export default function Page() {
               </div>
 
               {/* Center Game (Active) */}
-              <div className="carousel-game-center" style={{
+              <div className="carousel-game-center carousel-transition" style={{
                 ...cardStyle,
                 minWidth: '380px',
                 maxWidth: '420px',
@@ -1128,7 +1107,6 @@ export default function Page() {
                       }}
                       onClick={() => {
                         console.log(`Just Play ${currentGame.name} clicked!`);
-                        
                         setIsOfflineMode(true);
                         setAuthed(true);
                         setSelectedGame(currentGame.id);
@@ -1144,7 +1122,7 @@ export default function Page() {
               </div>
 
               {/* Right Game (Blurred) */}
-              <div className="carousel-game-side" style={{
+              <div className="carousel-game-side carousel-transition" style={{
                 ...cardStyle,
                 minWidth: '250px',
                 maxWidth: '280px',
@@ -1174,7 +1152,7 @@ export default function Page() {
               {/* Right Arrow */}
               <button
                 className="carousel-arrows"
-                onClick={() => setCarouselIndex((prev) => (prev + 1) % games.length)}
+                onClick={handleCarouselNext}
                 style={{
                   position: 'absolute',
                   right: '50px',
@@ -1191,14 +1169,6 @@ export default function Page() {
                   fontSize: '24px',
                   color: '#FF3D14',
                   transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.4)';
-                  e.currentTarget.style.borderColor = '#FF3D14';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.2)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
                 }}
               >
                 →
@@ -1242,9 +1212,8 @@ export default function Page() {
                   const message = `Authenticate @375 Arcade at ${Date.now()}`;
                   await signMessageAsync({ message });
                   
-                  // Set authenticated and reset payment state
                   setAuthed(true);
-                  setIsPaid(false); // Force to game selection page
+                  setIsPaid(false);
                   setSelectedGame(null);
                   setGameStarted(false);
                   setGameOver(false);
@@ -1268,47 +1237,24 @@ export default function Page() {
     );
   }
 
-  // Show connected and authenticated state - the game selection page with CAROUSEL
+  // Connected and authenticated - game selection with fixed title
   if (address && isConnected && authed && !isPaid && !gameStarted && !gameOver) {
-    const [carouselIndex, setCarouselIndex] = useState(0);
-    const games = [
-      { 
-        id: 'tetris' as GameType, 
-        name: 'TETRIS', 
-        icon: '/blocks.png', 
-        description: 'Play a classic game of Tetris for 0.01 Irys!',
-        borderColor: '#50FFD6'
-      },
-      { 
-        id: 'pacman' as GameType, 
-        name: 'PACMAN', 
-        icon: '/pacman.png', 
-        description: 'Play the classic arcade game for 0.01 Irys!',
-        borderColor: '#FFD700'
-      },
-      { 
-        id: null, 
-        name: 'COMING SOON', 
-        icon: '🎲', 
-        description: 'More games coming soon!',
-        borderColor: '#FF3D14'
-      }
-    ];
-
-    const currentGame = games[carouselIndex];
-    const leftGame = games[(carouselIndex - 1 + games.length) % games.length];
-    const rightGame = games[(carouselIndex + 1) % games.length];
-
     return (
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
         <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
-            <div style={{ marginBottom: '40px' }}>
+            {/* Fixed title */}
+            <div style={{ 
+              marginBottom: '40px',
+              position: 'relative',
+              zIndex: 10
+            }}>
               <img 
                 src="/arcade-title.png" 
                 alt="375 Arcade - Built on Irys"
+                className="arcade-title-fixed"
                 style={{ 
                   maxWidth: '400px',
                   width: '100%',
@@ -1330,7 +1276,7 @@ export default function Page() {
               {/* Left Arrow */}
               <button
                 className="carousel-arrows"
-                onClick={() => setCarouselIndex((prev) => (prev - 1 + games.length) % games.length)}
+                onClick={handleCarouselPrev}
                 style={{
                   position: 'absolute',
                   left: '50px',
@@ -1348,20 +1294,12 @@ export default function Page() {
                   color: '#FF3D14',
                   transition: 'all 0.3s ease'
                 }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.4)';
-                  e.currentTarget.style.borderColor = '#FF3D14';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.2)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
-                }}
               >
                 ←
               </button>
 
               {/* Left Game (Blurred) */}
-              <div className="carousel-game-side" style={{
+              <div className="carousel-game-side carousel-transition" style={{
                 ...cardStyle,
                 minWidth: '250px',
                 maxWidth: '280px',
@@ -1389,7 +1327,7 @@ export default function Page() {
               </div>
 
               {/* Center Game (Active) */}
-              <div className="carousel-game-center" style={{
+              <div className="carousel-game-center carousel-transition" style={{
                 ...cardStyle,
                 minWidth: '380px',
                 maxWidth: '420px',
@@ -1439,7 +1377,7 @@ export default function Page() {
               </div>
 
               {/* Right Game (Blurred) */}
-              <div className="carousel-game-side" style={{
+              <div className="carousel-game-side carousel-transition" style={{
                 ...cardStyle,
                 minWidth: '250px',
                 maxWidth: '280px',
@@ -1469,7 +1407,7 @@ export default function Page() {
               {/* Right Arrow */}
               <button
                 className="carousel-arrows"
-                onClick={() => setCarouselIndex((prev) => (prev + 1) % games.length)}
+                onClick={handleCarouselNext}
                 style={{
                   position: 'absolute',
                   right: '50px',
@@ -1486,14 +1424,6 @@ export default function Page() {
                   fontSize: '24px',
                   color: '#FF3D14',
                   transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.4)';
-                  e.currentTarget.style.borderColor = '#FF3D14';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.2)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
                 }}
               >
                 →
@@ -1513,7 +1443,7 @@ export default function Page() {
     );
   }
 
-  // Ready to start - Show for offline mode OR after payment (but NOT when game started)
+  // Ready to start
   if ((isOfflineMode || isPaid) && selectedGame && !gameStarted && !gameOver) {
     console.log('Ready to Play condition met:', { isOfflineMode, isPaid, selectedGame, gameStarted, gameOver });
     return (
@@ -1576,7 +1506,7 @@ export default function Page() {
     );
   }
 
-  // Game active - Show when game has started (both paid and offline mode)
+  // Game active
   if (gameStarted || gameOver) {
     console.log('Game active condition met:', { gameStarted, gameOver, isOfflineMode, isPaid, selectedGame });
     return (
@@ -1621,7 +1551,7 @@ export default function Page() {
     );
   }
 
-  // Fallback return (should not reach here normally)
+  // Fallback return
   return (
     <div style={containerStyle}>
       <NavigationHeader />
