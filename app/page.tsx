@@ -395,7 +395,7 @@ export default function Page() {
       id: 'pacman' as GameType, 
       name: 'PACMAN', 
       icon: '/pacman.png', 
-      description: 'Play the classic arcade game for 0.01 Irys!',
+      description: 'Play the classic Pacman for 0.01 Irys!',
       borderColor: '#FFD700'
     },
     { 
@@ -415,11 +415,11 @@ export default function Page() {
   const mobileStyles = `
     @media (max-width: 1440px) {
       .arcade-container {
-        padding: 100px 15px 120px !important;
+        padding: 120px 15px 120px !important;
       }
       .arcade-title-fixed {
         max-width: 350px !important;
-        margin-bottom: 40px !important;
+        margin-bottom: 50px !important;
       }
       .carousel-arrows {
         left: 20px !important;
@@ -429,11 +429,11 @@ export default function Page() {
     
     @media (max-width: 1024px) {
       .arcade-container {
-        padding: 80px 10px 100px !important;
+        padding: 100px 10px 100px !important;
       }
       .arcade-title-fixed {
         max-width: 300px !important;
-        margin-bottom: 30px !important;
+        margin-bottom: 40px !important;
       }
       .carousel-game-center {
         min-width: 300px !important;
@@ -451,11 +451,11 @@ export default function Page() {
     
     @media (max-width: 768px) {
       .arcade-container {
-        padding: 60px 5px 80px !important;
+        padding: 80px 5px 80px !important;
       }
       .arcade-title-fixed {
         max-width: 280px !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 30px !important;
       }
       .carousel-container {
         flex-direction: column !important;
@@ -483,10 +483,11 @@ export default function Page() {
     
     @media (max-width: 480px) {
       .arcade-container {
-        padding: 40px 5px 60px !important;
+        padding: 60px 5px 60px !important;
       }
       .arcade-title-fixed {
         max-width: 250px !important;
+        margin-bottom: 20px !important;
       }
       .carousel-game-center {
         min-width: 260px !important;
@@ -496,7 +497,21 @@ export default function Page() {
     }
     
     .carousel-transition {
-      transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+      transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    }
+    
+    .carousel-game-center, .carousel-game-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .carousel-game-center .game-icon, .carousel-game-side .game-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   `;
 
@@ -965,7 +980,7 @@ export default function Page() {
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
             {/* Fixed title that doesn't move */}
             <div style={{ 
-              marginBottom: '60px',
+              marginBottom: '70px',
               position: 'relative',
               zIndex: 10
             }}>
@@ -1021,14 +1036,19 @@ export default function Page() {
                 ...cardStyle,
                 minWidth: '250px',
                 maxWidth: '280px',
+                height: '400px',
                 opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
                 boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
                 transform: 'scale(0.8)',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                <div style={{ 
+                <div className="game-icon" style={{ 
                   width: '48px', 
                   height: '48px', 
                   backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none', 
@@ -1036,12 +1056,14 @@ export default function Page() {
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
                   marginBottom: '15px',
-                  margin: '0 auto 15px auto',
-                  fontSize: leftGame.icon.startsWith('/') ? '0' : '48px'
+                  fontSize: leftGame.icon.startsWith('/') ? '0' : '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
                   {!leftGame.icon.startsWith('/') && leftGame.icon}
                 </div>
-                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px' }}>{leftGame.name}</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px', textAlign: 'center' }}>{leftGame.name}</h3>
               </div>
 
               {/* Center Game (Active) */}
@@ -1049,11 +1071,16 @@ export default function Page() {
                 ...cardStyle,
                 minWidth: '380px',
                 maxWidth: '420px',
+                height: '400px',
                 border: `3px solid ${currentGame.borderColor}`,
                 boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
-                transform: 'scale(1.05)'
+                transform: 'scale(1.05)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                <div style={{ 
+                <div className="game-icon" style={{ 
                   width: '80px', 
                   height: '80px', 
                   backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none', 
@@ -1061,8 +1088,10 @@ export default function Page() {
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
                   marginBottom: '20px',
-                  margin: '0 auto 20px auto',
-                  fontSize: currentGame.icon.startsWith('/') ? '0' : '80px'
+                  fontSize: currentGame.icon.startsWith('/') ? '0' : '80px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
                   {!currentGame.icon.startsWith('/') && currentGame.icon}
                 </div>
@@ -1071,16 +1100,17 @@ export default function Page() {
                   marginBottom: '15px', 
                   color: currentGame.borderColor,
                   fontWeight: '700',
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                  textAlign: 'center'
                 }}>
                   {currentGame.name}
                 </h2>
-                <p style={{ marginBottom: '30px', color: '#9CA3AF', fontSize: '16px' }}>
+                <p style={{ marginBottom: '30px', color: '#9CA3AF', fontSize: '16px', textAlign: 'center' }}>
                   {currentGame.description}
                 </p>
                 
                 {currentGame.id && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
                     <button
                       style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
                       onClick={handleWalletConnection}
@@ -1088,7 +1118,7 @@ export default function Page() {
                       🔗 Connect Wallet & Play
                     </button>
                     
-                    <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
+                    <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px', textAlign: 'center' }}>
                       Don't want to connect your wallet and publish your scores? No worries!
                     </p>
                     
@@ -1126,14 +1156,19 @@ export default function Page() {
                 ...cardStyle,
                 minWidth: '250px',
                 maxWidth: '280px',
+                height: '400px',
                 opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
                 boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
                 transform: 'scale(0.8)',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                <div style={{ 
+                <div className="game-icon" style={{ 
                   width: '48px', 
                   height: '48px', 
                   backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none', 
@@ -1141,12 +1176,14 @@ export default function Page() {
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
                   marginBottom: '15px',
-                  margin: '0 auto 15px auto',
-                  fontSize: rightGame.icon.startsWith('/') ? '0' : '48px'
+                  fontSize: rightGame.icon.startsWith('/') ? '0' : '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
                   {!rightGame.icon.startsWith('/') && rightGame.icon}
                 </div>
-                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px' }}>{rightGame.name}</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px', textAlign: 'center' }}>{rightGame.name}</h3>
               </div>
 
               {/* Right Arrow */}
@@ -1247,7 +1284,7 @@ export default function Page() {
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
             {/* Fixed title */}
             <div style={{ 
-              marginBottom: '40px',
+              marginBottom: '50px',
               position: 'relative',
               zIndex: 10
             }}>
