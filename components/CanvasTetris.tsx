@@ -1,807 +1,1268 @@
-// components/CanvasTetris.tsx
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { ethers } from 'ethers';
+import { useWeb3Modal } from '@web3modal/wagmi/react';
+import { useAccount, useDisconnect, useSignMessage } from 'wagmi';
+import BlurredPreview from '../components/BlurredPreview';
+import CanvasTetris from '../components/CanvasTetris';
 
-const COLS = 10;
-const ROWS = 20;
-const BLOCK = 30;
-
-const SHAPES = [
-  { shape: [[1,1],[1,1]],           color: '#e74c3c', cw: true  }, // O
-  { shape: [[1,1,1,1]],             color: '#9b59b6', cw: true  }, // I
-  { shape: [[0,1,0],[1,1,1]],       color: '#f1c40f', cw: true }, // T
-  { shape: [[1,0,0],[1,1,1]],       color: '#1abc9c', cw: true }, // J
-  { shape: [[0,0,1],[1,1,1]],       color: '#3498db', cw: true }, // L
-  { shape: [[1,1,0],[0,1,1]],       color: '#e67e22', cw: true }, // S
-  { shape: [[0,1,1],[1,1,0]],       color: '#2ecc71', cw: true }, // Z
-];
-
-function rotateCW(m: number[][]) {
-  const R=m.length, C=m[0].length;
-  const res = Array.from({ length:C }, ()=>Array(R).fill(0));
-  for(let r=0;r<R;r++) for(let c=0;c<C;c++) res[c][R-1-r]=m[r][c];
-  return res;
+// Add Google Fonts
+if (typeof window !== 'undefined') {
+  const link = document.createElement('link');
+  link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;700;800&display=swap';
+  link.rel = 'stylesheet';
+  document.head.appendChild(link);
 }
 
-type Piece = { x:number, y:number, shape:number[][], color:string, cw:boolean };
-type ShapeInfo = { shape: number[][], color: string, cw: boolean };
+const IRYS_PARAMS = {
+  chainId: '0x4F6', // 1270 in hex
+  chainName: 'Irys Testnet',
+  rpcUrls: ['https://testnet-rpc.irys.xyz/v1/execution-rpc'],
+  nativeCurrency: { name: 'Irys', symbol: 'IRYS', decimals: 18 },
+  blockExplorerUrls: ['https://testnet-explorer.irys.xyz'],
+};
 
-export default function CanvasTetris({
-  onGameOver,
-  start,
-  onPlayAgain,
-  onPublishScore,
-  playerAddress,
-}: {
-  onGameOver: (score:number, lines:number)=>void;
-  start: boolean;
-  onPlayAgain?: () => void;
-  onPublishScore?: (score: number, lines: number) => void;
-  playerAddress?: string;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-  
-  // Use a ref for the grid to avoid stale state issues
-  const gridRef = useRef<string[][]>(
-    Array.from({ length: ROWS }, () => Array(COLS).fill(''))
-  );
-  const [grid, setGrid] = useState<string[][]>(
-    Array.from({ length: ROWS }, () => Array(COLS).fill(''))
-  );
-
-  const currentRef = useRef<Piece | undefined>(undefined);
-  const nextPieceRef = useRef<ShapeInfo | undefined>(undefined);
-  const holdRef = useRef<Piece|null>(null);
-  const usedHoldRef = useRef(false);
-  
-  const [score, setScore] = useState(0);
-  const [lines, setLines] = useState(0);
-  const [level, setLevel] = useState(1);
-  const scoreRef = useRef(0);
-  const linesRef = useRef(0);
-  const levelRef = useRef(1);
-  const comboRef = useRef(0);
-  
-  const timerRef = useRef<number | undefined>(undefined);
-  const gameOverRef = useRef(false);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-
-  // init context
-  useEffect(()=>{
-    ctxRef.current = canvasRef.current!.getContext('2d')!;
-    draw();
-  },[]);
-
-  // Generate next piece
-  const generatePiece = (): ShapeInfo => {
-    const index = Math.floor(Math.random() * SHAPES.length);
-    const {shape, color, cw} = SHAPES[index];
-    return {
-      shape: shape.map(r=>[...r]),
-      color,
-      cw
-    };
-  };
-
-  // spawn
-  const spawn = () => {
-    let pieceInfo: ShapeInfo;
-    
-    if (!nextPieceRef.current) {
-      // First piece of the game
-      pieceInfo = generatePiece();
-      nextPieceRef.current = generatePiece();
-    } else {
-      // Use the next piece and generate a new next piece
-      pieceInfo = nextPieceRef.current;
-      nextPieceRef.current = generatePiece();
-    }
-
-    currentRef.current = {
-      x: Math.floor(COLS/2 - pieceInfo.shape[0].length/2),
-      y: 0,
-      shape: pieceInfo.shape,
-      color: pieceInfo.color,
-      cw: pieceInfo.cw
-    };
-    usedHoldRef.current = false;
-  };
-
-  // collision
-  const collide = (x:number,y:number,m:number[][]) =>
-    m.some((row,dy)=>row.some((v,dx)=>{
-      if(!v) return false;
-      const nx=x+dx, ny=y+dy;
-      return ny<0||ny>=ROWS||nx<0||nx>=COLS||gridRef.current[ny][nx]!=='';
-    }));
-
-  // Calculate score based on lines cleared
-  const calculateScore = (linesCleared: number): number => {
-    const basePoints = [0, 40, 100, 300, 1200]; // Single, Double, Triple, Tetris
-    let points = basePoints[linesCleared] * levelRef.current;
-    
-    // Combo bonus
-    if (linesCleared > 0) {
-      comboRef.current++;
-      points += comboRef.current * 50 * levelRef.current;
-    } else {
-      comboRef.current = 0;
-    }
-    
-    return points;
-  };
-
-  // merge + clear
-  const merge = () => {
-    const g = gridRef.current.map(r=>[...r]);
-    const cur = currentRef.current!;
-    cur.shape.forEach((row,dy)=>row.forEach((v,dx)=>{ 
-      if(v && cur.y+dy >= 0 && cur.y+dy < ROWS && cur.x+dx >= 0 && cur.x+dx < COLS) {
-        g[cur.y+dy][cur.x+dx]=cur.color; 
-      }
-    }));
-    
-    let cleared=0;
-    for(let r=ROWS-1;r>=0;r--){
-      if(g[r].every(c=>c!=='')){
-        g.splice(r,1);
-        g.unshift(Array(COLS).fill(''));
-        cleared++; r++;
-      }
-    }
-    
-    if(cleared > 0){
-      const newLines = linesRef.current + cleared;
-      const scoreIncrease = calculateScore(cleared);
-      const newScore = scoreRef.current + scoreIncrease;
-      const newLevel = Math.floor(newLines / 4) + 1; // Level up every 4 lines for balanced progression
-      
-      linesRef.current = newLines;
-      scoreRef.current = newScore;
-      levelRef.current = newLevel;
-      
-      setLines(newLines);
-      setScore(newScore);
-      setLevel(newLevel);
-    } else {
-      // Reset combo if no lines cleared
-      comboRef.current = 0;
-    }
-    
-    // Update both ref and state
-    gridRef.current = g;
-    setGrid(g);
-  };
-
-  // Get drop speed based on level - Balanced progression for 2-3 min gameplay
-  const getDropSpeed = (): number => {
-    // More balanced speed curve - faster ramp but not exponentially crazy
-    const baseSpeed = 700; // Start at comfortable speed
-    const speedDecrease = 60; // Moderate decrease per level
-    const minSpeed = 100; // Playable minimum speed (not too fast)
-    
-    const speed = baseSpeed - (levelRef.current - 1) * speedDecrease;
-    return Math.max(minSpeed, speed);
-  };
-
-  // draw everything
-  const draw = () => {
-    const ctx = ctxRef.current, cur = currentRef.current;
-    if(!ctx||!cur) return;
-
-    // Clear entire canvas
-    ctx.clearRect(0, 0, COLS*BLOCK + 180, ROWS*BLOCK);
-
-    // Main game board
-    ctx.fillStyle='#111'; ctx.fillRect(0,0,COLS*BLOCK,ROWS*BLOCK);
-    ctx.strokeStyle='#333'; ctx.lineWidth=1;
-    ctx.strokeRect(0,0,COLS*BLOCK,ROWS*BLOCK);
-
-    // settled blocks
-    gridRef.current.forEach((row,r)=>row.forEach((c,x)=>{ 
-      if(c){
-        ctx.fillStyle=c;
-        ctx.fillRect(x*BLOCK,r*BLOCK,BLOCK-1,BLOCK-1);
-      } 
-    }));
-
-    // ghost piece with proper rotation preview
-    let dropY=cur.y;
-    while(!collide(cur.x,dropY+1,cur.shape)) dropY++;
-    if (dropY !== cur.y) {
-      ctx.fillStyle='rgba(255,255,255,0.2)';
-      cur.shape.forEach((row,dy)=>row.forEach((v,dx)=>{ 
-        if(v && dropY+dy >= 0 && dropY+dy < ROWS && cur.x+dx >= 0 && cur.x+dx < COLS) {
-          ctx.fillRect((cur.x+dx)*BLOCK,(dropY+dy)*BLOCK,BLOCK-1,BLOCK-1);
-        }
-      }));
-    }
-
-    // current piece
-    ctx.fillStyle=cur.color;
-    cur.shape.forEach((row,dy)=>row.forEach((v,dx)=>{ 
-      if(v) ctx.fillRect((cur.x+dx)*BLOCK,(cur.y+dy)*BLOCK,BLOCK-1,BLOCK-1);
-    }));
-
-    // Right side panel - centered content
-    const panelWidth = 178;
-    const panelX = COLS*BLOCK;
-    const centerX = panelX + panelWidth/2; // Center point for alignment
-    
-    ctx.fillStyle='#222'; 
-    ctx.fillRect(panelX, 0, panelWidth, ROWS*BLOCK);
-    ctx.strokeStyle='#fff'; ctx.lineWidth=2; 
-    ctx.strokeRect(panelX, 0, panelWidth, ROWS*BLOCK);
-    
-    // Centered text
-    ctx.fillStyle='#fff'; 
-    ctx.font='14px sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText(`Score: ${scoreRef.current}`, centerX, 25);
-    ctx.fillText(`Lines: ${linesRef.current}`, centerX, 45);
-    ctx.fillText(`Level: ${levelRef.current}`, centerX, 65);
-    
-    if (comboRef.current > 0) {
-      ctx.fillStyle='#f39c12';
-      ctx.fillText(`Combo: ${comboRef.current}x`, centerX, 85);
-      ctx.fillStyle='#fff';
-    }
-
-    // Speed indicator
-    ctx.fillStyle='#888';
-    ctx.font='10px sans-serif';
-    ctx.fillText(`Speed: ${getDropSpeed()}ms`, centerX, 105);
-
-    // Hold piece display - bigger size
-    const boxSize = BLOCK * 3.2; // Increased from 2.5 to 3.2
-    const holdX = centerX - boxSize/2;
-    const holdY = 125;
-    
-    ctx.strokeStyle='#666';
-    ctx.strokeRect(holdX, holdY, boxSize, boxSize);
-    ctx.fillStyle='#fff';
-    ctx.font='12px sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText('Hold (C)', centerX, holdY - 5);
-    
-    if(holdRef.current){
-      const h = holdRef.current;
-      const scale = 0.8; // Increased from 0.7 to 0.8
-      const pieceWidth = h.shape[0].length * (BLOCK * scale);
-      const pieceHeight = h.shape.length * (BLOCK * scale);
-      const offsetX = holdX + (boxSize - pieceWidth) / 2;
-      const offsetY = holdY + (boxSize - pieceHeight) / 2;
-      
-      ctx.fillStyle = h.color;
-      h.shape.forEach((row,dy)=>row.forEach((v,dx)=>{ 
-        if(v) ctx.fillRect(offsetX + dx*(BLOCK*scale), offsetY + dy*(BLOCK*scale), (BLOCK*scale)-1, (BLOCK*scale)-1);
-      }));
-    }
-
-    // Next piece display - bigger size
-    const nextY = holdY + boxSize + 20;
-    const nextX = centerX - boxSize/2;
-    
-    ctx.strokeStyle='#666';
-    ctx.strokeRect(nextX, nextY, boxSize, boxSize);
-    ctx.fillStyle='#fff';
-    ctx.font='12px sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText('Next', centerX, nextY - 5);
-    
-    if(nextPieceRef.current){
-      const next = nextPieceRef.current;
-      const scale = 0.8; // Increased from 0.7 to 0.8
-      const pieceWidth = next.shape[0].length * (BLOCK * scale);
-      const pieceHeight = next.shape.length * (BLOCK * scale);
-      const offsetX = nextX + (boxSize - pieceWidth) / 2;
-      const offsetY = nextY + (boxSize - pieceHeight) / 2;
-      
-      ctx.fillStyle = next.color;
-      next.shape.forEach((row,dy)=>row.forEach((v,dx)=>{ 
-        if(v) ctx.fillRect(offsetX + dx*(BLOCK*scale), offsetY + dy*(BLOCK*scale), (BLOCK*scale)-1, (BLOCK*scale)-1);
-      }));
-    }
-
-    // Controls help - centered
-    ctx.fillStyle='#666';
-    ctx.font='10px sans-serif';
-    ctx.textAlign='center';
-    const helpY = nextY + boxSize + 30;
-    ctx.fillText('← → Move', centerX, helpY);
-    ctx.fillText('↓ Soft Drop', centerX, helpY + 15);
-    ctx.fillText('Space Hard Drop', centerX, helpY + 30);
-    ctx.fillText('↑ Rotate', centerX, helpY + 45);
-    ctx.fillText('C Hold', centerX, helpY + 60);
-    
-    // Reset text alignment
-    ctx.textAlign='left';
-  };
-
-  // step (merge/spawn/draw/loop)
-  const step = () => {
-    if (gameOverRef.current) return;
-    
-    const cur = currentRef.current!;
-    if(!collide(cur.x,cur.y+1,cur.shape)){
-      cur.y++;
-      draw();
-      timerRef.current = window.setTimeout(step, getDropSpeed());
-    } else {
-      // Piece has landed
-      merge();
-      spawn();
-      
-      // Check for game over after spawning new piece
-      if(collide(currentRef.current!.x,currentRef.current!.y,currentRef.current!.shape)){
-        console.log('GAME OVER DETECTED!');
-        clearTimeout(timerRef.current);
-        gameOverRef.current = true;
-        setIsGameOver(true);
-        onGameOver(scoreRef.current, linesRef.current);
-        return;
-      }
-      
-      draw();
-      timerRef.current = window.setTimeout(step, getDropSpeed());
-    }
-  };
-
-  // controls + start with improved responsiveness
-  useEffect(()=>{
-    if(!ctxRef.current) return;
-    
-    console.log('Game effect running, start:', start);
-    
-    // Key state tracking for improved responsiveness
-    const keyState = { left: false, right: false, down: false };
-    let keyRepeatTimer: number | null = null;
-    
-    // Only reset if we're actually starting a new game
-    if (start) {
-      clearTimeout(timerRef.current);
-      gameOverRef.current = false;
-      setIsGameOver(false);
-      
-      // Reset grid ref when starting new game
-      gridRef.current = Array.from({ length: ROWS }, () => Array(COLS).fill(''));
-      setGrid(gridRef.current);
-      
-      // Reset score refs
-      scoreRef.current = 0;
-      linesRef.current = 0;
-      levelRef.current = 1;
-      comboRef.current = 0;
-      setScore(0);
-      setLines(0);
-      setLevel(1);
-      
-      // Reset pieces
-      nextPieceRef.current = undefined;
-      holdRef.current = null;
-      
-      spawn(); 
-      draw();
-    }
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent arrow keys from scrolling the page
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
-        e.preventDefault();
-      }
-      
-      if (gameOverRef.current) {
-        console.log('INPUT BLOCKED - GAME OVER STATE');
-        return false;
-      }
-      
-      const cur = currentRef.current;
-      if (!cur) return;
-      
-      let needsRedraw = false;
-      
-      // Improved key handling with repeat for smooth movement
-      if(e.code === 'ArrowLeft' && !keyState.left) {
-        keyState.left = true;
-        if (!collide(cur.x-1,cur.y,cur.shape)) {
-          cur.x--;
-          needsRedraw = true;
-        }
-        
-        // Start repeat timer for held key
-        keyRepeatTimer = window.setTimeout(() => {
-          const repeatMove = () => {
-            if (keyState.left && !collide(cur.x-1,cur.y,cur.shape)) {
-              cur.x--;
-              draw();
-            }
-            if (keyState.left) {
-              keyRepeatTimer = window.setTimeout(repeatMove, 50); // Fast repeat
-            }
-          };
-          repeatMove();
-        }, 150); // Initial delay before repeat
-      }
-      
-      if(e.code === 'ArrowRight' && !keyState.right) {
-        keyState.right = true;
-        if (!collide(cur.x+1,cur.y,cur.shape)) {
-          cur.x++;
-          needsRedraw = true;
-        }
-        
-        // Start repeat timer for held key
-        keyRepeatTimer = window.setTimeout(() => {
-          const repeatMove = () => {
-            if (keyState.right && !collide(cur.x+1,cur.y,cur.shape)) {
-              cur.x++;
-              draw();
-            }
-            if (keyState.right) {
-              keyRepeatTimer = window.setTimeout(repeatMove, 50); // Fast repeat
-            }
-          };
-          repeatMove();
-        }, 150); // Initial delay before repeat
-      }
-      
-      if(e.code === 'ArrowDown' && !keyState.down) {
-        keyState.down = true;
-        if (!collide(cur.x,cur.y+1,cur.shape)) {
-          cur.y++;
-          needsRedraw = true;
-        }
-        
-        // Start repeat timer for held key (same as left/right)
-        keyRepeatTimer = window.setTimeout(() => {
-          const repeatMove = () => {
-            if (keyState.down && !collide(cur.x,cur.y+1,cur.shape)) {
-              cur.y++;
-              draw();
-            }
-            if (keyState.down) {
-              keyRepeatTimer = window.setTimeout(repeatMove, 30); // Faster repeat for down
-            }
-          };
-          repeatMove();
-        }, 100); // Shorter initial delay for down
-      }
-
-      if(e.code==='Space'){
-        clearTimeout(timerRef.current);
-        
-        while(!collide(cur.x,cur.y+1,cur.shape)) {
-          cur.y++;
-        }
-        
-        merge();
-        spawn();
-        
-        if(collide(currentRef.current!.x,currentRef.current!.y,currentRef.current!.shape)){
-          console.log('GAME OVER FROM HARD DROP!');
-          gameOverRef.current = true;
-          setIsGameOver(true);
-          onGameOver(scoreRef.current, linesRef.current);
-          return false;
-        }
-        
-        draw();
-        timerRef.current = window.setTimeout(step, getDropSpeed());
-        return false;
-      }
-
-      if(e.code==='ArrowUp'){
-  const rot = rotateCW(cur.shape);
-  // Try rotation at current position first
-  if(!collide(cur.x,cur.y,rot)) {
-    cur.shape=rot;
-    needsRedraw = true;
-  } else {
-    // Try wall kicks (move left/right to allow rotation)
-    for(let offset of [-1, 1, -2, 2]) {
-      if(!collide(cur.x + offset, cur.y, rot)) {
-        cur.x += offset;
-        cur.shape=rot;
-        needsRedraw = true;
-        break;
-      }
-    }
-  }
+interface LeaderboardEntry {
+  rank: number;
+  displayAddress: string;
+  score: number;
+  lines: number;
+  level: number;
+  timestamp: number;
+  txId?: string;
+  walletAddress?: string;
 }
 
-      if(e.code==='KeyC' && !usedHoldRef.current){
-        if(!holdRef.current){
-          holdRef.current={...cur};
-          spawn();
+// Local storage keys for persistence
+const STORAGE_KEYS = {
+  WALLET_ADDRESS: 'tetris_wallet_address',
+  IS_AUTHENTICATED: 'tetris_is_authenticated',
+  IS_PAID: 'tetris_is_paid'
+};
+
+export default function Page() {
+  const { open } = useWeb3Modal();
+  const { address, isConnected, chainId } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
+  
+  const [authed, setAuthed] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+
+  // Load persisted state on mount - only for existing sessions
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Only restore state if wallet is already connected
+    if (address && isConnected) {
+      const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
+      const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
+      
+      if (savedAuth) {
+        console.log('Restoring wallet session:', address);
+        setAuthed(true);
+        setIsPaid(savedPaid);
+      }
+    }
+  }, [address, isConnected]);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    if (address) {
+      localStorage.setItem(STORAGE_KEYS.WALLET_ADDRESS, address);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, authed.toString());
+  }, [authed]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STORAGE_KEYS.IS_PAID, isPaid.toString());
+  }, [isPaid]);
+
+  // Clear persisted state when wallet disconnects
+  const clearPersistedState = () => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(STORAGE_KEYS.WALLET_ADDRESS);
+    localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED);
+    localStorage.removeItem(STORAGE_KEYS.IS_PAID);
+  };
+
+  // Load leaderboard ONCE on page load, then only refresh when needed
+  useEffect(() => {
+    const loadLeaderboard = async () => {
+      try {
+        console.log('Frontend: Loading leaderboard...');
+        setIsLoadingLeaderboard(true);
+        
+        const response = await fetch('/api/leaderboard');
+        console.log('Frontend: API response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Frontend: API response data:', data);
+        
+        if (data.success) {
+          console.log('Frontend: Setting leaderboard with', data.leaderboard.length, 'entries');
+          setLeaderboard(data.leaderboard);
         } else {
-          const tmp=holdRef.current!;
-          holdRef.current={...cur};
-          currentRef.current={ 
-            x:Math.floor(COLS/2 - tmp.shape[0].length/2), 
-            y:0, 
-            shape:tmp.shape.map(r=>[...r]), 
-            color:tmp.color, 
-            cw:tmp.cw 
-          };
+          console.error('Frontend: API returned error:', data.error);
+          setLeaderboard([]);
         }
-        usedHoldRef.current=true;
-        needsRedraw = true;
-      }
-
-      if (needsRedraw) {
-        draw();
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      // Stop key repeat when key is released
-      if (e.code === 'ArrowLeft') {
-        keyState.left = false;
-        if (keyRepeatTimer) clearTimeout(keyRepeatTimer);
-      }
-      if (e.code === 'ArrowRight') {
-        keyState.right = false;
-        if (keyRepeatTimer) clearTimeout(keyRepeatTimer);
-      }
-      if (e.code === 'ArrowDown') {
-        keyState.down = false;
-        if (keyRepeatTimer) clearTimeout(keyRepeatTimer);
+      } catch (error) {
+        console.error('Frontend: Failed to load leaderboard:', error);
+        setLeaderboard([]);
+      } finally {
+        setIsLoadingLeaderboard(false);
       }
     };
     
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    
-    // Start the game loop if start is true
-    if(start) {
-      timerRef.current = window.setTimeout(step, getDropSpeed());
-    }
-    
-    return ()=>{
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      clearTimeout(timerRef.current);
-      if (keyRepeatTimer) clearTimeout(keyRepeatTimer);
-    };
-  },[start]);
+    // Load once on mount
+    loadLeaderboard();
+  }, []);
 
-  const handleRestart = () => {
-    console.log('RESTART CLICKED');
-    if (onPlayAgain) {
-      clearTimeout(timerRef.current);
-      setIsGameOver(false);
-      gameOverRef.current = false;
-      onPlayAgain();
-    }
-  };
-
-  // Direct Irys upload using browser-compatible approach
-  const handlePublishScore = async () => {
-    if (!playerAddress) {
-      alert('No wallet connected');
-      return;
-    }
-
-    setIsPublishing(true);
-    
-    try {
-      console.log('Publishing score to Irys blockchain...');
+  // Handle wallet connection changes
+  useEffect(() => {
+    if (!isConnected) {
+      // User disconnected wallet - clear ALL state including persisted
+      console.log('Wallet disconnected - clearing all state');
+      setAuthed(false);
+      setIsPaid(false);
+      setGameStarted(false);
+      setGameOver(false);
+      setIsOfflineMode(false);
+      clearPersistedState();
+    } else if (isConnected && address) {
+      // Wallet just connected - check if we have persisted auth
+      const savedAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED) === 'true';
+      const savedPaid = localStorage.getItem(STORAGE_KEYS.IS_PAID) === 'true';
       
-      // Check if wallet is available
-      if (!(window as any).ethereum) {
+      if (savedAuth) {
+        setAuthed(true);
+        setIsPaid(savedPaid);
+      }
+      // If no saved auth, user needs to authenticate (this prevents bypass)
+    }
+  }, [isConnected, address]);
+
+  // Spacebar → start game (works for both paid and offline mode)
+  useEffect(() => {
+    // Allow spacebar if: (paid OR offline) AND game not started AND game not over
+    const canStartGame = (isPaid || isOfflineMode) && !gameStarted && !gameOver;
+    
+    if (!canStartGame) return;
+    
+    console.log('Spacebar listener active:', { isPaid, isOfflineMode, gameStarted, gameOver, canStartGame });
+    
+    const handler = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        console.log('Spacebar detected in offline mode! Starting game...');
+        setGameStarted(true);
+        setGameOver(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isPaid, isOfflineMode, gameStarted, gameOver]);
+
+  // Handle payment for new game
+  const handlePayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) {
         throw new Error('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
       }
 
-      // Prepare score data
-      const scoreData = {
-        walletAddress: playerAddress,
-        score: scoreRef.current,
-        lines: linesRef.current,
-        level: levelRef.current,
-        timestamp: Date.now(),
-        chainId: process.env.NEXT_PUBLIC_IRYS_CHAIN_ID,
-        gameType: 'tetris',
-        version: '1.0'
-      };
-
-      // Prepare tags for Irys
-      const tags = [
-        { name: 'Application', value: 'Tetris-Leaderboard' },
-        { name: 'Type', value: 'Score' },
-        { name: 'Player', value: playerAddress },
-        { name: 'Score', value: scoreRef.current.toString() },
-        { name: 'Lines', value: linesRef.current.toString() },
-        { name: 'Level', value: levelRef.current.toString() },
-        { name: 'Timestamp', value: Date.now().toString() },
-        { name: 'Content-Type', value: 'application/json' }
-      ];
-
-      console.log('Score data:', scoreData);
-      console.log('Tags:', tags);
-
-      // For now, let's use our server endpoint but have the user sign the data
-      const { ethers } = await import('ethers');
-      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const provider = new ethers.BrowserProvider(ethereum);
+      await provider.send('eth_requestAccounts', []);
+      
       const signer = await provider.getSigner();
-      
-      // Sign the score data for verification
-      const message = `Publish Tetris Score: ${scoreRef.current} points, ${linesRef.current} lines at ${Date.now()}`;
-      const signature = await signer.signMessage(message);
-      
-      console.log('User signed score publication');
-
-      // Send to our server endpoint with signature
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          data: scoreData, 
-          tags,
-          signature,
-          message
-        })
+      const tx = await signer.sendTransaction({
+        to: process.env.NEXT_PUBLIC_GAME_WALLET_ADDRESS,
+        value: ethers.parseEther(process.env.NEXT_PUBLIC_GAME_FEE!),
       });
-
-      const result = await response.json();
       
-      if (result.success) {
-        console.log('Score published successfully!');
-        console.log('Transaction ID:', result.txHash);
-
-        // Call the parent callback to refresh leaderboard
-        if (onPublishScore) {
-          onPublishScore(scoreRef.current, linesRef.current);
-        }
-
-        alert(`🎉 Score published to blockchain!\n\nTransaction ID: ${result.txHash}\n\nYour score is now permanently stored on the Irys blockchain and will appear on the leaderboard.`);
-      } else {
-        throw new Error(result.error || 'Upload failed');
-      }
-
-    } catch (error: any) {
-      console.error('Failed to publish score:', error);
+      console.log('Payment transaction sent:', tx.hash);
+      await tx.wait();
+      console.log('Payment confirmed');
       
-      if (error.code === 4001) {
-        alert('Transaction cancelled by user');
-      } else if (error.message.includes('User rejected')) {
-        alert('Transaction rejected by user');
+      setIsPaid(true);
+      setGameStarted(false);
+      setGameOver(false);
+      setIsProcessingPayment(false);
+    } catch (e: any) {
+      console.error('Payment failed:', e);
+      
+      if (e.code === 4001) {
+        alert('Payment cancelled by user');
+      } else if (e.message.includes('insufficient funds')) {
+        alert('Insufficient funds. Please add more IRYS to your wallet.');
       } else {
-        alert(`Failed to publish score: ${error.message}`);
+        alert('Payment failed: ' + e.message);
       }
-    } finally {
-      setIsPublishing(false);
+      setIsProcessingPayment(false);
     }
   };
 
-  return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      <canvas
-        ref={canvasRef}
-        width={COLS*BLOCK + 180}
-        height={ROWS*BLOCK}
-        style={{ background:'#000', border:'2px solid #666' }}
-      />
+  // Handle offline restart (no payment)
+  const handleOfflineRestart = () => {
+    setGameStarted(false);
+    setGameOver(false);
+    setIsPaid(true); // Allow game to start
+  };
+
+  // Handle score publishing - now triggers leaderboard refresh
+  const handlePublishScore = async (score: number, lines: number) => {
+    console.log('Frontend: Score published, refreshing leaderboard...');
+    
+    // Refresh leaderboard after score publication
+    try {
+      setIsLoadingLeaderboard(true);
+      const response = await fetch('/api/leaderboard');
+      const data = await response.json();
       
-      {isGameOver && (
+      if (data.success) {
+        console.log('Frontend: Leaderboard refreshed with', data.leaderboard.length, 'entries');
+        setLeaderboard(data.leaderboard);
+      } else {
+        console.error('Frontend: Failed to refresh leaderboard:', data.error);
+      }
+    } catch (error) {
+      console.error('Frontend: Failed to refresh leaderboard:', error);
+    } finally {
+      setIsLoadingLeaderboard(false);
+    }
+  };
+
+  // Home button handler that preserves auth state
+  const handleHomeClick = () => {
+    // Reset game state but preserve wallet connection and auth
+    setGameStarted(false);
+    setGameOver(false);
+    setIsPaid(false); // Reset payment state so user needs to pay again
+    
+    // For offline mode, also reset the address to return to landing
+    if (isOfflineMode) {
+      setAuthed(false);
+      setIsOfflineMode(false);
+    }
+    
+    // Only clear payment from localStorage, keep wallet and auth
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.IS_PAID, 'false');
+    }
+  };
+
+  // Handle wallet disconnection
+  const handleDisconnectWallet = () => {
+    console.log('Disconnecting wallet...');
+    disconnect();
+    setAuthed(false);
+    setIsPaid(false);
+    setGameStarted(false);
+    setGameOver(false);
+    setIsOfflineMode(false);
+    clearPersistedState();
+  };
+
+  // Enhanced wallet connection using WalletConnect
+  const handleWalletConnection = async () => {
+    try {
+      await open();
+    } catch (error: any) {
+      console.error('Failed to open wallet modal:', error);
+      alert('Failed to open wallet connection modal: ' + error.message);
+    }
+  };
+
+  // Bruce Mascot Component - Fixed positioning for all pages
+  const BruceMascot = () => (
+    <img 
+      src="/bruce.png" 
+      alt="Bruce - 375ai Mascot" 
+      style={{ 
+        position: 'fixed',
+        bottom: '10px', // Changed from top: 25% to bottom: 10px to align foot with footer
+        left: '-3%',
+        width: '31.25vw', // 25% bigger (was 25vw)
+        height: 'auto',
+        minWidth: '375px', // 25% bigger (was 300px)
+        maxWidth: '625px', // 25% bigger (was 500px)
+        opacity: 0.6,
+        filter: 'drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5))',
+        zIndex: -1, // Put Bruce behind everything
+        pointerEvents: 'none'
+      }} 
+    />
+  );
+
+  // Leaderboard Component - Show when paid (including offline mode)
+  const LeaderboardPanel = () => {
+    // Show leaderboard when in game states (including offline mode)
+    if (!isPaid && !isOfflineMode) return null;
+    
+    const uniqueLeaderboard = leaderboard.reduce((acc: LeaderboardEntry[], current) => {
+      const existingIndex = acc.findIndex(entry => 
+        entry.displayAddress === current.displayAddress || 
+        (entry as any).walletAddress === (current as any).walletAddress
+      );
+      
+      if (existingIndex === -1) {
+        acc.push(current);
+      } else if (current.score > acc[existingIndex].score) {
+        acc[existingIndex] = current;
+      }
+      
+      return acc;
+    }, []).sort((a, b) => b.score - a.score);
+
+    const userScore = address && authed 
+      ? uniqueLeaderboard.find(entry => 
+          (entry as any).walletAddress?.toLowerCase() === address.toLowerCase()
+        )
+      : null;
+    
+    return (
+      <div style={{
+        position: 'fixed',
+        top: '70px',
+        right: '20px',
+        width: '320px',
+        background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.95) 0%, rgba(15, 15, 20, 0.95) 100%)',
+        border: '1px solid rgba(255, 61, 20, 0.3)',
+        borderRadius: '16px',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.4)',
+        zIndex: 1000,
+        overflow: 'hidden',
+        maxHeight: 'calc(100vh - 100px)'
+      }}>
         <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.9)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '24px',
-          fontFamily: 'sans-serif',
-          zIndex: 9999
+          position: 'relative',
+          padding: '20px',
+          background: 'linear-gradient(135deg, rgba(15, 15, 20, 0.8) 0%, rgba(25, 25, 35, 0.8) 100%)',
+          textAlign: 'center',
+          borderBottom: '1px solid rgba(255, 61, 20, 0.2)'
         }}>
-          <div style={{ 
-            background: '#333', 
-            padding: '40px', 
-            borderRadius: '10px',
-            textAlign: 'center',
-            border: '2px solid #666',
-            minWidth: '300px',
-            position: 'relative'
+          <h2 style={{
+            margin: 0,
+            color: '#E5E7EB',
+            fontSize: '16px',
+            fontWeight: '600',
+            letterSpacing: '0.5px'
+          }}>🏆 TETRIS LEADERBOARD</h2>
+        </div>
+        
+        <div style={{ padding: '16px', maxHeight: '300px', overflowY: 'auto' }}>
+          {isLoadingLeaderboard ? (
+            <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px', fontSize: '14px' }}>
+              Loading...
+            </div>
+          ) : uniqueLeaderboard.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px' }}>
+              <div style={{ fontSize: '24px', marginBottom: '10px' }}>🎯</div>
+              <div style={{ fontSize: '14px' }}>No scores yet!</div>
+              <div style={{ fontSize: '12px', marginTop: '5px' }}>Be the first to publish to blockchain!</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {uniqueLeaderboard.slice(0, 10).map((entry, index) => (
+                <div key={`entry-${index}`} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px',
+                  background: 'rgba(15, 15, 20, 0.4)',
+                  border: '1px solid rgba(55, 65, 81, 0.3)',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s'
+                }}>
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    minWidth: '32px',
+                    textAlign: 'center',
+                    color: '#E5E7EB'
+                  }}>
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontFamily: 'Monaco, Menlo, monospace',
+                      fontSize: '12px',
+                      color: '#9CA3AF',
+                      marginBottom: '2px'
+                    }}>
+                      {entry.displayAddress}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#50FFD6'
+                      }}>
+                        {entry.score?.toLocaleString() || '0'}
+                      </span>
+                      <span style={{
+                        fontSize: '10px',
+                        padding: '2px 6px',
+                        background: 'rgba(80, 255, 214, 0.1)',
+                        border: '1px solid rgba(80, 255, 214, 0.2)',
+                        borderRadius: '4px',
+                        color: '#50FFD6'
+                      }}>
+                        Lv.{entry.level || 1}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Personal High Score Section */}
+        <div style={{ borderTop: '1px solid rgba(55, 65, 81, 0.2)' }}>
+          <div style={{
+            padding: '16px',
+            transition: 'all 0.3s',
+            filter: (!userScore || !authed) ? 'blur(4px)' : 'none',
+            opacity: (!userScore || !authed) ? 0.6 : 1
           }}>
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setIsGameOver(false);
-                gameOverRef.current = false;
-              }}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'transparent',
-                border: 'none',
-                color: '#999',
-                fontSize: '24px',
-                cursor: 'pointer',
-                width: '30px',
-                height: '30px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '50%',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.color = '#fff';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#999';
-              }}
-            >
-              ×
-            </button>
-            
-            <h2 style={{ margin: '0 0 20px 0', color: '#fff' }}>Game Over!</h2>
-            <div style={{ fontSize: '18px', marginBottom: '20px' }}>
-              <div>Final Score: <span style={{ color: '#f39c12' }}>{scoreRef.current}</span></div>
-              <div>Lines Cleared: <span style={{ color: '#3498db' }}>{linesRef.current}</span></div>
-              <div>Level Reached: <span style={{ color: '#e74c3c' }}>{levelRef.current}</span></div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '12px'
+            }}>
+              <span style={{ fontSize: '14px' }}>👤</span>
+              <span style={{
+                fontSize: '12px',
+                color: '#9CA3AF',
+                fontWeight: '500'
+              }}>Your Personal Best</span>
             </div>
-            
-            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-              <button
-                onClick={handleRestart}
-                style={{
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  background: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer'
-                }}
-              >
-                Play Again
-              </button>
-              
-              {playerAddress && (
-                <button
-                  onClick={handlePublishScore}
-                  disabled={isPublishing}
-                  style={{
-                    padding: '12px 24px',
-                    fontSize: '16px',
-                    background: isPublishing ? '#7f8c8d' : '#6366f1',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: isPublishing ? 'not-allowed' : 'pointer',
-                    opacity: isPublishing ? 0.7 : 1
-                  }}
-                >
-                  {isPublishing ? '⏳ Publishing...' : '🏆 Publish to Leaderboards'}
-                </button>
-              )}
-            </div>
-            
-            {isPublishing && (
-              <div style={{ 
-                marginTop: '15px', 
-                fontSize: '14px', 
-                color: '#95a5a6' 
-              }}>
-                Sign the transaction in your wallet to publish your score to the blockchain
+            {userScore && authed ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#50FFD6',
+                  marginBottom: '4px'
+                }}>
+                  {userScore.score.toLocaleString()}
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#9CA3AF'
+                }}>
+                  Level {userScore.level} • {userScore.lines} lines
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '13px',
+                  color: '#4B5563',
+                  marginBottom: '4px'
+                }}>
+                  Connect & sign to view
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#374151'
+                }}>
+                  Your personal high score
+                </div>
               </div>
             )}
           </div>
         </div>
+        
+        {/* Blockchain Features Info */}
+        <div style={{
+          padding: '12px 16px',
+          borderTop: '1px solid rgba(55, 65, 81, 0.2)',
+          background: 'rgba(8, 8, 12, 0.6)'
+        }}>
+          <div style={{
+            fontSize: '10px',
+            color: '#6B7280',
+            marginBottom: '4px',
+            textAlign: 'center'
+          }}>
+            🔗 Permanent • ⚡ 60-day devnet • 🏆 Immutable
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Navigation Header
+  const NavigationHeader = () => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1100,
+      background: 'rgba(8, 8, 12, 0.9)',
+      backdropFilter: 'blur(12px)',
+      borderBottom: '1px solid rgba(80, 255, 214, 0.15)',
+      padding: '12px 20px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    }}>
+      {/* Left Side - Navigation Links Only */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>        
+        {/* Navigation Links */}
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <button
+            onClick={handleHomeClick}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(255, 61, 20, 0.15) 0%, rgba(255, 61, 20, 0.05) 100%)',
+              border: '2px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 20px',
+              color: '#FF3D14',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.25) 0%, rgba(255, 61, 20, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #FF3D14, #50FFD6) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 61, 20, 0.3), 0 0 20px rgba(255, 61, 20, 0.1)';
+              e.currentTarget.style.color = '#FFF';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 61, 20, 0.15) 0%, rgba(255, 61, 20, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#FF3D14';
+            }}
+          >
+            Home
+          </button>
+          
+          <button
+            onClick={() => window.open('https://irys.xyz/faucet', '_blank')}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)',
+              border: '2px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 20px',
+              color: '#50FFD6',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.25) 0%, rgba(80, 255, 214, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #50FFD6, #FF3D14) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(80, 255, 214, 0.3), 0 0 20px rgba(80, 255, 214, 0.1)';
+              e.currentTarget.style.color = '#FFF';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(80, 255, 214, 0.15) 0%, rgba(80, 255, 214, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#50FFD6';
+            }}
+          >
+            Faucet
+          </button>
+          
+          <button
+            onClick={() => window.open('https://375ai-leaderboards.vercel.app/', '_blank')}
+            style={{
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)',
+              border: '2px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 20px',
+              color: '#9CA3AF',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.25) 0%, rgba(156, 163, 175, 0.1) 100%)';
+              e.currentTarget.style.borderImage = 'linear-gradient(135deg, #9CA3AF, #E5E7EB) 1';
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(156, 163, 175, 0.3), 0 0 20px rgba(156, 163, 175, 0.1)';
+              e.currentTarget.style.color = '#FFF';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(156, 163, 175, 0.05) 100%)';
+              e.currentTarget.style.borderImage = 'none';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.color = '#9CA3AF';
+            }}
+          >
+            Global Leaderboards
+          </button>
+        </div>
+      </div>
+
+      {/* Right Side - Wallet Status & Disconnect - Only show when connected and authenticated */}
+      {address && isConnected && authed && !isOfflineMode && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(80, 255, 214, 0.2) 0%, rgba(80, 255, 214, 0.05) 100%)',
+            border: '1px solid rgba(80, 255, 214, 0.3)',
+            borderRadius: '10px',
+            padding: '8px 16px',
+            fontSize: '12px',
+            color: '#50FFD6',
+            fontFamily: 'Monaco, monospace',
+            fontWeight: '600',
+            backdropFilter: 'blur(8px)'
+          }}>
+            {address.slice(0, 6)}...{address.slice(-4)}
+          </div>
+          <button
+            onClick={handleDisconnectWallet}
+            style={{
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '10px',
+              padding: '8px 16px',
+              color: '#EF4444',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+              e.currentTarget.style.transform = 'translateY(-1px) scale(1.05)';
+              e.currentTarget.style.color = '#FFF';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.color = '#EF4444';
+            }}
+          >
+            Disconnect
+          </button>
+        </div>
       )}
     </div>
   );
+
+  // Updated container and card styles with mobile responsiveness
+  const containerStyle = {
+    minHeight: '100vh',
+    maxHeight: '100vh',
+    background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2a2a2a 100%)',
+    color: 'white',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+    overflow: 'hidden'
+  };
+
+  const cardStyle = {
+    background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.9) 0%, rgba(25, 25, 35, 0.9) 100%)',
+    border: '2px solid rgba(80, 255, 214, 0.3)',
+    borderRadius: '20px',
+    padding: '40px',
+    backdropFilter: 'blur(12px)',
+    boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.2)',
+    textAlign: 'center' as const,
+    transition: 'all 0.3s ease'
+  };
+
+  const buttonStyle = {
+    background: 'linear-gradient(135deg, #FF3D14 0%, #50FFD6 100%)',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '16px 32px',
+    color: 'white',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    boxShadow: '0 4px 15px rgba(80, 255, 214, 0.4)',
+    minWidth: '200px'
+  };
+
+  // Add CSS for mobile responsiveness
+  const mobileStyles = `
+    @media (max-width: 768px) {
+      .arcade-container {
+        padding: 80px 10px 40px !important;
+      }
+      .arcade-cards {
+        flex-direction: column !important;
+        gap: 20px !important;
+      }
+      .arcade-card {
+        min-width: 280px !important;
+        max-width: 350px !important;
+        margin: 0 auto !important;
+      }
+      .leaderboard-panel {
+        position: relative !important;
+        top: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        margin-bottom: 20px !important;
+        max-height: 400px !important;
+      }
+      .nav-buttons {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .nav-button {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+      }
+    }
+  `;
+
+  // Footer component
+  const Footer = () => (
+    <div style={{
+      position: 'absolute',
+      bottom: '10px',
+      left: '20px',
+      right: '20px',
+      textAlign: 'center',
+      zIndex: 500
+    }}>
+      <div style={{ 
+        fontSize: '12px', 
+        color: '#B9C1C1',
+        marginBottom: '8px'
+      }}>
+        Made with love by{' '}
+        <a 
+          href="https://x.com/cryptdean" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ 
+            color: '#FF3D14', 
+            textDecoration: 'none',
+            fontWeight: '600'
+          }}
+        >
+          Dean
+        </a>
+        . para mi amore, <em>vivr</em>
+      </div>
+      
+      <div style={{ 
+        fontSize: '9px', 
+        color: '#666',
+        lineHeight: '1.3',
+        maxWidth: '600px',
+        margin: '0 auto'
+      }}>
+        <strong>Disclaimer:</strong> 375 Arcade is not in any way, shape, or form affiliated with the 375ai or Irys team. This is a game made for the community. There will be no financial transactions, solicitations, donations, or anything related to user spending. For official updates visit{' '}
+        <a 
+          href="https://x.com/375ai_" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#FF3D14', textDecoration: 'none' }}
+        >
+          375ai
+        </a>
+        {' '}and{' '}
+        <a 
+          href="https://x.com/irys_xyz" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#10b981', textDecoration: 'none' }}
+        >
+          Irys
+        </a>
+      </div>
+    </div>
+  );
+
+  // Wrong chain
+  if (chainId && chainId !== 1270 && !isOfflineMode) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
+            <h2 style={{ marginBottom: '20px', color: '#FF3D14' }}>Wrong Network</h2>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
+              Please switch to <strong>Irys Testnet</strong> to continue
+            </p>
+            <button
+              style={buttonStyle}
+              onClick={async () => {
+                const ethereum = (window as any).ethereum;
+                if (!ethereum) {
+                  alert('No wallet found. Please install MetaMask, OKX, or another Web3 wallet.');
+                  return;
+                }
+                
+                try {
+                  await ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [IRYS_PARAMS],
+                  });
+                } catch (addError: any) {
+                  console.log('Add network failed:', addError);
+                }
+                
+                try {
+                  await ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: IRYS_PARAMS.chainId }],
+                  });
+                } catch (switchError: any) {
+                  if (switchError.code === 4001) {
+                    alert('Network switch cancelled by user');
+                  } else {
+                    alert('Failed to switch network: ' + switchError.message);
+                  }
+                }
+              }}
+            >
+              Switch to Irys Testnet
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Landing page
+  if (!address && !isConnected && !isOfflineMode) {
+    return (
+      <div style={containerStyle}>
+        <style>{mobileStyles}</style>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div className="arcade-container" style={{ padding: '130px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
+            <div style={{ marginBottom: '60px' }}>
+              <img 
+                src="/arcade-title.png" 
+                alt="375 Arcade - Built on Irys"
+                style={{ 
+                  maxWidth: '400px',
+                  width: '100%',
+                  height: 'auto',
+                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                }} 
+              />
+            </div>
+
+            <div className="arcade-cards" style={{ 
+              display: 'flex', 
+              gap: '40px', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <div className="arcade-card" style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+
+              <div className="arcade-card" style={{
+                ...cardStyle,
+                minWidth: '320px',
+                maxWidth: '400px',
+                border: '3px solid #50FFD6',
+                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.4)'
+              }}>
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  backgroundImage: 'url(/blocks.png)', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}></div>
+                <h2 style={{ 
+                  fontSize: '32px', 
+                  marginBottom: '15px', 
+                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '700'
+                }}>
+                  TETRIS
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
+                  Play a classic game of Tetris for 0.01 Irys!
+                </p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <button
+                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+                    onClick={handleWalletConnection}
+                  >
+                    🔗 Connect Wallet & Play
+                  </button>
+                  
+                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
+                    Don't want to connect your wallet and publish your scores? No worries!
+                  </p>
+                  
+                  <button
+                    style={{
+                      background: 'rgba(25, 25, 35, 0.5)',
+                      border: '2px solid rgba(107, 114, 128, 0.3)',
+                      borderRadius: '12px',
+                      padding: '12px 24px',
+                      color: '#9CA3AF',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      minWidth: '200px'
+                    }}
+                    onClick={() => {
+                      console.log('Just Play clicked!'); // Debug log
+                      console.log('Before setting states:', { isOfflineMode, authed, isPaid, gameStarted, gameOver });
+                      
+                      // Set offline mode first, then other states
+                      setIsOfflineMode(true);
+                      setAuthed(true);
+                      setIsPaid(true);
+                      setGameStarted(false);
+                      setGameOver(false);
+                      
+                      console.log('After setting states - should be:', { 
+                        isOfflineMode: true, 
+                        authed: true, 
+                        isPaid: true, 
+                        gameStarted: false, 
+                        gameOver: false 
+                      });
+                    }}
+                  >
+                    Just Play
+                  </button>
+                </div>
+              </div>
+
+              <div className="arcade-card" style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+            </div>
+          </div>
+          
+          <Footer />
+        </div>
+        
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Sign auth - Skip for offline users
+  if (!authed && address && isConnected) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
+            <h2 style={{ marginBottom: '20px' }}>Authentication Required</h2>
+            <p style={{ marginBottom: '10px', color: '#B9C1C1' }}>
+              <strong>Connected:</strong> {address.slice(0, 6)}...{address.slice(-4)}
+            </p>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1' }}>
+              Sign a message to verify your identity
+            </p>
+            <button
+              style={buttonStyle}
+              onClick={async () => {
+                try {
+                  const message = `Authenticate @375 Tetris at ${Date.now()}`;
+                  await signMessageAsync({ message });
+                  
+                  // Set authenticated and reset payment state
+                  setAuthed(true);
+                  setIsPaid(false); // Force to game selection page
+                  setGameStarted(false);
+                  setGameOver(false);
+                  
+                  console.log('Authentication successful - redirecting to game selection');
+                } catch (e: any) {
+                  if (e.message.includes('User rejected')) {
+                    alert('Authentication cancelled by user');
+                  } else {
+                    alert('Authentication failed: ' + e.message);
+                  }
+                }
+              }}
+            >
+              🔐 Sign Message
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show connected and authenticated state - the game selection page
+  if (address && isConnected && authed && !isPaid && !gameStarted && !gameOver) {
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
+          <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '40px' }}>
+              <img 
+                src="/arcade-title.png" 
+                alt="375 Arcade - Built on Irys"
+                style={{ 
+                  maxWidth: '400px',
+                  width: '100%',
+                  height: 'auto',
+                  filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
+                }} 
+              />
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              gap: '40px', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎯</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+
+              <div style={{
+                ...cardStyle,
+                minWidth: '320px',
+                maxWidth: '400px',
+                border: '3px solid #50FFD6',
+                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.3)'
+              }}>
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  backgroundImage: 'url(/blocks.png)', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '20px',
+                  margin: '0 auto 20px auto'
+                }}></div>
+                <h2 style={{ 
+                  fontSize: '32px', 
+                  marginBottom: '15px', 
+                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '700'
+                }}>
+                  TETRIS
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
+                  Play a classic game of Tetris for 0.01 Irys!
+                </p>
+                
+                <button
+                  style={{ 
+                    ...buttonStyle, 
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
+                  }}
+                  onClick={handlePayment}
+                  disabled={isProcessingPayment}
+                >
+                  {isProcessingPayment ? '⏳ Processing...' : 'Play'}
+                </button>
+              </div>
+
+              <div style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '320px',
+                opacity: 0.6,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
+                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+              </div>
+            </div>
+          </div>
+          <Footer />
+        </div>
+        
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Ready to start - Show for offline mode OR after payment (but NOT when game started)
+  if ((isOfflineMode || isPaid) && !gameStarted && !gameOver) {
+    console.log('Ready to Play condition met:', { isOfflineMode, isPaid, gameStarted, gameOver });
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
+            <h2 style={{ marginBottom: '20px', color: '#10b981' }}>✅ Ready to Play!</h2>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
+              Press <kbd style={{ 
+                background: 'rgba(255, 61, 20, 0.2)', 
+                padding: '8px 12px', 
+                borderRadius: '6px', 
+                border: '1px solid rgba(255, 61, 20, 0.3)',
+                color: '#FF3D14',
+                fontFamily: 'Monaco, monospace'
+              }}>SPACEBAR</kbd> to start
+            </p>
+            <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
+              <p>🎯 Clear lines to score points</p>
+              <p>⚡ Speed increases every 4 lines</p>
+              {address && !isOfflineMode && (
+                <p>🏆 Publish scores to blockchain leaderboard!</p>
+              )}
+            </div>
+          </div>
+        </div>
+        <Footer />
+        
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Game active - Show when game has started (both paid and offline mode)
+  if (gameStarted || gameOver) {
+    console.log('Game active condition met:', { gameStarted, gameOver, isOfflineMode, isPaid });
+    return (
+      <div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <BruceMascot />
+        <div style={{ 
+          padding: '80px 20px 20px', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          minHeight: '100vh'
+        }}>
+          <CanvasTetris
+            start={gameStarted}
+            onGameOver={(score, lines) => {
+              console.log('Game over callback triggered:', { score, lines });
+              console.log('CanvasTetris props:', { 
+                isOfflineMode, 
+                playerAddress: isOfflineMode ? undefined : address,
+                address 
+              });
+              setGameOver(true);
+              setGameStarted(false);
+            }}
+            onPlayAgain={isOfflineMode ? handleOfflineRestart : handlePayment}
+            onPublishScore={handlePublishScore}
+            playerAddress={isOfflineMode ? undefined : address}
+          />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 }
