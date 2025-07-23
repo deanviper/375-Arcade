@@ -1434,4 +1434,31 @@ export default function Page() {
                 setGameOver(true);
                 setGameStarted(false);
               }}
-              onPlay
+              onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('pacman')}
+              onPublishScore={handlePublishScore}
+              playerAddress={isOfflineMode ? undefined : address}
+            />
+          ) : null}
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Fallback return (should not reach here normally)
+  return (
+    <div style={containerStyle}>
+      <NavigationHeader />
+      <LeaderboardPanel />
+      <BruceMascot />
+      <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={cardStyle}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔄</div>
+          <h2 style={{ marginBottom: '20px' }}>Loading...</h2>
+          <p style={{ color: '#B9C1C1' }}>Initializing 375 Arcade...</p>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
