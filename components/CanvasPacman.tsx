@@ -32,7 +32,7 @@ const MAZE = [
 ];
 
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
-type Ghost = { x: number; y: number; dir: Direction; color: string };
+type Ghost = { x: number; y: number; dir: Direction; color: string; vulnerable: boolean; originalColor: string };
 
 export default function CanvasPacman({
   onGameOver,
@@ -58,10 +58,10 @@ export default function CanvasPacman({
   // Player state
   const pacmanRef = useRef({ x: 9, y: 15, dir: 'RIGHT' as Direction, nextDir: 'RIGHT' as Direction });
   const ghostsRef = useRef<Ghost[]>([
-    { x: 9, y: 9, dir: 'UP', color: '#FF0000' },
-    { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF' },
-    { x: 9, y: 10, dir: 'UP', color: '#00FFFF' },
-    { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847' }
+    { x: 9, y: 9, dir: 'UP', color: '#FF0000', vulnerable: false, originalColor: '#FF0000' },
+    { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF', vulnerable: false, originalColor: '#FFB8FF' },
+    { x: 9, y: 10, dir: 'UP', color: '#00FFFF', vulnerable: false, originalColor: '#00FFFF' },
+    { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847', vulnerable: false, originalColor: '#FFB847' }
   ]);
   
   // Game stats
@@ -133,7 +133,13 @@ export default function CanvasPacman({
         gameStateRef.current.score += 50;
         gameStateRef.current.dotsRemaining--;
         gameStateRef.current.powerMode = true;
-        gameStateRef.current.powerTimer = 200; // ~10 seconds at 20fps
+        gameStateRef.current.powerTimer = 120; // Reduced from 200 to ~6 seconds at 20fps
+        
+        // Make all ghosts vulnerable
+        ghostsRef.current.forEach(ghost => {
+          ghost.vulnerable = true;
+        });
+        
         setScore(gameStateRef.current.score);
       }
     }
@@ -148,7 +154,7 @@ export default function CanvasPacman({
       });
       
       if (possibleDirs.length > 0) {
-        // Simple AI: prefer moving toward Pacman, but add randomness
+        // Simple AI: prefer moving toward/away from Pacman based on vulnerability
         const pacman = pacmanRef.current;
         const dx = pacman.x - ghost.x;
         const dy = pacman.y - ghost.y;
@@ -160,8 +166,8 @@ export default function CanvasPacman({
           preferredDir = dy > 0 ? 'DOWN' : 'UP';
         }
         
-        // In power mode, run away from Pacman
-        if (gameStateRef.current.powerMode) {
+        // If vulnerable, run away from Pacman
+        if (ghost.vulnerable) {
           switch (preferredDir) {
             case 'UP': preferredDir = 'DOWN'; break;
             case 'DOWN': preferredDir = 'UP'; break;
@@ -199,12 +205,16 @@ export default function CanvasPacman({
     
     ghostsRef.current.forEach(ghost => {
       if (ghost.x === pacman.x && ghost.y === pacman.y) {
-        if (gameStateRef.current.powerMode) {
+        if (ghost.vulnerable) {
           // Eat ghost - bonus points and respawn ghost
           gameStateRef.current.score += 200;
           setScore(gameStateRef.current.score);
+          
+          // Reset ghost to home position and make it non-vulnerable
           ghost.x = 9;
           ghost.y = 9;
+          ghost.vulnerable = false;
+          ghost.color = ghost.originalColor;
         } else {
           // Pacman dies
           gameStateRef.current.lives--;
@@ -220,10 +230,18 @@ export default function CanvasPacman({
             pacman.y = 15;
             pacman.dir = 'RIGHT';
             pacman.nextDir = 'RIGHT';
-            ghostsRef.current.forEach((ghost, i) => {
-              ghost.x = 9;
-              ghost.y = 9 + (i % 2);
+            
+            // Reset ghosts and remove vulnerability
+            ghostsRef.current.forEach((g, i) => {
+              g.x = 9;
+              g.y = 9 + (i % 2);
+              g.vulnerable = false;
+              g.color = g.originalColor;
             });
+            
+            // Reset power mode
+            gameStateRef.current.powerMode = false;
+            gameStateRef.current.powerTimer = 0;
           }
         }
       }
@@ -249,10 +267,17 @@ export default function CanvasPacman({
       pacman.dir = 'RIGHT';
       pacman.nextDir = 'RIGHT';
       
+      // Reset ghosts
       ghostsRef.current.forEach((ghost, i) => {
         ghost.x = 9;
         ghost.y = 9 + (i % 2);
+        ghost.vulnerable = false;
+        ghost.color = ghost.originalColor;
       });
+      
+      // Reset power mode
+      gameStateRef.current.powerMode = false;
+      gameStateRef.current.powerTimer = 0;
     }
   };
 
@@ -269,12 +294,17 @@ export default function CanvasPacman({
       gameStateRef.current.powerTimer--;
       if (gameStateRef.current.powerTimer <= 0) {
         gameStateRef.current.powerMode = false;
+        // Reset all ghosts to normal state
+        ghostsRef.current.forEach(ghost => {
+          ghost.vulnerable = false;
+          ghost.color = ghost.originalColor;
+        });
       }
     }
     
     draw();
-    // Much slower game loop - 150ms instead of requestAnimationFrame for playable speed
-    gameLoopRef.current = window.setTimeout(gameLoop, 150);
+    // Smooth game loop - 120ms for better responsiveness
+    gameLoopRef.current = window.setTimeout(gameLoop, 120);
   };
 
   const draw = () => {
@@ -320,7 +350,7 @@ export default function CanvasPacman({
     const pacX = pacman.x * BLOCK + BLOCK/2;
     const pacY = pacman.y * BLOCK + BLOCK/2;
     
-    ctx.fillStyle = gameStateRef.current.powerMode ? '#FFD700' : '#FFFF00';
+    ctx.fillStyle = '#FFFF00';
     ctx.beginPath();
     ctx.arc(pacX, pacY, BLOCK/2 - 2, 0, Math.PI * 2);
     ctx.fill();
@@ -347,10 +377,16 @@ export default function CanvasPacman({
       const ghostX = ghost.x * BLOCK + BLOCK/2;
       const ghostY = ghost.y * BLOCK + BLOCK/2;
       
-      if (gameStateRef.current.powerMode) {
-        ctx.fillStyle = gameStateRef.current.powerTimer % 20 < 10 ? '#0000FF' : '#FFF';
+      // Set ghost color based on vulnerability
+      if (ghost.vulnerable) {
+        // Flash between blue and white when power mode is about to end
+        if (gameStateRef.current.powerTimer < 40 && gameStateRef.current.powerTimer % 10 < 5) {
+          ctx.fillStyle = '#FFF';
+        } else {
+          ctx.fillStyle = '#0000FF';
+        }
       } else {
-        ctx.fillStyle = ghost.color;
+        ctx.fillStyle = ghost.originalColor;
       }
       
       // Ghost body
@@ -428,14 +464,14 @@ export default function CanvasPacman({
       // Reset positions
       pacmanRef.current = { x: 9, y: 15, dir: 'RIGHT', nextDir: 'RIGHT' };
       ghostsRef.current = [
-        { x: 9, y: 9, dir: 'UP', color: '#FF0000' },
-        { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF' },
-        { x: 9, y: 10, dir: 'UP', color: '#00FFFF' },
-        { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847' }
+        { x: 9, y: 9, dir: 'UP', color: '#FF0000', vulnerable: false, originalColor: '#FF0000' },
+        { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF', vulnerable: false, originalColor: '#FFB8FF' },
+        { x: 9, y: 10, dir: 'UP', color: '#00FFFF', vulnerable: false, originalColor: '#00FFFF' },
+        { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847', vulnerable: false, originalColor: '#FFB847' }
       ];
       
       // Start game loop with proper timing
-      gameLoopRef.current = window.setTimeout(gameLoop, 150);
+      gameLoopRef.current = window.setTimeout(gameLoop, 120);
     }
     
     return () => {
@@ -614,7 +650,7 @@ export default function CanvasPacman({
             <button
               onClick={() => {
                 setIsGameOver(false);
-                gameStateRef.current.gameOver = false;
+                // Don't reset gameOver state - keep it true so spacebar still works
               }}
               style={{
                 position: 'absolute',
