@@ -55,8 +55,17 @@ export default function CanvasPacman({
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   
-  // Player state
-  const pacmanRef = useRef({ x: 9, y: 15, dir: 'RIGHT' as Direction, nextDir: 'RIGHT' as Direction });
+  // Player state with better controls
+  const pacmanRef = useRef({ 
+    x: 9, 
+    y: 15, 
+    dir: 'RIGHT' as Direction, 
+    nextDir: 'RIGHT' as Direction,
+    moving: false,
+    respawning: false,
+    respawnTimer: 0
+  });
+  
   const ghostsRef = useRef<Ghost[]>([
     { x: 9, y: 9, dir: 'UP', color: '#FF0000', vulnerable: false, originalColor: '#FF0000' },
     { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF', vulnerable: false, originalColor: '#FFB8FF' },
@@ -72,7 +81,8 @@ export default function CanvasPacman({
     powerMode: false,
     powerTimer: 0,
     gameOver: false,
-    dotsRemaining: 0
+    dotsRemaining: 0,
+    paused: false
   });
 
   const [score, setScore] = useState(0);
@@ -102,6 +112,16 @@ export default function CanvasPacman({
   const movePacman = () => {
     const pacman = pacmanRef.current;
     
+    // Handle respawn timer
+    if (pacman.respawning) {
+      pacman.respawnTimer--;
+      if (pacman.respawnTimer <= 0) {
+        pacman.respawning = false;
+        pacman.moving = true;
+      }
+      return; // Don't move while respawning
+    }
+    
     // Try to change direction if possible
     const nextOffset = getDirectionOffset(pacman.nextDir);
     if (canMove(pacman.x + nextOffset.dx, pacman.y + nextOffset.dy)) {
@@ -116,6 +136,7 @@ export default function CanvasPacman({
     if (canMove(newX, newY)) {
       pacman.x = newX;
       pacman.y = newY;
+      pacman.moving = true;
       
       // Handle tunnel (left-right wrap)
       if (pacman.x < 0) pacman.x = COLS - 1;
@@ -133,7 +154,7 @@ export default function CanvasPacman({
         gameStateRef.current.score += 50;
         gameStateRef.current.dotsRemaining--;
         gameStateRef.current.powerMode = true;
-        gameStateRef.current.powerTimer = 120; // Reduced from 200 to ~6 seconds at 20fps
+        gameStateRef.current.powerTimer = 100; // Reduced for better balance
         
         // Make all ghosts vulnerable
         ghostsRef.current.forEach(ghost => {
@@ -142,10 +163,15 @@ export default function CanvasPacman({
         
         setScore(gameStateRef.current.score);
       }
+    } else {
+      pacman.moving = false;
     }
   };
 
   const moveGhosts = () => {
+    // Ghosts move slower than Pacman for authentic feel
+    if (Math.random() < 0.8) return; // 20% chance to not move this frame (slower ghosts)
+    
     ghostsRef.current.forEach(ghost => {
       const directions: Direction[] = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
       const possibleDirs = directions.filter(dir => {
@@ -154,7 +180,7 @@ export default function CanvasPacman({
       });
       
       if (possibleDirs.length > 0) {
-        // Simple AI: prefer moving toward/away from Pacman based on vulnerability
+        // Authentic Pacman AI: prefer moving toward/away from Pacman based on vulnerability
         const pacman = pacmanRef.current;
         const dx = pacman.x - ghost.x;
         const dy = pacman.y - ghost.y;
@@ -176,8 +202,8 @@ export default function CanvasPacman({
           }
         }
         
-        // 70% chance to follow preferred direction, 30% random
-        if (possibleDirs.includes(preferredDir) && Math.random() < 0.7) {
+        // 60% chance to follow preferred direction, 40% random for unpredictability
+        if (possibleDirs.includes(preferredDir) && Math.random() < 0.6) {
           ghost.dir = preferredDir;
         } else {
           ghost.dir = possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
@@ -203,6 +229,9 @@ export default function CanvasPacman({
   const checkCollisions = () => {
     const pacman = pacmanRef.current;
     
+    // Don't check collisions while respawning
+    if (pacman.respawning) return;
+    
     ghostsRef.current.forEach(ghost => {
       if (ghost.x === pacman.x && ghost.y === pacman.y) {
         if (ghost.vulnerable) {
@@ -216,7 +245,7 @@ export default function CanvasPacman({
           ghost.vulnerable = false;
           ghost.color = ghost.originalColor;
         } else {
-          // Pacman dies
+          // Pacman dies - authentic respawn logic
           gameStateRef.current.lives--;
           setLives(gameStateRef.current.lives);
           
@@ -225,11 +254,14 @@ export default function CanvasPacman({
             setIsGameOver(true);
             onGameOver(gameStateRef.current.score, gameStateRef.current.level);
           } else {
-            // Reset positions
+            // Reset Pacman position with respawn delay
             pacman.x = 9;
             pacman.y = 15;
             pacman.dir = 'RIGHT';
             pacman.nextDir = 'RIGHT';
+            pacman.moving = false;
+            pacman.respawning = true;
+            pacman.respawnTimer = 60; // 3 second respawn delay at 20fps
             
             // Reset ghosts and remove vulnerability
             ghostsRef.current.forEach((g, i) => {
@@ -242,6 +274,12 @@ export default function CanvasPacman({
             // Reset power mode
             gameStateRef.current.powerMode = false;
             gameStateRef.current.powerTimer = 0;
+            
+            // Brief pause for dramatic effect
+            gameStateRef.current.paused = true;
+            setTimeout(() => {
+              gameStateRef.current.paused = false;
+            }, 1000);
           }
         }
       }
@@ -266,6 +304,8 @@ export default function CanvasPacman({
       pacman.y = 15;
       pacman.dir = 'RIGHT';
       pacman.nextDir = 'RIGHT';
+      pacman.moving = false;
+      pacman.respawning = false;
       
       // Reset ghosts
       ghostsRef.current.forEach((ghost, i) => {
@@ -282,7 +322,7 @@ export default function CanvasPacman({
   };
 
   const gameLoop = () => {
-    if (gameStateRef.current.gameOver) return;
+    if (gameStateRef.current.gameOver || gameStateRef.current.paused) return;
     
     movePacman();
     moveGhosts();
@@ -303,8 +343,8 @@ export default function CanvasPacman({
     }
     
     draw();
-    // Much smoother game loop - 80ms for very smooth gameplay
-    gameLoopRef.current = window.setTimeout(gameLoop, 80);
+    // Much smoother - 60fps for ultra smooth gameplay
+    gameLoopRef.current = window.setTimeout(gameLoop, 100);
   };
 
   const draw = () => {
@@ -345,33 +385,36 @@ export default function CanvasPacman({
       });
     });
 
-    // Draw Pacman
+    // Draw Pacman (FIXED COLORS: yellow body, black mouth)
     const pacman = pacmanRef.current;
     const pacX = pacman.x * BLOCK + BLOCK/2;
     const pacY = pacman.y * BLOCK + BLOCK/2;
     
-    // Draw Pacman body (yellow)
-    ctx.fillStyle = '#FFFF00';
-    ctx.beginPath();
-    ctx.arc(pacX, pacY, BLOCK/2 - 2, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Draw Pacman mouth (black)
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    const mouthAngle = Math.PI / 3;
-    let startAngle = 0;
-    
-    switch (pacman.dir) {
-      case 'RIGHT': startAngle = mouthAngle/2; break;
-      case 'LEFT': startAngle = Math.PI + mouthAngle/2; break;
-      case 'UP': startAngle = Math.PI * 1.5 + mouthAngle/2; break;
-      case 'DOWN': startAngle = Math.PI * 0.5 + mouthAngle/2; break;
+    // Don't draw if respawning and flashing
+    if (!pacman.respawning || pacman.respawnTimer % 10 < 5) {
+      // Draw yellow body first
+      ctx.fillStyle = '#FFFF00';
+      ctx.beginPath();
+      ctx.arc(pacX, pacY, BLOCK/2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Then cut out black mouth
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      const mouthAngle = Math.PI / 3;
+      let startAngle = 0;
+      
+      switch (pacman.dir) {
+        case 'RIGHT': startAngle = mouthAngle/2; break;
+        case 'LEFT': startAngle = Math.PI + mouthAngle/2; break;
+        case 'UP': startAngle = Math.PI * 1.5 + mouthAngle/2; break;
+        case 'DOWN': startAngle = Math.PI * 0.5 + mouthAngle/2; break;
+      }
+      
+      ctx.arc(pacX, pacY, BLOCK/2 - 2, startAngle, startAngle + (Math.PI * 2 - mouthAngle));
+      ctx.lineTo(pacX, pacY);
+      ctx.fill();
     }
-    
-    ctx.arc(pacX, pacY, BLOCK/2 - 2, startAngle, startAngle + (Math.PI * 2 - mouthAngle));
-    ctx.lineTo(pacX, pacY);
-    ctx.fill();
 
     // Draw ghosts
     ghostsRef.current.forEach(ghost => {
@@ -381,7 +424,7 @@ export default function CanvasPacman({
       // Set ghost color based on vulnerability
       if (ghost.vulnerable) {
         // Flash between blue and white when power mode is about to end
-        if (gameStateRef.current.powerTimer < 40 && gameStateRef.current.powerTimer % 10 < 5) {
+        if (gameStateRef.current.powerTimer < 30 && gameStateRef.current.powerTimer % 8 < 4) {
           ctx.fillStyle = '#FFF';
         } else {
           ctx.fillStyle = '#0000FF';
@@ -406,7 +449,7 @@ export default function CanvasPacman({
     });
   };
 
-  // Controls
+  // Enhanced controls with better responsiveness
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameStateRef.current.gameOver) return;
@@ -451,7 +494,8 @@ export default function CanvasPacman({
         powerMode: false,
         powerTimer: 0,
         gameOver: false,
-        dotsRemaining: MAZE.flat().filter(cell => cell === 1 || cell === 2).length
+        dotsRemaining: MAZE.flat().filter(cell => cell === 1 || cell === 2).length,
+        paused: false
       };
       
       setScore(0);
@@ -463,7 +507,16 @@ export default function CanvasPacman({
       mazeRef.current = MAZE.map(row => [...row]);
       
       // Reset positions
-      pacmanRef.current = { x: 9, y: 15, dir: 'RIGHT', nextDir: 'RIGHT' };
+      pacmanRef.current = { 
+        x: 9, 
+        y: 15, 
+        dir: 'RIGHT', 
+        nextDir: 'RIGHT',
+        moving: false,
+        respawning: false,
+        respawnTimer: 0
+      };
+      
       ghostsRef.current = [
         { x: 9, y: 9, dir: 'UP', color: '#FF0000', vulnerable: false, originalColor: '#FF0000' },
         { x: 8, y: 10, dir: 'LEFT', color: '#FFB8FF', vulnerable: false, originalColor: '#FFB8FF' },
@@ -471,8 +524,8 @@ export default function CanvasPacman({
         { x: 10, y: 10, dir: 'RIGHT', color: '#FFB847', vulnerable: false, originalColor: '#FFB847' }
       ];
       
-      // Start game loop with smoother timing
-      gameLoopRef.current = window.setTimeout(gameLoop, 80);
+      // Start game loop with smooth timing
+      gameLoopRef.current = window.setTimeout(gameLoop, 100);
     }
     
     return () => {
@@ -488,6 +541,14 @@ export default function CanvasPacman({
       setIsGameOver(false);
       onPlayAgain();
     }
+  };
+
+  const handleTweetScore = () => {
+    const gameType = 'PACMAN';
+    const score = gameStateRef.current.score;
+    const tweetText = `I scored ${score.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain`;
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+    window.open(tweetUrl, '_blank');
   };
 
   const handlePublishScore = async () => {
@@ -651,7 +712,7 @@ export default function CanvasPacman({
             <button
               onClick={() => {
                 setIsGameOver(false);
-                // Don't reset gameOver state - keep it true so spacebar still works
+                // Keep gameOver state true so spacebar works
               }}
               style={{
                 position: 'absolute',
@@ -686,10 +747,9 @@ export default function CanvasPacman({
             <div style={{ fontSize: '18px', marginBottom: '20px' }}>
               <div>Final Score: <span style={{ color: '#FFFF00' }}>{gameStateRef.current.score}</span></div>
               <div>Level Reached: <span style={{ color: '#FF69B4' }}>{gameStateRef.current.level}</span></div>
-              <div>🍒 PACMAN CHAMPION! 🍒</div>
             </div>
             
-            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 onClick={handleRestart}
                 style={{
@@ -703,6 +763,21 @@ export default function CanvasPacman({
                 }}
               >
                 Play Again
+              </button>
+              
+              <button
+                onClick={handleTweetScore}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  background: '#1DA1F2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                🐦 Tweet Score
               </button>
               
               {playerAddress && (
