@@ -1459,7 +1459,7 @@ export default function Page() {
         {/* Arcade title on left during in-game screens */}
         <div style={{
           position: 'fixed',
-          top: '70px',
+          top: '140px',   /* >>> moved down */
           left: '20px',
           zIndex: 1000
         }}>
@@ -1467,7 +1467,7 @@ export default function Page() {
             src="/arcade-title.png" 
             alt="375 Arcade - Built on Irys"
             style={{ 
-              maxWidth: '200px',
+              maxWidth: '500px', /* >>> ~2.5x */
               width: '100%',
               height: 'auto',
               filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
