@@ -302,7 +302,7 @@ export default function Page() {
         maxWidth: '625px', // 25% bigger (was 500px)
         opacity: 0.6,
         filter: 'drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5))',
-        zIndex: 1,
+        zIndex: -1, // Put Bruce behind everything
         pointerEvents: 'none'
       }} 
     />
@@ -1255,6 +1255,12 @@ export default function Page() {
             onPublishScore={handlePublishScore}
             playerAddress={isOfflineMode ? undefined : address}
           />
+          {/* Debug log for offline mode */}
+          {console.log('CanvasTetris props:', { 
+            isOfflineMode, 
+            playerAddress: isOfflineMode ? undefined : address,
+            address 
+          })}
         </div>
         <Footer />
       </div>
