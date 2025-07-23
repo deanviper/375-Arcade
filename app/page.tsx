@@ -282,7 +282,7 @@ export default function Page() {
     setGameOver(false);
   };
 
-  // Handle score publishing
+  // Handle score publishing with proper leaderboard refresh
   const handlePublishScore = async (score: number, linesOrLevel: number) => {
     console.log('Frontend: Score published, refreshing leaderboard...');
     
@@ -347,6 +347,52 @@ export default function Page() {
     }
   };
 
+  // Responsive styles based on screen size
+  const getResponsiveStyles = () => {
+    if (typeof window === 'undefined') {
+      return {
+        fontSize: '16px',
+        padding: '20px',
+        cardPadding: '40px',
+        titleMaxWidth: '400px'
+      };
+    }
+
+    const width = window.innerWidth;
+    
+    if (width < 480) { // Mobile
+      return {
+        fontSize: '14px',
+        padding: '10px',
+        cardPadding: '20px',
+        titleMaxWidth: '280px'
+      };
+    } else if (width < 768) { // Tablet
+      return {
+        fontSize: '15px',
+        padding: '15px',
+        cardPadding: '30px',
+        titleMaxWidth: '350px'
+      };
+    } else if (width < 1024) { // Small laptop
+      return {
+        fontSize: '16px',
+        padding: '18px',
+        cardPadding: '35px',
+        titleMaxWidth: '380px'
+      };
+    } else { // Desktop
+      return {
+        fontSize: '16px',
+        padding: '20px',
+        cardPadding: '40px',
+        titleMaxWidth: '400px'
+      };
+    }
+  };
+
+  const responsiveStyles = getResponsiveStyles();
+
   // Styles
   const containerStyle = {
     minHeight: '100vh',
@@ -361,7 +407,7 @@ export default function Page() {
     background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.9) 0%, rgba(25, 25, 35, 0.9) 100%)',
     border: '2px solid rgba(80, 255, 214, 0.3)',
     borderRadius: '20px',
-    padding: '40px',
+    padding: responsiveStyles.cardPadding,
     backdropFilter: 'blur(12px)',
     boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.2)',
     textAlign: 'center' as const,
@@ -374,7 +420,7 @@ export default function Page() {
     borderRadius: '12px',
     padding: '16px 32px',
     color: 'white',
-    fontSize: '16px',
+    fontSize: responsiveStyles.fontSize,
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.2s',
@@ -427,8 +473,27 @@ export default function Page() {
         padding: 120px 15px 120px !important;
       }
       .arcade-title-fixed {
-        max-width: 350px !important;
+        max-width: ${responsiveStyles.titleMaxWidth} !important;
         margin-bottom: 50px !important;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .arcade-container {
+        padding: 100px 10px 100px !important;
+      }
+      .arcade-title-fixed {
+        max-width: 280px !important;
+        margin-bottom: 30px !important;
+      }
+      .carousel-container {
+        flex-direction: column !important;
+        gap: 20px !important;
+      }
+      .carousel-game-center, .carousel-game-side {
+        min-width: 250px !important;
+        max-width: 280px !important;
+        height: 350px !important;
       }
     }
     
@@ -445,7 +510,7 @@ export default function Page() {
     }
   `;
 
-  // Leaderboard Component
+  // Leaderboard Component with responsive design
   const LeaderboardPanel = () => {
     if (!isPaid && !isOfflineMode) return null;
     
@@ -473,13 +538,16 @@ export default function Page() {
           (entry as any).walletAddress?.toLowerCase() === address.toLowerCase()
         )
       : null;
+
+    // Responsive positioning for leaderboard
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     
     return (
       <div style={{
         position: 'fixed',
-        top: '70px',
-        right: '20px',
-        width: '320px',
+        top: isMobile ? '60px' : '70px',
+        right: isMobile ? '10px' : '20px',
+        width: isMobile ? '280px' : '320px',
         background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.95) 0%, rgba(15, 15, 20, 0.95) 100%)',
         border: '1px solid rgba(255, 61, 20, 0.3)',
         borderRadius: '16px',
@@ -487,11 +555,11 @@ export default function Page() {
         boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.4)',
         zIndex: 1000,
         overflow: 'hidden',
-        maxHeight: 'calc(100vh - 100px)'
+        maxHeight: isMobile ? 'calc(100vh - 120px)' : 'calc(100vh - 100px)'
       }}>
         <div style={{
           position: 'relative',
-          padding: '20px',
+          padding: isMobile ? '15px' : '20px',
           background: 'linear-gradient(135deg, rgba(15, 15, 20, 0.8) 0%, rgba(25, 25, 35, 0.8) 100%)',
           textAlign: 'center',
           borderBottom: '1px solid rgba(255, 61, 20, 0.2)'
@@ -499,7 +567,7 @@ export default function Page() {
           <h2 style={{
             margin: 0,
             color: '#E5E7EB',
-            fontSize: '16px',
+            fontSize: isMobile ? '14px' : '16px',
             fontWeight: '600',
             letterSpacing: '0.5px'
           }}>
@@ -507,7 +575,7 @@ export default function Page() {
           </h2>
         </div>
         
-        <div style={{ padding: '16px', maxHeight: '300px', overflowY: 'auto' }}>
+        <div style={{ padding: isMobile ? '12px' : '16px', maxHeight: isMobile ? '250px' : '300px', overflowY: 'auto' }}>
           {isLoadingLeaderboard ? (
             <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px', fontSize: '14px' }}>
               Loading...
@@ -524,16 +592,16 @@ export default function Page() {
                 <div key={`entry-${index}`} style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px',
+                  gap: isMobile ? '8px' : '12px',
+                  padding: isMobile ? '8px' : '12px',
                   background: 'rgba(15, 15, 20, 0.4)',
                   border: '1px solid rgba(55, 65, 81, 0.3)',
                   borderRadius: '8px'
                 }}>
                   <div style={{
-                    fontSize: '14px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: '600',
-                    minWidth: '32px',
+                    minWidth: '28px',
                     textAlign: 'center',
                     color: '#E5E7EB'
                   }}>
@@ -542,7 +610,7 @@ export default function Page() {
                   <div style={{ flex: 1 }}>
                     <div style={{
                       fontFamily: 'Monaco, Menlo, monospace',
-                      fontSize: '12px',
+                      fontSize: isMobile ? '10px' : '12px',
                       color: '#9CA3AF',
                       marginBottom: '2px'
                     }}>
@@ -550,18 +618,8 @@ export default function Page() {
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <span style={{
-                        fontSize: '14px',
+                        fontSize: isMobile ? '12px' : '14px',
                         fontWeight: '600',
-                        color: '#50FFD6'
-                      }}>
-                        {entry.score?.toLocaleString() || '0'}
-                      </span>
-                      <span style={{
-                        fontSize: '10px',
-                        padding: '2px 6px',
-                        background: selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(80, 255, 214, 0.1)',
-                        border: `1px solid ${selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(80, 255, 214, 0.2)'}`,
-                        borderRadius: '4px',
                         color: selectedGame === 'pacman' ? '#FFD700' : '#50FFD6'
                       }}>
                         {selectedGame === 'pacman' ? '🍒 PAC' : '🧱 TET'}
@@ -577,7 +635,7 @@ export default function Page() {
     );
   };
 
-  // Navigation Header
+  // Navigation Header with responsive design
   const NavigationHeader = () => (
     <div style={{
       position: 'fixed',
@@ -588,13 +646,15 @@ export default function Page() {
       background: 'rgba(8, 8, 12, 0.9)',
       backdropFilter: 'blur(12px)',
       borderBottom: '1px solid rgba(80, 255, 214, 0.15)',
-      padding: '12px 20px',
+      padding: responsiveStyles.padding,
       display: 'flex',
       justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: '10px'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>        
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           <button
             onClick={handleHomeClick}
             style={{
@@ -603,7 +663,7 @@ export default function Page() {
               borderRadius: '12px',
               padding: '10px 20px',
               color: '#FF3D14',
-              fontSize: '14px',
+              fontSize: responsiveStyles.fontSize,
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -622,7 +682,7 @@ export default function Page() {
               borderRadius: '12px',
               padding: '10px 20px',
               color: '#50FFD6',
-              fontSize: '14px',
+              fontSize: responsiveStyles.fontSize,
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -641,7 +701,7 @@ export default function Page() {
               borderRadius: '12px',
               padding: '10px 20px',
               color: '#9CA3AF',
-              fontSize: '14px',
+              fontSize: responsiveStyles.fontSize,
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -692,13 +752,13 @@ export default function Page() {
     </div>
   );
 
-  // Footer component
+  // Footer component with responsive design
   const Footer = () => (
     <div style={{
       position: 'fixed',
       bottom: '5px',
-      left: '20px',
-      right: '20px',
+      left: responsiveStyles.padding,
+      right: responsiveStyles.padding,
       textAlign: 'center',
       zIndex: 500
     }}>
@@ -825,7 +885,7 @@ export default function Page() {
                 alt="375 Arcade - Built on Irys"
                 className="arcade-title-fixed"
                 style={{ 
-                  maxWidth: '400px',
+                  maxWidth: responsiveStyles.titleMaxWidth,
                   width: '100%',
                   height: 'auto',
                   filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
@@ -936,7 +996,7 @@ export default function Page() {
                 }}>
                   {currentGame.name}
                 </h2>
-                <p style={{ marginBottom: '30px', color: '#9CA3AF', fontSize: '16px', textAlign: 'center' }}>
+                <p style={{ marginBottom: '30px', color: '#9CA3AF', fontSize: responsiveStyles.fontSize, textAlign: 'center' }}>
                   {currentGame.description}
                 </p>
                 
@@ -1116,7 +1176,7 @@ export default function Page() {
                 src="/arcade-title.png" 
                 alt="375 Arcade - Built on Irys"
                 style={{ 
-                  maxWidth: '400px',
+                  maxWidth: responsiveStyles.titleMaxWidth,
                   width: '100%',
                   height: 'auto',
                   filter: 'drop-shadow(0 8px 16px rgba(255, 61, 20, 0.3))'
@@ -1217,7 +1277,7 @@ export default function Page() {
                 }}>
                   {currentGame.name}
                 </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
+                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: responsiveStyles.fontSize }}>
                   {currentGame.description}
                 </p>
                 
@@ -1299,6 +1359,25 @@ export default function Page() {
   if ((isOfflineMode || isPaid) && selectedGame && !gameStarted && !gameOver) {
     return (
       <div style={containerStyle}>
+        {/* Arcade title on left during in-game screens */}
+        <div style={{
+          position: 'fixed',
+          top: '70px',
+          left: '20px',
+          zIndex: 1000
+        }}>
+          <img 
+            src="/arcade-title.png" 
+            alt="375 Arcade - Built on Irys"
+            style={{ 
+              maxWidth: '200px',
+              width: '100%',
+              height: 'auto',
+              filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
+            }} 
+          />
+        </div>
+        
         <NavigationHeader />
         <LeaderboardPanel />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -1354,6 +1433,25 @@ export default function Page() {
   if (gameStarted || gameOver) {
     return (
       <div style={containerStyle}>
+        {/* Arcade title on left during gameplay */}
+        <div style={{
+          position: 'fixed',
+          top: '70px',
+          left: '20px',
+          zIndex: 1000
+        }}>
+          <img 
+            src="/arcade-title.png" 
+            alt="375 Arcade - Built on Irys"
+            style={{ 
+              maxWidth: '200px',
+              width: '100%',
+              height: 'auto',
+              filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
+            }} 
+          />
+        </div>
+        
         <NavigationHeader />
         <LeaderboardPanel />
         <div style={{ 
@@ -1407,4 +1505,14 @@ export default function Page() {
       <Footer />
     </div>
   );
-}
+}: '#50FFD6'
+                      }}>
+                        {entry.score?.toLocaleString() || '0'}
+                      </span>
+                      <span style={{
+                        fontSize: '9px',
+                        padding: '2px 4px',
+                        background: selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(80, 255, 214, 0.1)',
+                        border: `1px solid ${selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(80, 255, 214, 0.2)'}`,
+                        borderRadius: '4px',
+                        color
