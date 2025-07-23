@@ -163,19 +163,41 @@ export async function GET() {
       console.log('All GraphQL requests failed:', graphqlError.message);
     }
 
-    // Sort scores by game type and create separate leaderboards
-    const tetrisScores = allScores
-      .filter(score => score.gameType === 'tetris')
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 50);
+    // Function to get highest score per wallet for each game type
+    const getHighestScorePerWallet = (scores: any[], gameType: string) => {
+      const walletScores = new Map<string, any>();
       
-    const pacmanScores = allScores
-      .filter(score => score.gameType === 'pacman')
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 50);
+      scores
+        .filter(score => score.gameType === gameType)
+        .forEach(score => {
+          const wallet = score.walletAddress.toLowerCase();
+          const existing = walletScores.get(wallet);
+          
+          if (!existing || score.score > existing.score) {
+            walletScores.set(wallet, score);
+          }
+        });
+      
+      return Array.from(walletScores.values()).sort((a, b) => b.score - a.score);
+    };
 
-    // Create combined leaderboard (for mixed display)
-    const combinedLeaderboard = allScores
+    // Get highest scores per wallet for each game type
+    const tetrisScores = getHighestScorePerWallet(allScores, 'tetris').slice(0, 50);
+    const pacmanScores = getHighestScorePerWallet(allScores, 'pacman').slice(0, 50);
+
+    // Create combined leaderboard with highest score per wallet across all games
+    const allWalletScores = new Map<string, any>();
+    
+    allScores.forEach(score => {
+      const wallet = score.walletAddress.toLowerCase();
+      const existing = allWalletScores.get(wallet);
+      
+      if (!existing || score.score > existing.score) {
+        allWalletScores.set(wallet, score);
+      }
+    });
+
+    const combinedLeaderboard = Array.from(allWalletScores.values())
       .sort((a, b) => b.score - a.score)
       .slice(0, 50)
       .map((entry, index) => ({
@@ -239,7 +261,7 @@ export async function GET() {
         irys: allScores.filter(s => s.source === 'Irys').length,
         direct: allScores.filter(s => s.source === 'Direct').length
       },
-      note: allScores.length > 0 ? 'Scores loaded from Irys blockchain' : 'No scores found - leaderboard refreshes every 60 days on devnet'
+      note: allScores.length > 0 ? 'Scores loaded from Irys blockchain - showing highest score per wallet' : 'No scores found - leaderboard refreshes every 60 days on devnet'
     };
 
     console.log('Final API response summary:', {
