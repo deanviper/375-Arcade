@@ -699,3 +699,6 @@ export default function CanvasPacman({
           </div>
         </div>
       )}
+    </div>
+  );
+}
