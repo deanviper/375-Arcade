@@ -48,7 +48,7 @@ export default function CanvasPacman({
   playerAddress?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameLoopRef = useRef<number>();
+  const gameLoopRef = useRef<number | undefined>(undefined);
   const mazeRef = useRef<number[][]>(MAZE.map(row => [...row]));
   
   // Game state
