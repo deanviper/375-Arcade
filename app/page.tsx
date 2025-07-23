@@ -1,7 +1,4 @@
-<div style={containerStyle}>
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display:'use client';
+}'use client';
 
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
@@ -313,64 +310,126 @@ export default function Page() {
       alert('Failed to open wallet connection modal: ' + error.message);
     }
   };
-  const Footer = () => (
-    <div style={{
-      position: 'fixed',
-      bottom: '5px',
-      left: '20px',
-      right: '20px',
-      textAlign: 'center',
-      zIndex: 500
-    }}>
-      <div style={{ 
-        fontSize: '11px', 
-        color: '#B9C1C1',
-        marginBottom: '5px'
-      }}>
-        Made with love by{' '}
-        <a 
-          href="https://x.com/cryptdean" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ 
-            color: '#FF3D14', 
-            textDecoration: 'none',
-            fontWeight: '600'
-          }}
-        >
-          Dean
-        </a>
-        . para mi amore, <em>vivr</em>
-      </div>
-      
-      <div style={{ 
-        fontSize: '8px', 
-        color: '#666',
-        lineHeight: '1.2',
-        maxWidth: '800px',
-        margin: '0 auto'
-      }}>
-        <strong>Disclaimer:</strong> 375 Arcade is not in any way, shape, or form affiliated with the 375ai or Irys team. This is a game made for the community. There will be no financial transactions, solicitations, donations, or anything related to user spending. For official updates visit{' '}
-        <a 
-          href="https://x.com/375ai_" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ color: '#FF3D14', textDecoration: 'none' }}
-        >
-          375ai
-        </a>
-        {' '}and{' '}
-        <a 
-          href="https://x.com/irys_xyz" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ color: '#10b981', textDecoration: 'none' }}
-        >
-          Irys
-        </a>
-      </div>
-    </div>
-  );
+
+  // Updated container and card styles with mobile responsiveness
+  const containerStyle = {
+    minHeight: '100vh',
+    maxHeight: '100vh',
+    background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2a2a2a 100%)',
+    color: 'white',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+    overflow: 'hidden'
+  };
+
+  const cardStyle = {
+    background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.9) 0%, rgba(25, 25, 35, 0.9) 100%)',
+    border: '2px solid rgba(80, 255, 214, 0.3)',
+    borderRadius: '20px',
+    padding: '40px',
+    backdropFilter: 'blur(12px)',
+    boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.2)',
+    textAlign: 'center' as const,
+    transition: 'all 0.3s ease'
+  };
+
+  const buttonStyle = {
+    background: 'linear-gradient(135deg, #FF3D14 0%, #50FFD6 100%)',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '16px 32px',
+    color: 'white',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    boxShadow: '0 4px 15px rgba(80, 255, 214, 0.4)',
+    minWidth: '200px'
+  };
+
+  // Add CSS for mobile responsiveness - Updated for better fit
+  const mobileStyles = `
+    @media (max-width: 1440px) {
+      .arcade-container {
+        padding: 100px 15px 120px !important;
+      }
+      .arcade-title-mobile {
+        max-width: 350px !important;
+        margin-bottom: 40px !important;
+      }
+      .carousel-arrows {
+        left: 20px !important;
+        right: 20px !important;
+      }
+    }
+    
+    @media (max-width: 1024px) {
+      .arcade-container {
+        padding: 80px 10px 100px !important;
+      }
+      .arcade-title-mobile {
+        max-width: 300px !important;
+        margin-bottom: 30px !important;
+      }
+      .carousel-game-center {
+        min-width: 300px !important;
+        max-width: 340px !important;
+      }
+      .carousel-game-side {
+        min-width: 200px !important;
+        max-width: 220px !important;
+      }
+      .carousel-arrows {
+        left: 10px !important;
+        right: 10px !important;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .arcade-container {
+        padding: 60px 5px 80px !important;
+      }
+      .arcade-title-mobile {
+        max-width: 280px !important;
+        margin-bottom: 20px !important;
+      }
+      .carousel-container {
+        flex-direction: column !important;
+        gap: 20px !important;
+        min-height: 300px !important;
+      }
+      .carousel-game-center {
+        min-width: 280px !important;
+        max-width: 320px !important;
+        transform: scale(1) !important;
+      }
+      .carousel-game-side {
+        display: none !important;
+      }
+      .carousel-arrows {
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+        display: flex !important;
+        gap: 20px !important;
+        justify-content: center !important;
+        margin-top: 20px !important;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .arcade-container {
+        padding: 40px 5px 60px !important;
+      }
+      .arcade-title-mobile {
+        max-width: 250px !important;
+      }
+      .carousel-game-center {
+        min-width: 260px !important;
+        max-width: 300px !important;
+        padding: 30px !important;
+      }
+    }
+  `;
 
   // Leaderboard Component - Show when paid (including offline mode) with game filtering
   const LeaderboardPanel = () => {
@@ -668,6 +727,7 @@ export default function Page() {
               e.currentTarget.style.borderImage = 'linear-gradient(135deg, #50FFD6, #FF3D14) 1';
               e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
               e.currentTarget.style.boxShadow = '0 8px 25px rgba(80, 255, 214, 0.3), 0 0 20px rgba(80, 255, 214, 0.1)';
+              e
               e.currentTarget.style.color = '#FFF';
             }}
             onMouseOut={(e) => {
@@ -769,140 +829,20 @@ export default function Page() {
     </div>
   );
 
-  // Updated container and card styles with mobile responsiveness
-  const containerStyle = {
-    minHeight: '100vh',
-    maxHeight: '100vh',
-    background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2a2a2a 100%)',
-    color: 'white',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
-    overflow: 'hidden'
-  };
-
-  const cardStyle = {
-    background: 'linear-gradient(135deg, rgba(8, 8, 12, 0.9) 0%, rgba(25, 25, 35, 0.9) 100%)',
-    border: '2px solid rgba(80, 255, 214, 0.3)',
-    borderRadius: '20px',
-    padding: '40px',
-    backdropFilter: 'blur(12px)',
-    boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.2)',
-    textAlign: 'center' as const,
-    transition: 'all 0.3s ease'
-  };
-
-  const buttonStyle = {
-    background: 'linear-gradient(135deg, #FF3D14 0%, #50FFD6 100%)',
-    border: 'none',
-    borderRadius: '12px',
-    padding: '16px 32px',
-    color: 'white',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-    boxShadow: '0 4px 15px rgba(80, 255, 214, 0.4)',
-    minWidth: '200px'
-  };
-
-  // Add CSS for mobile responsiveness - Updated for better fit
-  const mobileStyles = `
-    @media (max-width: 1440px) {
-      .arcade-container {
-        padding: 100px 15px 120px !important;
-      }
-      .arcade-title-mobile {
-        max-width: 350px !important;
-        margin-bottom: 40px !important;
-      }
-      .carousel-arrows {
-        left: 20px !important;
-        right: 20px !important;
-      }
-    }
-    
-    @media (max-width: 1024px) {
-      .arcade-container {
-        padding: 80px 10px 100px !important;
-      }
-      .arcade-title-mobile {
-        max-width: 300px !important;
-        margin-bottom: 30px !important;
-      }
-      .carousel-game-center {
-        min-width: 300px !important;
-        max-width: 340px !important;
-      }
-      .carousel-game-side {
-        min-width: 200px !important;
-        max-width: 220px !important;
-      }
-      .carousel-arrows {
-        left: 10px !important;
-        right: 10px !important;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .arcade-container {
-        padding: 60px 5px 80px !important;
-      }
-      .arcade-title-mobile {
-        max-width: 280px !important;
-        margin-bottom: 20px !important;
-      }
-      .carousel-container {
-        flex-direction: column !important;
-        gap: 20px !important;
-        min-height: 300px !important;
-      }
-      .carousel-game-center {
-        min-width: 280px !important;
-        max-width: 320px !important;
-        transform: scale(1) !important;
-      }
-      .carousel-game-side {
-        display: none !important;
-      }
-      .carousel-arrows {
-        position: relative !important;
-        left: auto !important;
-        right: auto !important;
-        display: flex !important;
-        gap: 20px !important;
-        justify-content: center !important;
-        margin-top: 20px !important;
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .arcade-container {
-        padding: 40px 5px 60px !important;
-      }
-      .arcade-title-mobile {
-        max-width: 250px !important;
-      }
-      .carousel-game-center {
-        min-width: 260px !important;
-        max-width: 300px !important;
-        padding: 30px !important;
-      }
-    }
-  `;
-
-  // Footer component
+  // Footer component with better positioning
   const Footer = () => (
     <div style={{
-      position: 'absolute',
-      bottom: '10px',
+      position: 'fixed',
+      bottom: '5px',
       left: '20px',
       right: '20px',
       textAlign: 'center',
       zIndex: 500
     }}>
       <div style={{ 
-        fontSize: '12px', 
+        fontSize: '11px', 
         color: '#B9C1C1',
-        marginBottom: '8px'
+        marginBottom: '5px'
       }}>
         Made with love by{' '}
         <a 
@@ -921,10 +861,10 @@ export default function Page() {
       </div>
       
       <div style={{ 
-        fontSize: '9px', 
+        fontSize: '8px', 
         color: '#666',
-        lineHeight: '1.3',
-        maxWidth: '600px',
+        lineHeight: '1.2',
+        maxWidth: '800px',
         margin: '0 auto'
       }}>
         <strong>Disclaimer:</strong> 375 Arcade is not in any way, shape, or form affiliated with the 375ai or Irys team. This is a game made for the community. There will be no financial transactions, solicitations, donations, or anything related to user spending. For official updates visit{' '}
@@ -1012,7 +952,6 @@ export default function Page() {
         name: 'TETRIS', 
         icon: '/blocks.png', 
         description: 'Play a classic game of Tetris for 0.01 Irys!',
-        gradient: 'linear-gradient(90deg, #50FFD6, #FF3D14)',
         borderColor: '#50FFD6'
       },
       { 
@@ -1020,7 +959,6 @@ export default function Page() {
         name: 'PACMAN', 
         icon: '/pacman.png', 
         description: 'Play the classic arcade game for 0.01 Irys!',
-        gradient: 'linear-gradient(90deg, #FFD700, #FF3D14)',
         borderColor: '#FFD700'
       },
       { 
@@ -1028,7 +966,6 @@ export default function Page() {
         name: 'COMING SOON', 
         icon: '🎲', 
         description: 'More games coming soon!',
-        gradient: 'linear-gradient(90deg, #FF3D14, #FF6B35)',
         borderColor: '#FF3D14'
       }
     ];
@@ -1042,7 +979,6 @@ export default function Page() {
         <style>{mobileStyles}</style>
         <NavigationHeader />
         <LeaderboardPanel />
-        <BruceMascot />
         <div className="arcade-container" style={{ padding: '130px 20px 160px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center', marginTop: '-20px' }}>
             <div style={{ marginBottom: '60px' }}>
@@ -1636,33 +1572,6 @@ export default function Page() {
             50% { opacity: 0.7; }
           }
         `}</style>
-      </div>C1' }}>
-              {selectedGame === 'tetris' ? (
-                <>
-                  <p>🎯 Clear lines to score points</p>
-                  <p>⚡ Speed increases every 4 lines</p>
-                </>
-              ) : (
-                <>
-                  <p>🍒 Eat all dots to advance levels</p>
-                  <p>👻 Avoid ghosts or eat power pellets</p>
-                  <p>🎮 Use arrow keys or WASD to move</p>
-                </>
-              )}
-              {address && !isOfflineMode && (
-                <p>🏆 Publish scores to blockchain leaderboard!</p>
-              )}
-            </div>
-          </div>
-        </div>
-        <Footer />
-        
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-          }
-        `}</style>
       </div>
     );
   }
@@ -1727,4 +1636,3 @@ export default function Page() {
       <Footer />
     </div>
   );
-}
