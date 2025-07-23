@@ -513,6 +513,15 @@ export default function Page() {
       align-items: center;
       justify-content: center;
     }
+    
+    /* Ensure consistent heights across all states */
+    .carousel-game-center {
+      height: 450px !important;
+    }
+    
+    .carousel-game-side {
+      height: 450px !important;
+    }
   `;
 
   // Leaderboard Component
@@ -1034,9 +1043,9 @@ export default function Page() {
               {/* Left Game (Blurred) */}
               <div className="carousel-game-side carousel-transition" style={{
                 ...cardStyle,
-                minWidth: '250px',
-                maxWidth: '280px',
-                height: '400px',
+                minWidth: '280px',
+                maxWidth: '300px',
+                height: '450px',
                 opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
@@ -1049,29 +1058,29 @@ export default function Page() {
                 justifyContent: 'center'
               }}>
                 <div className="game-icon" style={{ 
-                  width: '48px', 
-                  height: '48px', 
+                  width: '80px', 
+                  height: '80px', 
                   backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none', 
                   backgroundSize: 'contain', 
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
-                  marginBottom: '15px',
-                  fontSize: leftGame.icon.startsWith('/') ? '0' : '48px',
+                  marginBottom: '20px',
+                  fontSize: leftGame.icon.startsWith('/') ? '0' : '80px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
                   {!leftGame.icon.startsWith('/') && leftGame.icon}
                 </div>
-                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px', textAlign: 'center' }}>{leftGame.name}</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '28px', textAlign: 'center' }}>{leftGame.name}</h3>
               </div>
 
               {/* Center Game (Active) */}
               <div className="carousel-game-center carousel-transition" style={{
                 ...cardStyle,
-                minWidth: '380px',
-                maxWidth: '420px',
-                height: '400px',
+                minWidth: '400px',
+                maxWidth: '440px',
+                height: '450px',
                 border: `3px solid ${currentGame.borderColor}`,
                 boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
                 transform: 'scale(1.05)',
@@ -1081,14 +1090,14 @@ export default function Page() {
                 justifyContent: 'center'
               }}>
                 <div className="game-icon" style={{ 
-                  width: '80px', 
-                  height: '80px', 
+                  width: '120px', 
+                  height: '120px', 
                   backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none', 
                   backgroundSize: 'contain', 
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
-                  marginBottom: '20px',
-                  fontSize: currentGame.icon.startsWith('/') ? '0' : '80px',
+                  marginBottom: '25px',
+                  fontSize: currentGame.icon.startsWith('/') ? '0' : '120px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -1154,9 +1163,9 @@ export default function Page() {
               {/* Right Game (Blurred) */}
               <div className="carousel-game-side carousel-transition" style={{
                 ...cardStyle,
-                minWidth: '250px',
-                maxWidth: '280px',
-                height: '400px',
+                minWidth: '280px',
+                maxWidth: '300px',
+                height: '450px',
                 opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
@@ -1169,21 +1178,21 @@ export default function Page() {
                 justifyContent: 'center'
               }}>
                 <div className="game-icon" style={{ 
-                  width: '48px', 
-                  height: '48px', 
+                  width: '80px', 
+                  height: '80px', 
                   backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none', 
                   backgroundSize: 'contain', 
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
-                  marginBottom: '15px',
-                  fontSize: rightGame.icon.startsWith('/') ? '0' : '48px',
+                  marginBottom: '20px',
+                  fontSize: rightGame.icon.startsWith('/') ? '0' : '80px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
                   {!rightGame.icon.startsWith('/') && rightGame.icon}
                 </div>
-                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px', textAlign: 'center' }}>{rightGame.name}</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '28px', textAlign: 'center' }}>{rightGame.name}</h3>
               </div>
 
               {/* Right Arrow */}
@@ -1338,50 +1347,130 @@ export default function Page() {
               {/* Left Game (Blurred) */}
               <div className="carousel-game-side carousel-transition" style={{
                 ...cardStyle,
-                minWidth: '250px',
-                maxWidth: '280px',
+                minWidth: '280px',
+                maxWidth: '300px',
+                height: '450px',
                 opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
                 boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
                 transform: 'scale(0.8)',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
+                <div className="game-icon" style={{ 
+                  width: '80px', 
+                  height: '80px', 
                   backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none', 
                   backgroundSize: 'contain', 
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
-                  marginBottom: '15px',
-                  margin: '0 auto 15px auto',
-                  fontSize: leftGame.icon.startsWith('/') ? '0' : '48px'
+                  marginBottom: '20px',
+                  fontSize: leftGame.icon.startsWith('/') ? '0' : '80px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
                   {!leftGame.icon.startsWith('/') && leftGame.icon}
                 </div>
-                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px' }}>{leftGame.name}</h3>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '28px', textAlign: 'center' }}>{leftGame.name}</h3>
               </div>
 
               {/* Center Game (Active) */}
               <div className="carousel-game-center carousel-transition" style={{
                 ...cardStyle,
-                minWidth: '380px',
-                maxWidth: '420px',
+                minWidth: '400px',
+                maxWidth: '440px',
+                height: '450px',
                 border: `3px solid ${currentGame.borderColor}`,
                 boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
-                transform: 'scale(1.05)'
+                transform: 'scale(1.05)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                <div style={{ 
-                  width: '64px', 
-                  height: '64px', 
+                <div className="game-icon" style={{ 
+                  width: '100px', 
+                  height: '100px', 
                   backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none', 
                   backgroundSize: 'contain', 
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
+                  marginBottom: '25px',
+                  fontSize: currentGame.icon.startsWith('/') ? '0' : '100px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {!currentGame.icon.startsWith('/') && currentGame.icon}
+                </div>
+                <h2 style={{ 
+                  fontSize: '32px', 
+                  marginBottom: '15px', 
+                  color: currentGame.borderColor,
+                  fontWeight: '700',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                  textAlign: 'center'
+                }}>
+                  {currentGame.name}
+                </h2>
+                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px', textAlign: 'center' }}>
+                  {currentGame.description}
+                </p>
+                
+                {currentGame.id && (
+                  <button
+                    style={{ 
+                      ...buttonStyle, 
+                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                      ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
+                    }}
+                    onClick={() => handlePayment(currentGame.id)}
+                    disabled={isProcessingPayment}
+                  >
+                    {isProcessingPayment ? '⏳ Processing...' : `Play ${currentGame.name}`}
+                  </button>
+                )}
+              </div>
+
+              {/* Right Game (Blurred) */}
+              <div className="carousel-game-side carousel-transition" style={{
+                ...cardStyle,
+                minWidth: '280px',
+                maxWidth: '300px',
+                height: '450px',
+                opacity: 0.4,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+                transform: 'scale(0.8)',
+                pointerEvents: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div className="game-icon" style={{ 
+                  width: '80px', 
+                  height: '80px', 
+                  backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
                   marginBottom: '20px',
-                  margin: '0 auto 20px auto',
-                  fontSize: currentGame.icon.startsWith('/') ? '0' : '64px'
+                  fontSize: rightGame.icon.startsWith('/') ? '0' : '80px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {!rightGame.icon.startsWith('/') && rightGame.icon}
+                </div>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '28px', textAlign: 'center' }}>{rightGame.name}</h3>
+              </div>Game.icon.startsWith('/') ? '0' : '64px'
                 }}>
                   {!currentGame.icon.startsWith('/') && currentGame.icon}
                 </div>
