@@ -1069,181 +1069,6 @@ export default function Page() {
           </div>
           <Footer />
         </div>
-      </div>
-    );
-  }
-
-  if ((isOfflineMode || isPaid) && selectedGame && !gameStarted && !gameOver) {
-    return (
-      <div style={containerStyle}>
-        <div style={{
-          position: 'fixed',
-          top: '140px',
-          left: '20px',
-          zIndex: 1000
-        }}>
-          <img
-            src="/arcade-title.png"
-            alt="375 Arcade - Built on Irys"
-            style={{
-              maxWidth: '500px',
-              width: '100%',
-              height: 'auto',
-              filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
-            }}
-          />
-        </div>
-
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={cardStyle}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              backgroundImage: selectedGame === 'tetris' ? 'url(/blocks.png)' : 'url(/pacman.png)',
-              backgroundSize: 'contain',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              marginBottom: '20px',
-              margin: '0 auto 20px auto'
-            }}></div>
-            <h2 style={{ marginBottom: '20px', color: '#10b981' }}>
-              ✅ Ready to Play {selectedGame === 'tetris' ? 'Tetris' : 'Pacman'}!
-            </h2>
-            <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px' }}>
-              Press <kbd style={{
-                background: 'rgba(255, 61, 20, 0.2)',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid rgba(255, 61, 20, 0.3)',
-                color: '#FF3D14',
-                fontFamily: 'Monaco, monospace'
-              }}>SPACEBAR</kbd> to start
-            </p>
-            <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
-              {selectedGame === 'tetris' ? (
-                <>
-                  <p>🎯 Clear lines to score points</p>
-                  <p>⚡ Speed increases every 4 lines</p>
-                </>
-              ) : (
-                <>
-                  <p>🍒 Eat all dots to advance levels</p>
-                  <p>👻 Avoid ghosts or eat power pellets</p>
-                  <p>🎮 Use arrow keys or WASD to move</p>
-                </>
-              )}
-              {address && !isOfflineMode && (
-                <p>🏆 Publish scores to blockchain leaderboard!</p>
-              )}
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (gameStarted || gameOver) {
-    return (
-      <div style={containerStyle}>
-        <div style={{
-          position: 'fixed',
-          top: '140px',
-          left: '20px',
-          zIndex: 1000
-        }}>
-          <img
-            src="/arcade-title.png"
-            alt="375 Arcade - Built on Irys"
-            style={{
-              maxWidth: '500px',
-              width: '100%',
-              height: 'auto',
-              filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
-            }}
-          />
-        </div>
-
-        <NavigationHeader />
-        <LeaderboardPanel />
-        <div style={{
-          padding: '80px 20px 20px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh'
-        }}>
-          {selectedGame === 'tetris' ? (
-            <CanvasTetris
-              start={gameStarted}
-              onGameOver={(score, lines) => {
-                setGameOver(true);
-                setGameStarted(false);
-              }}
-              onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('tetris')}
-              onPublishScore={handlePublishScore}
-              playerAddress={isOfflineMode ? undefined : address}
-            />
-          ) : selectedGame === 'pacman' ? (
-            <CanvasPacman
-              start={gameStarted}
-              onGameOver={(score, level) => {
-                setGameOver(true);
-                setGameStarted(false);
-              }}
-              onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('pacman')}
-              onPublishScore={handlePublishScore}
-              playerAddress={isOfflineMode ? undefined : address}
-            />
-          ) : null}
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  return (
-    <div style={containerStyle}>
-      <NavigationHeader />
-      <LeaderboardPanel />
-      <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔄</div>
-          <h2 style={{ marginBottom: '20px' }}>Loading...</h2>
-          <p style={{ color: '#B9C1C1' }}>Initializing 375 Arcade...</p>
-        </div>
-      </div>
-      <Footer />
-    </div>
-  );
-}
-                style={{
-                  position: 'absolute',
-                  right: '50px',
-                  zIndex: 10,
-                  background: 'rgba(255, 61, 20, 0.2)',
-                  border: '2px solid rgba(255, 61, 20, 0.5)',
-                  borderRadius: '50%',
-                  width: '60px',
-                  height: '60px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '24px',
-                  color: '#FF3D14',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                →
-              </button>
-            </div>
-          </div>
-
-          <Footer />
-        </div>
 
         <style jsx>{`
           @keyframes pulse {
@@ -1453,3 +1278,176 @@ export default function Page() {
 
               <button
                 onClick={handleCarouselNext}
+                style={{
+                  position: 'absolute',
+                  right: '50px',
+                  zIndex: 10,
+                  background: 'rgba(255, 61, 20, 0.2)',
+                  border: '2px solid rgba(255, 61, 20, 0.5)',
+                  borderRadius: '50%',
+                  width: '60px',
+                  height: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  color: '#FF3D14'
+                }}
+              >
+                →
+              </button>
+            </div>
+          </div>
+          <Footer />
+        </div>
+      </div>
+    );
+  }
+
+  if ((isOfflineMode || isPaid) && selectedGame && !gameStarted && !gameOver) {
+    return (
+      <div style={containerStyle}>
+        <div style={{
+          position: 'fixed',
+          top: '140px',
+          left: '20px',
+          zIndex: 1000
+        }}>
+          <img
+            src="/arcade-title.png"
+            alt="375 Arcade - Built on Irys"
+            style={{
+              maxWidth: '500px',
+              width: '100%',
+              height: 'auto',
+              filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
+            }}
+          />
+        </div>
+
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={cardStyle}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              backgroundImage: selectedGame === 'tetris' ? 'url(/blocks.png)' : 'url(/pacman.png)',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              marginBottom: '20px',
+              margin: '0 auto 20px auto'
+            }}></div>
+            <h2 style={{ marginBottom: '20px', color: '#10b981' }}>
+              ✅ Ready to Play {selectedGame === 'tetris' ? 'Tetris' : 'Pacman'}!
+            </h2>
+            <p style={{ marginBottom: '30px', color: '#B9C1C1', fontSize: '18px' }}>
+              Press <kbd style={{
+                background: 'rgba(255, 61, 20, 0.2)',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid rgba(255, 61, 20, 0.3)',
+                color: '#FF3D14',
+                fontFamily: 'Monaco, monospace'
+              }}>SPACEBAR</kbd> to start
+            </p>
+            <div style={{ fontSize: '14px', color: '#B9C1C1' }}>
+              {selectedGame === 'tetris' ? (
+                <>
+                  <p>🎯 Clear lines to score points</p>
+                  <p>⚡ Speed increases every 4 lines</p>
+                </>
+              ) : (
+                <>
+                  <p>🍒 Eat all dots to advance levels</p>
+                  <p>👻 Avoid ghosts or eat power pellets</p>
+                  <p>🎮 Use arrow keys or WASD to move</p>
+                </>
+              )}
+              {address && !isOfflineMode && (
+                <p>🏆 Publish scores to blockchain leaderboard!</p>
+              )}
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (gameStarted || gameOver) {
+    return (
+      <div style={containerStyle}>
+        <div style={{
+          position: 'fixed',
+          top: '140px',
+          left: '20px',
+          zIndex: 1000
+        }}>
+          <img
+            src="/arcade-title.png"
+            alt="375 Arcade - Built on Irys"
+            style={{
+              maxWidth: '500px',
+              width: '100%',
+              height: 'auto',
+              filter: 'drop-shadow(0 4px 8px rgba(255, 61, 20, 0.3))'
+            }}
+          />
+        </div>
+
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <div style={{
+          padding: '80px 20px 20px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh'
+        }}>
+          {selectedGame === 'tetris' ? (
+            <CanvasTetris
+              start={gameStarted}
+              onGameOver={(score, lines) => {
+                setGameOver(true);
+                setGameStarted(false);
+              }}
+              onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('tetris')}
+              onPublishScore={handlePublishScore}
+              playerAddress={isOfflineMode ? undefined : address}
+            />
+          ) : selectedGame === 'pacman' ? (
+            <CanvasPacman
+              start={gameStarted}
+              onGameOver={(score, level) => {
+                setGameOver(true);
+                setGameStarted(false);
+              }}
+              onPlayAgain={isOfflineMode ? handleOfflineRestart : () => handlePayment('pacman')}
+              onPublishScore={handlePublishScore}
+              playerAddress={isOfflineMode ? undefined : address}
+            />
+          ) : null}
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div style={containerStyle}>
+      <NavigationHeader />
+      <LeaderboardPanel />
+      <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={cardStyle}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔄</div>
+          <h2 style={{ marginBottom: '20px' }}>Loading...</h2>
+          <p style={{ color: '#B9C1C1' }}>Initializing 375 Arcade...</p>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
