@@ -620,6 +620,16 @@ export default function Page() {
                       <span style={{
                         fontSize: isMobile ? '12px' : '14px',
                         fontWeight: '600',
+                        color: '#50FFD6'
+                      }}>
+                        {entry.score?.toLocaleString() || '0'}
+                      </span>
+                      <span style={{
+                        fontSize: '9px',
+                        padding: '2px 4px',
+                        background: selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(80, 255, 214, 0.1)',
+                        border: `1px solid ${selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(80, 255, 214, 0.2)'}`,
+                        borderRadius: '4px',
                         color: selectedGame === 'pacman' ? '#FFD700' : '#50FFD6'
                       }}>
                         {selectedGame === 'pacman' ? '🍒 PAC' : '🧱 TET'}
@@ -721,6 +731,7 @@ export default function Page() {
             border: '1px solid rgba(80, 255, 214, 0.3)',
             borderRadius: '10px',
             padding: '8px 16px',
+            fontSize: '
             fontSize: '12px',
             color: '#50FFD6',
             fontFamily: 'Monaco, monospace',
@@ -1503,16 +1514,3 @@ export default function Page() {
         </div>
       </div>
       <Footer />
-    </div>
-  );
-}: '#50FFD6'
-                      }}>
-                        {entry.score?.toLocaleString() || '0'}
-                      </span>
-                      <span style={{
-                        fontSize: '9px',
-                        padding: '2px 4px',
-                        background: selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(80, 255, 214, 0.1)',
-                        border: `1px solid ${selectedGame === 'pacman' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(80, 255, 214, 0.2)'}`,
-                        borderRadius: '4px',
-                        color
