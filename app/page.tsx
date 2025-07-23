@@ -726,6 +726,23 @@ export default function Page() {
 
   // Add CSS for mobile responsiveness
   const mobileStyles = `
+    @media (max-width: 1024px) and (min-width: 769px) {
+      /* iPad specific styles */
+      .arcade-container {
+        padding: 140px 20px 250px !important;
+      }
+      .arcade-title-mobile {
+        max-width: 350px !important;
+        margin-bottom: 50px !important;
+      }
+      .bruce-mobile {
+        width: 45vw !important;
+        min-width: 250px !important;
+        max-width: 400px !important;
+        left: -8% !important;
+      }
+    }
+    
     @media (max-width: 768px) {
       .arcade-container {
         padding: 120px 10px 200px !important;
@@ -772,7 +789,7 @@ export default function Page() {
     
     @media (max-width: 480px) {
       .arcade-container {
-        padding: 100px 5px 180px !important;
+        padding: 110px 5px 180px !important;
       }
       /* Even smaller Bruce on very small screens */
       .bruce-mobile {
@@ -783,7 +800,8 @@ export default function Page() {
       }
       /* Smaller arcade title on phones */
       .arcade-title-mobile {
-        max-width: 250px !important;
+        max-width: 280px !important;
+        display: block !important;
       }
     }
   `;
