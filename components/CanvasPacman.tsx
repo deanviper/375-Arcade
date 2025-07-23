@@ -212,7 +212,7 @@ export default function CanvasPacman({
 
   const checkCollisions = () => {
     const pacman = pacmanRef.current;
-    if (pacman.respawning) return;
+    if (pacman.respawning || gameStateRef.current.paused) return;
 
     ghostsRef.current.forEach(ghost => {
       if (ghost.x === pacman.x && ghost.y === pacman.y) {
@@ -232,15 +232,17 @@ export default function CanvasPacman({
             setIsGameOver(true);
             onGameOver(gameStateRef.current.score, gameStateRef.current.level);
           } else {
+            // Reset positions
             pacman.x = 9;
             pacman.y = 15;
             pacman.dir = 'RIGHT';
             pacman.nextDir = 'RIGHT';
             pacman.moving = false;
             pacman.respawning = true;
-            pacman.respawnTimer = 60; // shorter freeze
+            pacman.respawnTimer = 90; // 1.5 seconds at 60fps
             pacman.animFrame = 0;
 
+            // Reset ghosts
             ghostsRef.current.forEach((g, i) => {
               g.x = 9;
               g.y = 9 + (i % 2);
@@ -251,8 +253,13 @@ export default function CanvasPacman({
             gameStateRef.current.powerMode = false;
             gameStateRef.current.powerTimer = 0;
 
+            // Brief pause before resuming
             gameStateRef.current.paused = true;
-            setTimeout(() => { gameStateRef.current.paused = false; }, 800);
+            setTimeout(() => { 
+              if (!gameStateRef.current.gameOver) {
+                gameStateRef.current.paused = false; 
+              }
+            }, 1000);
           }
         }
       }
@@ -285,23 +292,26 @@ export default function CanvasPacman({
   };
 
   const gameLoop = () => {
-    if (gameStateRef.current.gameOver || gameStateRef.current.paused) return;
+    if (gameStateRef.current.gameOver) return;
+    
+    // Don't process game logic when paused, but continue the loop
+    if (!gameStateRef.current.paused) {
+      gameStateRef.current.frameCount++;
+      
+      movePacman();
+      moveGhosts();
+      checkCollisions();
+      checkLevelComplete();
 
-    gameStateRef.current.frameCount++;
-
-    movePacman();
-    moveGhosts();
-    checkCollisions();
-    checkLevelComplete();
-
-    if (gameStateRef.current.powerMode) {
-      gameStateRef.current.powerTimer--;
-      if (gameStateRef.current.powerTimer <= 0) {
-        gameStateRef.current.powerMode = false;
-        ghostsRef.current.forEach(g => {
-          g.vulnerable = false;
-          g.color = g.originalColor;
-        });
+      if (gameStateRef.current.powerMode) {
+        gameStateRef.current.powerTimer--;
+        if (gameStateRef.current.powerTimer <= 0) {
+          gameStateRef.current.powerMode = false;
+          ghostsRef.current.forEach(g => {
+            g.vulnerable = false;
+            g.color = g.originalColor;
+          });
+        }
       }
     }
 
@@ -402,8 +412,6 @@ export default function CanvasPacman({
       ctx.fillRect(gx - 5, gy - 7, 2, 2);
       ctx.fillRect(gx + 3, gy - 7, 2, 2);
     });
-
-    // HUD aligned: we'll draw these outside canvas via DOM (already) so skip here
   };
 
   useEffect(() => {
@@ -590,7 +598,7 @@ export default function CanvasPacman({
         }}
       />
 
-      {/* HUD aligned top-right corner of canvas container */}
+      {/* HUD with orange hearts for lives */}
       <div style={{
         position: 'absolute',
         top: `${-50 * scale}px`,
@@ -598,6 +606,7 @@ export default function CanvasPacman({
         width: `${containerWidth}px`,
         display: 'flex',
         justifyContent: 'space-between',
+        alignItems: 'center',
         padding: `0 ${8 * scale}px`,
         color: '#FFFF00',
         fontFamily: 'monospace',
@@ -609,25 +618,9 @@ export default function CanvasPacman({
       }}>
         <div>Score: {score}</div>
         <div>Level: {level}</div>
-        <div>Lives: {'❤️'.repeat(lives)}</div>
-      </div>
-
-      {/* Controls help, reduced and moved to bottom-right corner */}
-      <div style={{
-        position: 'absolute',
-        bottom: `${-60 * scale}px`,
-        right: 0,
-        textAlign: 'right',
-        color: '#FFD700',
-        fontSize: `${11 * scale}px`,
-        fontFamily: 'monospace',
-        lineHeight: 1.3,
-        transform: `scale(${scale})`,
-        transformOrigin: 'bottom right'
-      }}>
-        <div>Arrow Keys / WASD to move</div>
-        <div>Eat all dots to advance levels</div>
-        <div>Power pellets = vulnerable ghosts</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          Lives: {Array.from({length: lives}, (_, i) => '🧡').join('')}
+        </div>
       </div>
 
       {isGameOver && (
