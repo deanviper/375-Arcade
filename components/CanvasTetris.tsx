@@ -394,6 +394,10 @@ export default function CanvasTetris({
       }
       
       if (gameOverRef.current) {
+        // Allow spacebar to show game over modal if it's hidden
+        if (e.code === 'Space' && !isGameOver) {
+          setIsGameOver(true);
+        }
         console.log('INPUT BLOCKED - GAME OVER STATE');
         return false;
       }
@@ -566,7 +570,7 @@ export default function CanvasTetris({
       clearTimeout(timerRef.current);
       if (keyRepeatTimer) clearTimeout(keyRepeatTimer);
     };
-  },[start]);
+  },[start, isGameOver]);
 
   const handleRestart = () => {
     console.log('RESTART CLICKED');
@@ -576,6 +580,14 @@ export default function CanvasTetris({
       gameOverRef.current = false;
       onPlayAgain();
     }
+  };
+
+  const handleTweetScore = () => {
+    const gameType = 'TETRIS';
+    const score = scoreRef.current;
+    const tweetText = `I scored ${score.toLocaleString()} points on @375ai_ Arcade's ${gameType}! Powered by @irys_xyz blockchain`;
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+    window.open(tweetUrl, '_blank');
   };
 
   // Direct Irys upload using browser-compatible approach
@@ -678,13 +690,41 @@ export default function CanvasTetris({
     }
   };
 
+  // Calculate responsive sizes
+  const getResponsiveSize = () => {
+    if (typeof window === 'undefined') return { scale: 1 };
+    
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    
+    // Calculate scale based on screen size
+    const maxGameWidth = Math.min(screenWidth * 0.6, 800);
+    const maxGameHeight = Math.min(screenHeight * 0.7, 600);
+    
+    const scaleX = maxGameWidth / (COLS * BLOCK + 180);
+    const scaleY = maxGameHeight / (ROWS * BLOCK);
+    const scale = Math.min(scaleX, scaleY, 1.2); // Max scale of 1.2x
+    
+    return {
+      scale: Math.max(scale, 0.5) // Minimum scale of 0.5x
+    };
+  };
+
+  const { scale } = getResponsiveSize();
+
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
       <canvas
         ref={canvasRef}
         width={COLS*BLOCK + 180}
         height={ROWS*BLOCK}
-        style={{ background:'#000', border:'2px solid #666' }}
+        style={{ 
+          background:'#000', 
+          border:'2px solid #666',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          imageRendering: 'pixelated'
+        }}
       />
       
       {isGameOver && (
@@ -716,7 +756,7 @@ export default function CanvasTetris({
             <button
               onClick={() => {
                 setIsGameOver(false);
-                gameOverRef.current = false;
+                // Keep gameOver state true so spacebar works
               }}
               style={{
                 position: 'absolute',
@@ -754,7 +794,7 @@ export default function CanvasTetris({
               <div>Level Reached: <span style={{ color: '#e74c3c' }}>{levelRef.current}</span></div>
             </div>
             
-            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 onClick={handleRestart}
                 style={{
@@ -768,6 +808,21 @@ export default function CanvasTetris({
                 }}
               >
                 Play Again
+              </button>
+              
+              <button
+                onClick={handleTweetScore}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  background: '#1DA1F2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                🐦 Tweet Score
               </button>
               
               {playerAddress && (
