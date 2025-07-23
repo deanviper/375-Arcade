@@ -1,4 +1,4 @@
-'use client'
+'use client' 
 
 import { defaultWagmiConfig } from '@web3modal/wagmi/react/config'
 import { createWeb3Modal } from '@web3modal/wagmi/react'
