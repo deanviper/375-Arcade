@@ -721,3 +721,106 @@ export default function CanvasPacman({
           fontSize: '24px',
           fontFamily: 'sans-serif',
           zIndex: 9999
+        }}>
+          <div style={{ 
+            background: '#333', 
+            padding: '40px', 
+            borderRadius: '10px',
+            textAlign: 'center',
+            border: '2px solid #666',
+            minWidth: '300px',
+            position: 'relative'
+          }}>
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setIsGameOver(false);
+                gameOverRef.current = false;
+              }}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'transparent',
+                border: 'none',
+                color: '#999',
+                fontSize: '24px',
+                cursor: 'pointer',
+                width: '30px',
+                height: '30px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.color = '#fff';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#999';
+              }}
+            >
+              ×
+            </button>
+            
+            <h2 style={{ margin: '0 0 20px 0', color: '#fff' }}>Game Over!</h2>
+            <div style={{ fontSize: '18px', marginBottom: '20px' }}>
+              <div>Final Score: <span style={{ color: '#ffff00' }}>{scoreRef.current}</span></div>
+              <div>Level Reached: <span style={{ color: '#ff69b4' }}>{levelRef.current}</span></div>
+              <div>Lives Used: <span style={{ color: '#00ffff' }}>{3 - livesRef.current}</span></div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+              <button
+                onClick={handleRestart}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  background: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Play Again
+              </button>
+              
+              {playerAddress && (
+                <button
+                  onClick={handlePublishScore}
+                  disabled={isPublishing}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    background: isPublishing ? '#7f8c8d' : '#6366f1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: isPublishing ? 'not-allowed' : 'pointer',
+                    opacity: isPublishing ? 0.7 : 1
+                  }}
+                >
+                  {isPublishing ? '⏳ Publishing...' : '🏆 Publish to Leaderboards'}
+                </button>
+              )}
+            </div>
+            
+            {isPublishing && (
+              <div style={{ 
+                marginTop: '15px', 
+                fontSize: '14px', 
+                color: '#95a5a6' 
+              }}>
+                Sign the transaction in your wallet to publish your score to the blockchain
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
