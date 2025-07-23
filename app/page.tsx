@@ -911,7 +911,7 @@ export default function Page() {
                 ...cardStyle,
                 minWidth: '280px',
                 maxWidth: '300px',
-                height: '450px',
+                height: '360px',
                 opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
@@ -941,7 +941,7 @@ export default function Page() {
                 ...cardStyle,
                 minWidth: '400px',
                 maxWidth: '440px',
-                height: '450px',
+                height: '360px',
                 border: `3px solid ${currentGame.borderColor}`,
                 boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
                 transform: 'scale(1.05)'
@@ -1018,7 +1018,7 @@ export default function Page() {
                 ...cardStyle,
                 minWidth: '280px',
                 maxWidth: '300px',
-                height: '450px',
+                height: '360px',
                 opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
@@ -1046,6 +1046,7 @@ export default function Page() {
 
               <button
                 onClick={handleCarouselNext}
+                className="header-button-hover"
                 style={{
                   position: 'absolute',
                   right: '50px',
@@ -1147,6 +1148,7 @@ export default function Page() {
             }}>
               <button
                 onClick={handleCarouselPrev}
+                className="header-button-hover"
                 style={{
                   position: 'absolute',
                   left: '50px',
