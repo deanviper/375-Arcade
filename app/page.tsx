@@ -1230,8 +1230,8 @@ export default function Page() {
   }
 
   // Game active - Show when game has started (both paid and offline mode)
-  if (gameStarted) {
-    console.log('Game active condition met:', { gameStarted, isOfflineMode, isPaid });
+  if (gameStarted || gameOver) {
+    console.log('Game active condition met:', { gameStarted, gameOver, isOfflineMode, isPaid });
     return (
       <div style={containerStyle}>
         <NavigationHeader />
@@ -1247,6 +1247,7 @@ export default function Page() {
           <CanvasTetris
             start={gameStarted}
             onGameOver={(score, lines) => {
+              console.log('Game over callback triggered:', { score, lines });
               setGameOver(true);
               setGameStarted(false);
             }}
