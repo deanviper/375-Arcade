@@ -1,4 +1,7 @@
-'use client';
+<div style={containerStyle}>
+        <NavigationHeader />
+        <LeaderboardPanel />
+        <div style={{ padding: '100px 20px 40px', display:'use client';
 
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
@@ -310,27 +313,63 @@ export default function Page() {
       alert('Failed to open wallet connection modal: ' + error.message);
     }
   };
-
-  // Bruce Mascot Component - Fixed positioning for all pages with mobile responsiveness
-  const BruceMascot = () => (
-    <img 
-      src="/bruce.png" 
-      alt="Bruce - 375ai Mascot" 
-      className="bruce-mobile"
-      style={{ 
-        position: 'fixed',
-        bottom: '10px',
-        left: '-3%',
-        width: '31.25vw',
-        height: 'auto',
-        minWidth: '375px',
-        maxWidth: '625px',
-        opacity: 0.6,
-        filter: 'drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5))',
-        zIndex: 10,
-        pointerEvents: 'none'
-      }} 
-    />
+  const Footer = () => (
+    <div style={{
+      position: 'fixed',
+      bottom: '5px',
+      left: '20px',
+      right: '20px',
+      textAlign: 'center',
+      zIndex: 500
+    }}>
+      <div style={{ 
+        fontSize: '11px', 
+        color: '#B9C1C1',
+        marginBottom: '5px'
+      }}>
+        Made with love by{' '}
+        <a 
+          href="https://x.com/cryptdean" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ 
+            color: '#FF3D14', 
+            textDecoration: 'none',
+            fontWeight: '600'
+          }}
+        >
+          Dean
+        </a>
+        . para mi amore, <em>vivr</em>
+      </div>
+      
+      <div style={{ 
+        fontSize: '8px', 
+        color: '#666',
+        lineHeight: '1.2',
+        maxWidth: '800px',
+        margin: '0 auto'
+      }}>
+        <strong>Disclaimer:</strong> 375 Arcade is not in any way, shape, or form affiliated with the 375ai or Irys team. This is a game made for the community. There will be no financial transactions, solicitations, donations, or anything related to user spending. For official updates visit{' '}
+        <a 
+          href="https://x.com/375ai_" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#FF3D14', textDecoration: 'none' }}
+        >
+          375ai
+        </a>
+        {' '}and{' '}
+        <a 
+          href="https://x.com/irys_xyz" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#10b981', textDecoration: 'none' }}
+        >
+          Irys
+        </a>
+      </div>
+    </div>
   );
 
   // Leaderboard Component - Show when paid (including offline mode) with game filtering
@@ -765,84 +804,87 @@ export default function Page() {
     minWidth: '200px'
   };
 
-  // Add CSS for mobile responsiveness
+  // Add CSS for mobile responsiveness - Updated for better fit
   const mobileStyles = `
-    @media (max-width: 1024px) and (min-width: 769px) {
-      /* iPad specific styles */
+    @media (max-width: 1440px) {
       .arcade-container {
-        padding: 140px 20px 250px !important;
+        padding: 100px 15px 120px !important;
       }
       .arcade-title-mobile {
         max-width: 350px !important;
-        margin-bottom: 50px !important;
+        margin-bottom: 40px !important;
       }
-      .bruce-mobile {
-        width: 45vw !important;
-        min-width: 250px !important;
-        max-width: 400px !important;
-        left: -8% !important;
+      .carousel-arrows {
+        left: 20px !important;
+        right: 20px !important;
+      }
+    }
+    
+    @media (max-width: 1024px) {
+      .arcade-container {
+        padding: 80px 10px 100px !important;
+      }
+      .arcade-title-mobile {
+        max-width: 300px !important;
+        margin-bottom: 30px !important;
+      }
+      .carousel-game-center {
+        min-width: 300px !important;
+        max-width: 340px !important;
+      }
+      .carousel-game-side {
+        min-width: 200px !important;
+        max-width: 220px !important;
+      }
+      .carousel-arrows {
+        left: 10px !important;
+        right: 10px !important;
       }
     }
     
     @media (max-width: 768px) {
       .arcade-container {
-        padding: 120px 10px 200px !important;
+        padding: 60px 5px 80px !important;
       }
-      .arcade-cards {
+      .arcade-title-mobile {
+        max-width: 280px !important;
+        margin-bottom: 20px !important;
+      }
+      .carousel-container {
         flex-direction: column !important;
         gap: 20px !important;
+        min-height: 300px !important;
       }
-      .arcade-card {
+      .carousel-game-center {
         min-width: 280px !important;
-        max-width: 350px !important;
-        margin: 0 auto !important;
+        max-width: 320px !important;
+        transform: scale(1) !important;
       }
-      .leaderboard-panel {
+      .carousel-game-side {
+        display: none !important;
+      }
+      .carousel-arrows {
         position: relative !important;
-        top: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
-        margin-bottom: 20px !important;
-        max-height: 400px !important;
-      }
-      .nav-buttons {
-        flex-wrap: wrap !important;
-        gap: 8px !important;
-      }
-      .nav-button {
-        padding: 6px 12px !important;
-        font-size: 12px !important;
-      }
-      /* Bruce mobile positioning */
-      .bruce-mobile {
-        width: 50vw !important;
-        min-width: 200px !important;
-        max-width: 300px !important;
-        left: -10% !important;
-        bottom: 5px !important;
-      }
-      /* Arcade title mobile */
-      .arcade-title-mobile {
-        max-width: 300px !important;
-        margin-bottom: 40px !important;
+        left: auto !important;
+        right: auto !important;
+        display: flex !important;
+        gap: 20px !important;
+        justify-content: center !important;
+        margin-top: 20px !important;
       }
     }
     
     @media (max-width: 480px) {
       .arcade-container {
-        padding: 110px 5px 180px !important;
+        padding: 40px 5px 60px !important;
       }
-      /* Even smaller Bruce on very small screens */
-      .bruce-mobile {
-        width: 40vw !important;
-        min-width: 150px !important;
-        max-width: 200px !important;
-        left: -15% !important;
-      }
-      /* Smaller arcade title on phones */
       .arcade-title-mobile {
-        max-width: 280px !important;
-        display: block !important;
+        max-width: 250px !important;
+      }
+      .carousel-game-center {
+        min-width: 260px !important;
+        max-width: 300px !important;
+        padding: 30px !important;
       }
     }
   `;
@@ -913,7 +955,6 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <BruceMascot />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
@@ -1019,7 +1060,7 @@ export default function Page() {
             </div>
 
             {/* Game Carousel */}
-            <div style={{ 
+            <div className="carousel-container" style={{ 
               display: 'flex', 
               gap: '40px', 
               alignItems: 'center', 
@@ -1029,6 +1070,7 @@ export default function Page() {
             }}>
               {/* Left Arrow */}
               <button
+                className="carousel-arrows"
                 onClick={() => setCarouselIndex((prev) => (prev - 1 + games.length) % games.length)}
                 style={{
                   position: 'absolute',
@@ -1060,7 +1102,7 @@ export default function Page() {
               </button>
 
               {/* Left Game (Blurred) */}
-              <div style={{
+              <div className="carousel-game-side" style={{
                 ...cardStyle,
                 minWidth: '250px',
                 maxWidth: '280px',
@@ -1088,7 +1130,7 @@ export default function Page() {
               </div>
 
               {/* Center Game (Active) */}
-              <div style={{
+              <div className="carousel-game-center" style={{
                 ...cardStyle,
                 minWidth: '380px',
                 maxWidth: '420px',
@@ -1112,10 +1154,9 @@ export default function Page() {
                 <h2 style={{ 
                   fontSize: '36px', 
                   marginBottom: '15px', 
-                  background: currentGame.gradient, 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
+                  color: currentGame.borderColor,
+                  fontWeight: '700',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
                 }}>
                   {currentGame.name}
                 </h2>
@@ -1167,7 +1208,7 @@ export default function Page() {
               </div>
 
               {/* Right Game (Blurred) */}
-              <div style={{
+              <div className="carousel-game-side" style={{
                 ...cardStyle,
                 minWidth: '250px',
                 maxWidth: '280px',
@@ -1196,6 +1237,7 @@ export default function Page() {
 
               {/* Right Arrow */}
               <button
+                className="carousel-arrows"
                 onClick={() => setCarouselIndex((prev) => (prev + 1) % games.length)}
                 style={{
                   position: 'absolute',
@@ -1226,30 +1268,6 @@ export default function Page() {
                 →
               </button>
             </div>
-
-            {/* Game Indicator Dots */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              gap: '12px', 
-              marginTop: '30px' 
-            }}>
-              {games.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCarouselIndex(index)}
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    border: 'none',
-                    background: index === carouselIndex ? '#50FFD6' : 'rgba(156, 163, 175, 0.4)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                />
-              ))}
-            </div>
           </div>
           
           <Footer />
@@ -1271,7 +1289,6 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <BruceMascot />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>✍️</div>
@@ -1315,13 +1332,41 @@ export default function Page() {
     );
   }
 
-  // Show connected and authenticated state - the game selection page
+  // Show connected and authenticated state - the game selection page with CAROUSEL
   if (address && isConnected && authed && !isPaid && !gameStarted && !gameOver) {
+    const [carouselIndex, setCarouselIndex] = useState(0);
+    const games = [
+      { 
+        id: 'tetris' as GameType, 
+        name: 'TETRIS', 
+        icon: '/blocks.png', 
+        description: 'Play a classic game of Tetris for 0.01 Irys!',
+        borderColor: '#50FFD6'
+      },
+      { 
+        id: 'pacman' as GameType, 
+        name: 'PACMAN', 
+        icon: '/pacman.png', 
+        description: 'Play the classic arcade game for 0.01 Irys!',
+        borderColor: '#FFD700'
+      },
+      { 
+        id: null, 
+        name: 'COMING SOON', 
+        icon: '🎲', 
+        description: 'More games coming soon!',
+        borderColor: '#FF3D14'
+      }
+    ];
+
+    const currentGame = games[carouselIndex];
+    const leftGame = games[(carouselIndex - 1 + games.length) % games.length];
+    const rightGame = games[(carouselIndex + 1) % games.length];
+
     return (
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <BruceMascot />
         <div style={{ padding: '70px 20px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', position: 'relative' }}>
           <div style={{ width: '100%', maxWidth: '1200px', textAlign: 'center' }}>
             <div style={{ marginBottom: '40px' }}>
@@ -1337,108 +1382,186 @@ export default function Page() {
               />
             </div>
 
-            <div style={{ 
+            {/* Game Carousel for Connected Users */}
+            <div className="carousel-container" style={{ 
               display: 'flex', 
               gap: '40px', 
               alignItems: 'center', 
               justifyContent: 'center',
-              flexWrap: 'wrap'
+              position: 'relative',
+              minHeight: '400px'
             }}>
-              <div style={{
+              {/* Left Arrow */}
+              <button
+                className="carousel-arrows"
+                onClick={() => setCarouselIndex((prev) => (prev - 1 + games.length) % games.length)}
+                style={{
+                  position: 'absolute',
+                  left: '50px',
+                  zIndex: 10,
+                  background: 'rgba(255, 61, 20, 0.2)',
+                  border: '2px solid rgba(255, 61, 20, 0.5)',
+                  borderRadius: '50%',
+                  width: '60px',
+                  height: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  color: '#FF3D14',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.4)';
+                  e.currentTarget.style.borderColor = '#FF3D14';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.2)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
+                }}
+              >
+                ←
+              </button>
+
+              {/* Left Game (Blurred) */}
+              <div className="carousel-game-side" style={{
                 ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #50FFD6',
-                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.3)'
+                minWidth: '250px',
+                maxWidth: '280px',
+                opacity: 0.4,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+                transform: 'scale(0.8)',
+                pointerEvents: 'none'
+              }}>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '15px',
+                  margin: '0 auto 15px auto',
+                  fontSize: leftGame.icon.startsWith('/') ? '0' : '48px'
+                }}>
+                  {!leftGame.icon.startsWith('/') && leftGame.icon}
+                </div>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px' }}>{leftGame.name}</h3>
+              </div>
+
+              {/* Center Game (Active) */}
+              <div className="carousel-game-center" style={{
+                ...cardStyle,
+                minWidth: '380px',
+                maxWidth: '420px',
+                border: `3px solid ${currentGame.borderColor}`,
+                boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
+                transform: 'scale(1.05)'
               }}>
                 <div style={{ 
                   width: '64px', 
                   height: '64px', 
-                  backgroundImage: 'url(/blocks.png)', 
+                  backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none', 
                   backgroundSize: 'contain', 
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
                   marginBottom: '20px',
-                  margin: '0 auto 20px auto'
-                }}></div>
+                  margin: '0 auto 20px auto',
+                  fontSize: currentGame.icon.startsWith('/') ? '0' : '64px'
+                }}>
+                  {!currentGame.icon.startsWith('/') && currentGame.icon}
+                </div>
                 <h2 style={{ 
                   fontSize: '32px', 
                   marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
+                  color: currentGame.borderColor,
+                  fontWeight: '700',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
                 }}>
-                  TETRIS
+                  {currentGame.name}
                 </h2>
                 <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
-                  Play a classic game of Tetris for 0.01 Irys!
+                  {currentGame.description}
                 </p>
                 
-                <button
-                  style={{ 
-                    ...buttonStyle, 
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
-                  }}
-                  onClick={() => handlePayment('tetris')}
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play Tetris'}
-                </button>
+                {currentGame.id && (
+                  <button
+                    style={{ 
+                      ...buttonStyle, 
+                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                      ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
+                    }}
+                    onClick={() => handlePayment(currentGame.id)}
+                    disabled={isProcessingPayment}
+                  >
+                    {isProcessingPayment ? '⏳ Processing...' : `Play ${currentGame.name}`}
+                  </button>
+                )}
               </div>
 
-              <div style={{
+              {/* Right Game (Blurred) */}
+              <div className="carousel-game-side" style={{
                 ...cardStyle,
-                minWidth: '320px',
-                maxWidth: '400px',
-                border: '3px solid #FFD700',
-                boxShadow: '0 25px 50px -12px rgba(255, 215, 0, 0.3)'
-              }}>
-                <div style={{ 
-                  fontSize: '64px',
-                  marginBottom: '20px',
-                  margin: '0 auto 20px auto'
-                }}>🍒</div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #FFD700, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  PACMAN
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#B9C1C1', fontSize: '16px' }}>
-                  Play the classic arcade game for 0.01 Irys!
-                </p>
-                
-                <button
-                  style={{ 
-                    ...buttonStyle, 
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    ...(isProcessingPayment ? { opacity: 0.7, cursor: 'not-allowed' } : {})
-                  }}
-                  onClick={() => handlePayment('pacman')}
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? '⏳ Processing...' : 'Play Pacman'}
-                </button>
-              </div>
-
-              <div style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                opacity: 0.6,
+                minWidth: '250px',
+                maxWidth: '280px',
+                opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+                transform: 'scale(0.8)',
+                pointerEvents: 'none'
               }}>
-                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
-                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '15px',
+                  margin: '0 auto 15px auto',
+                  fontSize: rightGame.icon.startsWith('/') ? '0' : '48px'
+                }}>
+                  {!rightGame.icon.startsWith('/') && rightGame.icon}
+                </div>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px' }}>{rightGame.name}</h3>
               </div>
+
+              {/* Right Arrow */}
+              <button
+                className="carousel-arrows"
+                onClick={() => setCarouselIndex((prev) => (prev + 1) % games.length)}
+                style={{
+                  position: 'absolute',
+                  right: '50px',
+                  zIndex: 10,
+                  background: 'rgba(255, 61, 20, 0.2)',
+                  border: '2px solid rgba(255, 61, 20, 0.5)',
+                  borderRadius: '50%',
+                  width: '60px',
+                  height: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  color: '#FF3D14',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.4)';
+                  e.currentTarget.style.borderColor = '#FF3D14';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.2)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
+                }}
+              >
+                →
+              </button>
             </div>
           </div>
           <Footer />
@@ -1446,8 +1569,8 @@ export default function Page() {
         
         <style jsx>{`
           @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            0%, 100% { transform: scale(1.05); }
+            50% { transform: scale(1.1); }
           }
         `}</style>
       </div>
@@ -1461,7 +1584,6 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <BruceMascot />
         <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
           <div style={cardStyle}>
             <div style={{ 
@@ -1514,6 +1636,33 @@ export default function Page() {
             50% { opacity: 0.7; }
           }
         `}</style>
+      </div>C1' }}>
+              {selectedGame === 'tetris' ? (
+                <>
+                  <p>🎯 Clear lines to score points</p>
+                  <p>⚡ Speed increases every 4 lines</p>
+                </>
+              ) : (
+                <>
+                  <p>🍒 Eat all dots to advance levels</p>
+                  <p>👻 Avoid ghosts or eat power pellets</p>
+                  <p>🎮 Use arrow keys or WASD to move</p>
+                </>
+              )}
+              {address && !isOfflineMode && (
+                <p>🏆 Publish scores to blockchain leaderboard!</p>
+              )}
+            </div>
+          </div>
+        </div>
+        <Footer />
+        
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -1525,7 +1674,6 @@ export default function Page() {
       <div style={containerStyle}>
         <NavigationHeader />
         <LeaderboardPanel />
-        <BruceMascot />
         <div style={{ 
           padding: '80px 20px 20px', 
           display: 'flex', 
@@ -1569,7 +1717,6 @@ export default function Page() {
     <div style={containerStyle}>
       <NavigationHeader />
       <LeaderboardPanel />
-      <BruceMascot />
       <div style={{ padding: '100px 20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={cardStyle}>
           <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔄</div>
