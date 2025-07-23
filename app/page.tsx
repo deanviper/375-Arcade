@@ -962,8 +962,40 @@ export default function Page() {
     );
   }
 
-  // Landing page
+  // Landing page with carousel
   if (!address && !isConnected && !isOfflineMode) {
+    const [carouselIndex, setCarouselIndex] = useState(0);
+    const games = [
+      { 
+        id: 'tetris' as GameType, 
+        name: 'TETRIS', 
+        icon: '/blocks.png', 
+        description: 'Play a classic game of Tetris for 0.01 Irys!',
+        gradient: 'linear-gradient(90deg, #50FFD6, #FF3D14)',
+        borderColor: '#50FFD6'
+      },
+      { 
+        id: 'pacman' as GameType, 
+        name: 'PACMAN', 
+        icon: '/pacman.png', 
+        description: 'Play the classic arcade game for 0.01 Irys!',
+        gradient: 'linear-gradient(90deg, #FFD700, #FF3D14)',
+        borderColor: '#FFD700'
+      },
+      { 
+        id: null, 
+        name: 'COMING SOON', 
+        icon: '🎲', 
+        description: 'More games coming soon!',
+        gradient: 'linear-gradient(90deg, #FF3D14, #FF6B35)',
+        borderColor: '#FF3D14'
+      }
+    ];
+
+    const currentGame = games[carouselIndex];
+    const leftGame = games[(carouselIndex - 1 + games.length) % games.length];
+    const rightGame = games[(carouselIndex + 1) % games.length];
+
     return (
       <div style={containerStyle}>
         <style>{mobileStyles}</style>
@@ -986,164 +1018,237 @@ export default function Page() {
               />
             </div>
 
-            <div className="arcade-cards" style={{ 
+            {/* Game Carousel */}
+            <div style={{ 
               display: 'flex', 
               gap: '40px', 
               alignItems: 'center', 
               justifyContent: 'center',
-              flexWrap: 'wrap'
+              position: 'relative',
+              minHeight: '400px'
             }}>
-              <div className="arcade-card" style={{
+              {/* Left Arrow */}
+              <button
+                onClick={() => setCarouselIndex((prev) => (prev - 1 + games.length) % games.length)}
+                style={{
+                  position: 'absolute',
+                  left: '50px',
+                  zIndex: 10,
+                  background: 'rgba(255, 61, 20, 0.2)',
+                  border: '2px solid rgba(255, 61, 20, 0.5)',
+                  borderRadius: '50%',
+                  width: '60px',
+                  height: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  color: '#FF3D14',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.4)';
+                  e.currentTarget.style.borderColor = '#FF3D14';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.2)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
+                }}
+              >
+                ←
+              </button>
+
+              {/* Left Game (Blurred) */}
+              <div style={{
                 ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                border: '3px solid #50FFD6',
-                boxShadow: '0 25px 50px -12px rgba(80, 255, 214, 0.4)'
+                minWidth: '250px',
+                maxWidth: '280px',
+                opacity: 0.4,
+                filter: 'blur(2px)',
+                border: '2px solid rgba(255, 61, 20, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+                transform: 'scale(0.8)',
+                pointerEvents: 'none'
               }}>
                 <div style={{ 
-                  width: '64px', 
-                  height: '64px', 
-                  backgroundImage: 'url(/blocks.png)', 
+                  width: '48px', 
+                  height: '48px', 
+                  backgroundImage: leftGame.icon.startsWith('/') ? `url(${leftGame.icon})` : 'none', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '15px',
+                  margin: '0 auto 15px auto',
+                  fontSize: leftGame.icon.startsWith('/') ? '0' : '48px'
+                }}>
+                  {!leftGame.icon.startsWith('/') && leftGame.icon}
+                </div>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px' }}>{leftGame.name}</h3>
+              </div>
+
+              {/* Center Game (Active) */}
+              <div style={{
+                ...cardStyle,
+                minWidth: '380px',
+                maxWidth: '420px',
+                border: `3px solid ${currentGame.borderColor}`,
+                boxShadow: `0 25px 50px -12px ${currentGame.borderColor}40`,
+                transform: 'scale(1.05)'
+              }}>
+                <div style={{ 
+                  width: '80px', 
+                  height: '80px', 
+                  backgroundImage: currentGame.icon.startsWith('/') ? `url(${currentGame.icon})` : 'none', 
                   backgroundSize: 'contain', 
                   backgroundRepeat: 'no-repeat', 
                   backgroundPosition: 'center',
                   marginBottom: '20px',
-                  margin: '0 auto 20px auto'
-                }}></div>
+                  margin: '0 auto 20px auto',
+                  fontSize: currentGame.icon.startsWith('/') ? '0' : '80px'
+                }}>
+                  {!currentGame.icon.startsWith('/') && currentGame.icon}
+                </div>
                 <h2 style={{ 
-                  fontSize: '32px', 
+                  fontSize: '36px', 
                   marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #50FFD6, #FF3D14)', 
+                  background: currentGame.gradient, 
                   WebkitBackgroundClip: 'text', 
                   WebkitTextFillColor: 'transparent',
                   fontWeight: '700'
                 }}>
-                  TETRIS
+                  {currentGame.name}
                 </h2>
-                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
-                  Play a classic game of Tetris for 0.01 Irys!
+                <p style={{ marginBottom: '30px', color: '#9CA3AF', fontSize: '16px' }}>
+                  {currentGame.description}
                 </p>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <button
-                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
-                    onClick={handleWalletConnection}
-                  >
-                    🔗 Connect Wallet & Play
-                  </button>
-                  
-                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
-                    Don't want to connect your wallet and publish your scores? No worries!
-                  </p>
-                  
-                  <button
-                    style={{
-                      background: 'rgba(25, 25, 35, 0.5)',
-                      border: '2px solid rgba(107, 114, 128, 0.3)',
-                      borderRadius: '12px',
-                      padding: '12px 24px',
-                      color: '#9CA3AF',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      minWidth: '200px'
-                    }}
-                    onClick={() => {
-                      console.log('Just Play Tetris clicked!');
-                      
-                      setIsOfflineMode(true);
-                      setAuthed(true);
-                      setSelectedGame('tetris');
-                      setIsPaid(true);
-                      setGameStarted(false);
-                      setGameOver(false);
-                    }}
-                  >
-                    Just Play
-                  </button>
-                </div>
+                {currentGame.id && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <button
+                      style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+                      onClick={handleWalletConnection}
+                    >
+                      🔗 Connect Wallet & Play
+                    </button>
+                    
+                    <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
+                      Don't want to connect your wallet and publish your scores? No worries!
+                    </p>
+                    
+                    <button
+                      style={{
+                        background: 'rgba(25, 25, 35, 0.5)',
+                        border: '2px solid rgba(107, 114, 128, 0.3)',
+                        borderRadius: '12px',
+                        padding: '12px 24px',
+                        color: '#9CA3AF',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        minWidth: '200px'
+                      }}
+                      onClick={() => {
+                        console.log(`Just Play ${currentGame.name} clicked!`);
+                        
+                        setIsOfflineMode(true);
+                        setAuthed(true);
+                        setSelectedGame(currentGame.id);
+                        setIsPaid(true);
+                        setGameStarted(false);
+                        setGameOver(false);
+                      }}
+                    >
+                      Just Play
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="arcade-card" style={{
+              {/* Right Game (Blurred) */}
+              <div style={{
                 ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                border: '3px solid #FFD700',
-                boxShadow: '0 25px 50px -12px rgba(255, 215, 0, 0.4)'
-              }}>
-                <div style={{ 
-                  fontSize: '64px',
-                  marginBottom: '20px',
-                  margin: '0 auto 20px auto'
-                }}>🍒</div>
-                <h2 style={{ 
-                  fontSize: '32px', 
-                  marginBottom: '15px', 
-                  background: 'linear-gradient(90deg, #FFD700, #FF3D14)', 
-                  WebkitBackgroundClip: 'text', 
-                  WebkitTextFillColor: 'transparent',
-                  fontWeight: '700'
-                }}>
-                  PACMAN
-                </h2>
-                <p style={{ marginBottom: '20px', color: '#9CA3AF', fontSize: '16px' }}>
-                  Play the classic arcade game for 0.01 Irys!
-                </p>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <button
-                    style={{ ...buttonStyle, animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
-                    onClick={handleWalletConnection}
-                  >
-                    🔗 Connect Wallet & Play
-                  </button>
-                  
-                  <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '10px 0 5px' }}>
-                    Don't want to connect your wallet and publish your scores? No worries!
-                  </p>
-                  
-                  <button
-                    style={{
-                      background: 'rgba(25, 25, 35, 0.5)',
-                      border: '2px solid rgba(107, 114, 128, 0.3)',
-                      borderRadius: '12px',
-                      padding: '12px 24px',
-                      color: '#9CA3AF',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      minWidth: '200px'
-                    }}
-                    onClick={() => {
-                      console.log('Just Play Pacman clicked!');
-                      
-                      setIsOfflineMode(true);
-                      setAuthed(true);
-                      setSelectedGame('pacman');
-                      setIsPaid(true);
-                      setGameStarted(false);
-                      setGameOver(false);
-                    }}
-                  >
-                    Just Play
-                  </button>
-                </div>
-              </div>
-
-              <div className="arcade-card" style={{
-                ...cardStyle,
-                minWidth: '280px',
-                maxWidth: '320px',
-                opacity: 0.6,
+                minWidth: '250px',
+                maxWidth: '280px',
+                opacity: 0.4,
                 filter: 'blur(2px)',
                 border: '2px solid rgba(255, 61, 20, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)'
+                boxShadow: '0 25px 50px -12px rgba(255, 61, 20, 0.3)',
+                transform: 'scale(0.8)',
+                pointerEvents: 'none'
               }}>
-                <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎲</div>
-                <h3 style={{ color: '#9CA3AF', margin: '0' }}>COMING SOON</h3>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  backgroundImage: rightGame.icon.startsWith('/') ? `url(${rightGame.icon})` : 'none', 
+                  backgroundSize: 'contain', 
+                  backgroundRepeat: 'no-repeat', 
+                  backgroundPosition: 'center',
+                  marginBottom: '15px',
+                  margin: '0 auto 15px auto',
+                  fontSize: rightGame.icon.startsWith('/') ? '0' : '48px'
+                }}>
+                  {!rightGame.icon.startsWith('/') && rightGame.icon}
+                </div>
+                <h3 style={{ color: '#9CA3AF', margin: '0', fontSize: '24px' }}>{rightGame.name}</h3>
               </div>
+
+              {/* Right Arrow */}
+              <button
+                onClick={() => setCarouselIndex((prev) => (prev + 1) % games.length)}
+                style={{
+                  position: 'absolute',
+                  right: '50px',
+                  zIndex: 10,
+                  background: 'rgba(255, 61, 20, 0.2)',
+                  border: '2px solid rgba(255, 61, 20, 0.5)',
+                  borderRadius: '50%',
+                  width: '60px',
+                  height: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  color: '#FF3D14',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.4)';
+                  e.currentTarget.style.borderColor = '#FF3D14';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 61, 20, 0.2)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 61, 20, 0.5)';
+                }}
+              >
+                →
+              </button>
+            </div>
+
+            {/* Game Indicator Dots */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              gap: '12px', 
+              marginTop: '30px' 
+            }}>
+              {games.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCarouselIndex(index)}
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: index === carouselIndex ? '#50FFD6' : 'rgba(156, 163, 175, 0.4)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                />
+              ))}
             </div>
           </div>
           
@@ -1152,8 +1257,8 @@ export default function Page() {
         
         <style jsx>{`
           @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            0%, 100% { transform: scale(1.05); }
+            50% { transform: scale(1.1); }
           }
         `}</style>
       </div>
